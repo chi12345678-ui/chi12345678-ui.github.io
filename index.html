@@ -1,42 +1,115 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>chie20200415-ui | 数据作品集</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: "Microsoft YaHei", sans-serif; line-height: 1.6; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #333; }
-    h1 { text-align: center; color: #2c3e50; }
-    .card { background: #f8f9fa; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
-    a { color: #2980b9; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .file-list { list-style: none; padding: 0; }
-    .file-list li { margin: 0.5rem 0; padding-left: 1.2rem; position: relative; }
-    .file-list li:before { content: "📄"; position: absolute; left: 0; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎访问我的数据作品集</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        /* PDF 预览卡片样式 */
+        .report-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .report-card h4 {
+            margin: 0;
+            padding: 14px 18px;
+            background: #f8f9fa;
+            font-size: 1.1em;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+        }
+        .report-card embed {
+            display: block;
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+        .report-card .actions {
+            padding: 12px 18px;
+            background: #fafafa;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .report-card .actions a {
+            margin: 0 8px;
+            font-weight: 500;
+        }
+        footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.85em;
+            color: #999;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <h1>👋 欢迎访问我的数据作品集</h1>
-  <p>专注快消品行业分析 | SQL · Python · Power BI</p>
+    <h1>欢迎访问我的数据作品集</h1>
+    
+    <p>您好！这里展示了我使用 Power BI 制作的数据分析案例。</p>
+    <p>所有报告均已导出为 PDF 格式，<strong>无需安装任何软件即可直接在浏览器中查看</strong>。</p>
 
-  <div class="card">
     <h3>📊 已上传案例</h3>
-    <ul class="file-list">
-      <li><a href="快消品进销存演示案例.pbix">快消品进销存演示案例.pbix</a></li>
-      <li><a href="复购分析案例.pbix">复购分析案例.pbix</a></li>
-    </ul>
-    <p><small>💡 提示：点击文件名可下载 .pbix 报告（需用 Power BI Desktop 打开）</small></p>
-  </div>
 
-  <div class="card">
-    <h3>📌 使用说明</h3>
-    <p>1. 下载 .pbix 文件 → 用 <a href="https://powerbi.microsoft.com/zh-cn/desktop/" target="_blank">Power BI Desktop</a> 打开<br>
-       2. 数据模型与可视化已内置，支持交互式探索<br>
-       3. 如需查看 PDF 版报告，请联系我获取</p>
-  </div>
+    <!-- ✅ 案例1：快消品进销存 -->
+    <div class="report-card">
+        <h4>快消品进销存演示案例</h4>
+        <embed src="快消品进销存演示案例.pdf" type="application/pdf">
+        <div class="actions">
+            📄 <a href="快消品进销存演示案例.pdf" download>下载 PDF 全文</a> | 
+            ⬇️ <a href="快消品进销存演示案例.pbix" download>下载 .pbix 源文件</a>
+        </div>
+    </div>
 
-  <footer style="text-align:center; margin-top:2rem; color:#7f8c8d;">
-    © 2025 chie20200415-ui | 邮箱：your@email.com
-  </footer>
+    <!-- ✅ 案例2：复购分析 -->
+    <div class="report-card">
+        <h4>复购分析案例</h4>
+        <embed src="复购分析案例.pdf" type="application/pdf">
+        <div class="actions">
+            📄 <a href="复购分析案例.pdf" download>下载 PDF 全文</a> | 
+            ⬇️ <a href="复购分析案例.pbix" download>下载 .pbix 源文件</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 数据作品集 | 托管于 GitHub Pages</p>
+    </footer>
 </body>
 </html>
