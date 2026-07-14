@@ -15,11 +15,7 @@
             --success: #27ae60;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
@@ -29,16 +25,9 @@
             padding: 20px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
 
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-        }
+        header { text-align: center; margin-bottom: 40px; padding: 20px; }
 
         h1 {
             font-size: 2.2rem;
@@ -77,10 +66,7 @@
             align-items: center;
             gap: 12px;
         }
-        .section-title i {
-            color: var(--secondary);
-            font-size: 1.4rem;
-        }
+        .section-title i { color: var(--secondary); font-size: 1.4rem; }
 
         /* 卡片布局：左文右图 */
         .case-card {
@@ -112,13 +98,9 @@
             align-items: center;
             gap: 10px;
         }
-        .case-info h3 i {
-            color: var(--secondary);
-        }
+        .case-info h3 i { color: var(--secondary); }
 
-        .capabilities, .value {
-            margin-bottom: 20px;
-        }
+        .capabilities, .value { margin-bottom: 20px; }
         .capabilities h4, .value h4 {
             font-size: 1.1rem;
             color: #2c3e50;
@@ -130,13 +112,8 @@
         .capabilities h4 i { color: #3498db; }
         .value h4 i { color: #27ae60; }
 
-        .capabilities ul, .value ul {
-            padding-left: 20px;
-        }
-        .capabilities li, .value li {
-            margin-bottom: 8px;
-            color: #555;
-        }
+        .capabilities ul, .value ul { padding-left: 20px; }
+        .capabilities li, .value li { margin-bottom: 8px; color: #555; }
 
         .actions {
             margin-top: auto;
@@ -155,44 +132,29 @@
             transition: all 0.3s ease;
             border: 1px solid transparent;
         }
-        .btn-primary {
-            background: var(--secondary);
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-        }
-        .btn-outline {
-            background: white;
-            color: var(--secondary);
-            border-color: var(--gray);
-        }
-        .btn-outline:hover {
-            background: var(--light);
-        }
+        .btn-primary { background: var(--secondary); color: white; }
+        .btn-primary:hover { background: #2980b9; transform: translateY(-2px); }
+        .btn-outline { background: white; color: var(--secondary); border-color: var(--gray); }
+        .btn-outline:hover { background: var(--light); }
 
         .pdf-preview {
-            flex: 1;
+            flex: 1.2; /* 稍微增加右侧占比 */
             min-width: 400px;
             position: relative;
         }
 
+        /* 🔥 核心修改：调高PDF预览比例与高度 */
         .pdf-preview iframe {
             width: 100%;
-            height: 600px;
+            height: 850px; /* 从600px提升至850px，显示更多内容 */
             border: none;
             border-radius: 0 0 10px 10px;
         }
 
-        /* 响应式：小屏时堆叠 */
         @media (max-width: 768px) {
-            .case-card {
-                flex-direction: column;
-            }
-            .pdf-preview {
-                min-width: 100%;
-            }
+            .case-card { flex-direction: column; }
+            .pdf-preview { min-width: 100%; }
+            .pdf-preview iframe { height: 600px; } /* 移动端保持适中高度 */
         }
 
         footer {
@@ -203,14 +165,6 @@
             margin-top: 40px;
             border-top: 1px solid var(--gray);
         }
-
-        /* 高亮提示 */
-        .highlight {
-            background: #fffde7;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: 600;
-        }
     </style>
 </head>
 <body>
@@ -220,36 +174,30 @@
             <p class="intro">基于 Power BI 构建的实战分析报告，支持在线预览与源文件下载。所有案例均使用模拟数据，聚焦方法论可迁移性。</p>
         </header>
 
-        <!-- 案例1：快消品进销存案例分析报告 -->
+        <!-- ✅ 案例1：快消品进销存案例分析报告 -->
         <div class="case-card">
             <div class="case-info">
                 <h3><i class="fas fa-shopping-cart"></i> 快消品进销存案例分析报告</h3>
-                
                 <div class="capabilities">
                     <h4><i class="fas fa-cogs"></i> 核心能力</h4>
                     <ul>
-                        <li>多表关联建模（销售/库存/采购/主数据）</li>
-                        <li>周转率 & 临期预警指标体系设计</li>
-                        <li>异常 SKU 定位与根因分析</li>
+                        <li>整体进销存趋势与周转分析</li>
+                        <li>品牌与单品动销分析（ABC分析）</li>
+                        <li>库存健康度与临期风险诊断</li>
+                        <li>智能采购与补货需求分析</li>
                     </ul>
                 </div>
-
                 <div class="value">
                     <h4><i class="fas fa-chart-line"></i> 业务价值</h4>
                     <ul>
-                        <li>建立标准化库存监控体系</li>
-                        <li>辅助备货决策与呆滞品清理</li>
-                        <li>降低缺货率 15%+，提升库存周转效率</li>
+                        <li>识别滞销与缺货风险，输出精细化采购与清仓建议</li>
+                        <li>优化高价值商品采购模型，降低资金占用</li>
+                        <li>建立库存健康度预警看板</li>
                     </ul>
                 </div>
-
                 <div class="actions">
-                    <a href="快消品进销存案例分析报告.pdf" class="btn btn-primary" download>
-                        <i class="fas fa-file-pdf"></i> 下载 PDF 全文
-                    </a>
-                    <a href="快消品进销存演示案例.pbix" class="btn btn-outline" download>
-                        <i class="fas fa-file-code"></i> 下载 .pbix 源文件
-                    </a>
+                    <a href="快消品进销存案例分析报告.pdf" class="btn btn-primary" download><i class="fas fa-file-pdf"></i> 下载 PDF</a>
+                    <a href="快消品进销存演示案例.pbix" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .pbix</a>
                 </div>
             </div>
             <div class="pdf-preview">
@@ -257,40 +205,96 @@
             </div>
         </div>
 
-        <!-- 案例2：复购案例分析 -->
+        <!-- ✅ 案例2：快消品进销存演示案例 -->
         <div class="case-card">
             <div class="case-info">
-                <h3><i class="fas fa-users"></i> 复购案例分析</h3>
-                
+                <h3><i class="fas fa-chart-pie"></i> 快消品进销存演示案例</h3>
                 <div class="capabilities">
                     <h4><i class="fas fa-cogs"></i> 核心能力</h4>
                     <ul>
-                        <li>用户行为轨迹闭环分析</li>
-                        <li>时间序列趋势建模（LTV/留存率）</li>
-                        <li>新老客对比拆解 + 复购漏斗构建</li>
+                        <li>截止2020年7月22日进销存数据可视化</li>
+                        <li>各品牌库存数量与产品月销量监控</li>
+                        <li>即将临期/过期商品数分布追踪</li>
+                        <li>各产品进货需求分析与销售额趋势展示</li>
                     </ul>
                 </div>
-
                 <div class="value">
                     <h4><i class="fas fa-chart-line"></i> 业务价值</h4>
                     <ul>
-                        <li>识别高价值用户特征标签</li>
-                        <li>定位流失关键节点（如第3次购买后断层）</li>
-                        <li>支撑精细化运营策略落地</li>
+                        <li>直观呈现库存金额环比(108%)与销售额环比(21%)</li>
+                        <li>快速定位库存周转异常品牌（如永圣、大中粮）</li>
+                        <li>辅助日常供应链管理与终端陈列决策</li>
                     </ul>
                 </div>
-
                 <div class="actions">
-                    <a href="复购案例分析.pdf" class="btn btn-primary" download>
-                        <i class="fas fa-file-pdf"></i> 下载 PDF 全文
-                    </a>
-                    <a href="复购分析案例.pbix" class="btn btn-outline" download>
-                        <i class="fas fa-file-code"></i> 下载 .pbix 源文件
-                    </a>
+                    <a href="快消品进销存演示案例.pdf" class="btn btn-primary" download><i class="fas fa-file-pdf"></i> 下载 PDF</a>
+                    <a href="快消品进销存演示案例.pbix" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .pbix</a>
+                </div>
+            </div>
+            <div class="pdf-preview">
+                <iframe src="快消品进销存演示案例.pdf?#toolbar=0&zoom=100" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- ✅ 案例3：复购案例分析 -->
+        <div class="case-card">
+            <div class="case-info">
+                <h3><i class="fas fa-users"></i> 复购案例分析</h3>
+                <div class="capabilities">
+                    <h4><i class="fas fa-cogs"></i> 核心能力</h4>
+                    <ul>
+                        <li>母婴店铺2014年1-7月销售额趋势分析</li>
+                        <li>新增与复购用户的消费人数及订单拆解</li>
+                        <li>消费金额与人均消费金额归因分析</li>
+                        <li>复购与留存比例分析（黄金60天转化）</li>
+                    </ul>
+                </div>
+                <div class="value">
+                    <h4><i class="fas fa-chart-line"></i> 业务价值</h4>
+                    <ul>
+                        <li>明确收入增长/下降原因（拉新失速、新客转化率低等）</li>
+                        <li>强化新客“黄金60天”转化SOP</li>
+                        <li>提升复购用户客单价，优化促销节奏与防流失机制</li>
+                    </ul>
+                </div>
+                <div class="actions">
+                    <a href="复购案例分析.pdf" class="btn btn-primary" download><i class="fas fa-file-pdf"></i> 下载 PDF</a>
+                    <a href="复购分析案例.pbix" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .pbix</a>
                 </div>
             </div>
             <div class="pdf-preview">
                 <iframe src="复购案例分析.pdf?#toolbar=0&zoom=100" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- ✅ 案例4：复购分析案例 -->
+        <div class="case-card">
+            <div class="case-info">
+                <h3><i class="fas fa-sync-alt"></i> 复购分析案例</h3>
+                <div class="capabilities">
+                    <h4><i class="fas fa-cogs"></i> 核心能力</h4>
+                    <ul>
+                        <li>销售金额变化趋势与消费金额占比可视化</li>
+                        <li>首次下单月份 cohorts 留存率统计</li>
+                        <li>不同类别客户消费金额对比</li>
+                        <li>月新增和复购用户订单数及人均订单数追踪</li>
+                    </ul>
+                </div>
+                <div class="value">
+                    <h4><i class="fas fa-chart-line"></i> 业务价值</h4>
+                    <ul>
+                        <li>量化新增(57%)与复购(43%)用户的销售贡献度</li>
+                        <li>洞察次月留存高峰期及长期留存衰减规律</li>
+                        <li>支撑精细化运营策略落地与沉睡用户召回</li>
+                    </ul>
+                </div>
+                <div class="actions">
+                    <a href="复购分析案例.pdf" class="btn btn-primary" download><i class="fas fa-file-pdf"></i> 下载 PDF</a>
+                    <a href="复购分析案例.pbix" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .pbix</a>
+                </div>
+            </div>
+            <div class="pdf-preview">
+                <iframe src="复购分析案例.pdf?#toolbar=0&zoom=100" allowfullscreen></iframe>
             </div>
         </div>
 
