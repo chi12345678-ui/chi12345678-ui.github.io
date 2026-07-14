@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>欢迎访问我的数据作品集</title>
+    <title>数据分析作品集 | Data Analytics Portfolio</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -52,6 +52,13 @@
             color: #2c3e50;
             border-bottom: 1px solid #eee;
         }
+        .report-card .desc {
+            padding: 12px 18px;
+            font-size: 0.9em;
+            color: #555;
+            background: #fff;
+            border-bottom: 1px dashed #eee;
+        }
         .report-card embed {
             display: block;
             width: 100%;
@@ -83,14 +90,21 @@
 <body>
     <h1>欢迎访问我的数据作品集</h1>
     
-    <p>您好！这里展示了我使用 Power BI 制作的数据分析案例。</p>
-    <p>所有报告均已导出为 PDF 格式，<strong>无需安装任何软件即可直接在浏览器中查看</strong>。</p>
+    <p>您好！这里展示了我基于 Power BI 构建的数据分析案例。</p>
+    <p>所有报告均已导出为 PDF 格式，<strong>无需安装任何软件即可直接在浏览器中预览</strong>。同时提供 .pbix 源文件供查阅底层逻辑与DAX度量值。</p>
+    <p style="font-size: 0.9em; color: #666; font-style: italic;">
+        💡 注：以下案例使用模拟/公开数据构建，核心价值在于分析框架的完整性与方法论的可迁移性，已验证可适配B2B/工业品等复杂业务场景。
+    </p>
 
-    <h3>📊 已上传案例</h3>
+    <h3>📊 分析案例展示</h3>
 
-    <!-- ✅ 案例1：快消品进销存 -->
+    <!-- ✅ 案例1：库存健康度诊断 -->
     <div class="report-card">
-        <h4>快消品进销存演示案例</h4>
+        <h4>库存健康度诊断框架：从指标监控到风险预警</h4>
+        <div class="desc">
+            核心能力：多表关联建模 · 周转率/临期预警指标设计 · 异常SKU定位<br>
+            业务价值：建立标准化库存监控体系，辅助备货决策与呆滞品清理
+        </div>
         <embed src="快消品进销存演示案例.pdf" type="application/pdf">
         <div class="actions">
             📄 <a href="快消品进销存演示案例.pdf" download>下载 PDF 全文</a> | 
@@ -98,18 +112,14 @@
         </div>
     </div>
 
-    <!-- ✅ 案例2：复购分析 -->
+    <!-- ✅ 案例2：用户复购归因分析 -->
     <div class="report-card">
-        <h4>复购分析案例</h4>
+        <h4>用户价值分层与留存归因：基于行为轨迹的闭环分析</h4>
+        <div class="desc">
+            核心能力：时间序列趋势分析 · 新老客对比拆解 · 复购漏斗构建<br>
+            业务价值：识别高价值用户特征，定位流失关键节点，支撑精细化运营
+        </div>
         <embed src="复购分析案例.pdf" type="application/pdf">
         <div class="actions">
             📄 <a href="复购分析案例.pdf" download>下载 PDF 全文</a> | 
             ⬇️ <a href="复购分析案例.pbix" download>下载 .pbix 源文件</a>
-        </div>
-    </div>
-
-    <footer>
-        <p>&copy; 2024 数据作品集 | 托管于 GitHub Pages</p>
-    </footer>
-</body>
-</html>
