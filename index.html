@@ -35,7 +35,6 @@
         a:hover {
             text-decoration: underline;
         }
-        /* PDF 预览卡片样式 */
         .report-card {
             background: #fff;
             border: 1px solid #e0e0e0;
@@ -59,7 +58,7 @@
             background: #fff;
             border-bottom: 1px dashed #eee;
         }
-        .report-card embed {
+        .report-card iframe {
             display: block;
             width: 100%;
             height: 500px;
@@ -98,28 +97,68 @@
 
     <h3>📊 分析案例展示</h3>
 
-    <!-- ✅ 案例1：库存健康度诊断 -->
+    <!-- ✅ 案例1：快消品进销存案例分析报告 -->
     <div class="report-card">
-        <h4>库存健康度诊断框架：从指标监控到风险预警</h4>
+        <h4>快消品进销存案例分析报告</h4>
         <div class="desc">
             核心能力：多表关联建模 · 周转率/临期预警指标设计 · 异常SKU定位<br>
             业务价值：建立标准化库存监控体系，辅助备货决策与呆滞品清理
         </div>
-        <embed src="快消品进销存演示案例.pdf" type="application/pdf">
+        <iframe src="快消品进销存案例分析报告.pdf?#toolbar=0" width="100%" height="500px" style="border:none;"></iframe>
         <div class="actions">
-            📄 <a href="快消品进销存演示案例.pdf" download>下载 PDF 全文</a> | 
+            📄 <a href="快消品进销存案例分析报告.pdf" download>下载 PDF 全文</a> | 
             ⬇️ <a href="快消品进销存演示案例.pbix" download>下载 .pbix 源文件</a>
         </div>
     </div>
 
-    <!-- ✅ 案例2：用户复购归因分析 -->
+    <!-- ✅ 案例2：复购案例分析 -->
     <div class="report-card">
-        <h4>用户价值分层与留存归因：基于行为轨迹的闭环分析</h4>
+        <h4>复购案例分析</h4>
         <div class="desc">
             核心能力：时间序列趋势分析 · 新老客对比拆解 · 复购漏斗构建<br>
             业务价值：识别高价值用户特征，定位流失关键节点，支撑精细化运营
         </div>
-        <embed src="复购分析案例.pdf" type="application/pdf">
+        <iframe src="复购案例分析.pdf?#toolbar=0" width="100%" height="500px" style="border:none;"></iframe>
         <div class="actions">
-            📄 <a href="复购分析案例.pdf" download>下载 PDF 全文</a> | 
+            📄 <a href="复购案例分析.pdf" download>下载 PDF 全文</a> | 
             ⬇️ <a href="复购分析案例.pbix" download>下载 .pbix 源文件</a>
+        </div>
+    </div>
+
+    <!-- ✅ 案例3：复购分析案例（补充，若需区分） -->
+    <!-- 如果你希望把“复购分析案例.pdf”也单独展示，可取消注释下方区块 -->
+    <!--
+    <div class="report-card">
+        <h4>复购分析案例（补充版）</h4>
+        <div class="desc">
+            基于行为轨迹的闭环归因模型，支持AB测试效果量化
+        </div>
+        <iframe src="复购分析案例.pdf?#toolbar=0" width="100%" height="500px" style="border:none;"></iframe>
+        <div class="actions">
+            📄 <a href="复购分析案例.pdf" download>下载 PDF</a> | 
+            ⬇️ <a href="复购分析案例.pbix" download>下载 .pbix</a>
+        </div>
+    </div>
+    -->
+
+    <!-- ✅ 案例4：快消品进销存演示案例（补充） -->
+    <!-- 同理，如需展示“演示案例”，可取消注释 -->
+    <!--
+    <div class="report-card">
+        <h4>快消品进销存演示案例</h4>
+        <div class="desc">
+            交互式仪表板演示，支持动态筛选与下钻分析
+        </div>
+        <iframe src="快消品进销存演示案例.pdf?#toolbar=0" width="100%" height="500px" style="border:none;"></iframe>
+        <div class="actions">
+            📄 <a href="快消品进销存演示案例.pdf" download>下载 PDF</a> | 
+            ⬇️ <a href="快消品进销存演示案例.pbix" download>下载 .pbix</a>
+        </div>
+    </div>
+    -->
+
+    <footer>
+        © 2025 数据分析作品集 | 所有案例基于模拟数据构建，仅用于方法论展示
+    </footer>
+</body>
+</html>
