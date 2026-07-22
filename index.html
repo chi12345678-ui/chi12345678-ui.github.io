@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>池增历 | 数据分析师</title>
+<title>阿历的个人主页 | 数据分析师</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Fredoka=圆润显示体(拉丁/数字)；中文回退苹方/冬青等更柔和的系统字体，再兜底思源 -->
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -22,7 +21,6 @@
   --disp:'Fredoka','PingFang SC','Hiragino Sans GB','Noto Sans SC',system-ui,sans-serif;
   --body:'Noto Sans SC','PingFang SC','Hiragino Sans GB',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
 }
-/* ===== 深色模式：暖调（深褐黑 + 暖橙 + 暖白字） ===== */
 [data-theme="dark"]{
   --bg:#15110b; --panel:#1d1812; --panel-2:#241e16;
   --ink:#f3ece1; --ink-2:#c4b7a3; --ink-3:#8c7f6b;
@@ -43,28 +41,30 @@ img{display:block;max-width:100%}
 
 .app{display:flex;min-height:100vh}
 
-/* ===== 侧边栏（加宽 + 圆润 + 字号放大） ===== */
+/* ===== 侧边栏 ===== */
 .side{width:var(--side-w);flex:0 0 var(--side-w);height:100vh;position:sticky;top:0;
   background:var(--panel);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;padding:36px 28px 24px;z-index:60;transition:background .4s,border-color .4s}
-.brand{display:flex;align-items:center;gap:15px;margin-bottom:6px}
-.avatar{width:66px;height:66px;border-radius:20px;object-fit:cover;flex:0 0 66px;
+  display:flex;flex-direction:column;padding:40px 28px 24px;z-index:60;transition:background .4s,border-color .4s}
+/* 头部：头像在上、名字在下，留白舒展 */
+.brand{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin-bottom:12px}
+.avatar{width:96px;height:96px;border-radius:26px;object-fit:cover;object-position:center 22%;flex:0 0 96px;
   border:2px solid var(--line);box-shadow:var(--shadow);background:var(--accent-soft)}
-.avatar-fb{width:66px;height:66px;border-radius:20px;flex:0 0 66px;display:none;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;font-family:var(--disp);font-weight:700;font-size:28px}
-.brand-txt h1{font-family:var(--disp);font-size:27px;font-weight:600;letter-spacing:.5px;line-height:1.1}
-.brand-txt p{font-size:14px;color:var(--ink-3);margin-top:4px;font-weight:500}
-.sign{font-size:16px;color:var(--ink-2);margin:16px 2px 24px;font-style:italic;
+.avatar-fb{width:96px;height:96px;border-radius:26px;flex:0 0 96px;display:none;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;font-family:var(--disp);font-weight:700;font-size:40px}
+.brand-txt{margin-top:18px;width:100%}
+.brand-txt h1{font-family:var(--disp);font-size:28px;font-weight:700;letter-spacing:.3px;line-height:1.15}
+.brand-txt p{font-size:14px;color:var(--ink-3);margin-top:7px;font-weight:500}
+.sign{font-size:16px;color:var(--ink-2);margin:24px 2px 32px;font-style:italic;
   border-left:2px solid var(--accent);padding-left:11px}
 
-.search{position:relative;margin-bottom:24px}
+.search{position:relative;margin-bottom:40px}
 .search input{width:100%;padding:13px 14px 13px 42px;border:1px solid var(--line);border-radius:14px;
   background:var(--panel-2);color:var(--ink);font-size:15.5px;font-family:var(--body);transition:.25s}
 .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:14px}
 
-.nav{list-style:none;display:flex;flex-direction:column;gap:6px;flex:1}
-.nav a{display:flex;align-items:center;gap:15px;padding:15px 18px;border-radius:15px;
+.nav{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1;margin-top:6px}
+.nav a{display:flex;align-items:center;gap:15px;padding:16px 18px;border-radius:15px;
   font-family:var(--disp);font-size:22px;font-weight:500;color:var(--ink-2);transition:.22s;position:relative}
 .nav a i{width:26px;text-align:center;font-size:19px;color:var(--ink-3);transition:.22s}
 .nav a:hover{background:var(--panel-2);color:var(--ink);transform:translateX(4px)}
@@ -72,10 +72,13 @@ img{display:block;max-width:100%}
 .nav a.active{background:var(--accent);color:#fff;font-weight:600;box-shadow:0 8px 20px rgba(232,115,12,.3)}
 .nav a.active i{color:#fff}
 
-.side-foot{border-top:1px solid var(--line);padding-top:18px;margin-top:14px}
-.side-foot a.mail{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--ink-2);transition:.2s}
-.side-foot a.mail:hover{color:var(--accent)}
-.side-foot .copy{font-size:12px;color:var(--ink-3);margin-top:12px;font-family:var(--mono)}
+.side-foot{border-top:1px solid var(--line);padding-top:20px;margin-top:18px}
+/* 联系方式：纯图标，点击复制 */
+.contact-row{display:flex;gap:11px;margin-bottom:16px}
+.cbtn{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--panel-2);
+  color:var(--ink-2);font-size:19px;cursor:pointer;display:grid;place-items:center;transition:.22s}
+.cbtn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-3px)}
+.side-foot .copy{font-size:12px;color:var(--ink-3);font-family:var(--mono)}
 
 /* ===== 主区 ===== */
 .main{flex:1;min-width:0}
@@ -93,7 +96,7 @@ img{display:block;max-width:100%}
 #toTop{opacity:0;pointer-events:none;transform:translateY(8px)}
 #toTop.show{opacity:1;pointer-events:auto;transform:none}
 
-/* ===== 开篇（字号放大） ===== */
+/* ===== 开篇 ===== */
 .hi{font-family:var(--disp);font-size:clamp(40px,6vw,72px);font-weight:600;line-height:1.02;letter-spacing:1px}
 .hi .wave{display:inline-block;transform-origin:70% 70%;animation:wave 2.4s ease-in-out infinite}
 @keyframes wave{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(14deg)}20%{transform:rotate(-8deg)}30%{transform:rotate(14deg)}40%{transform:rotate(-4deg)}50%{transform:rotate(10deg)}}
@@ -123,7 +126,7 @@ img{display:block;max-width:100%}
   border:1px solid var(--line);color:var(--ink-2);font-size:17px;transition:.22s}
 .socials a:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-3px)}
 
-/* ===== 简介/优势（字号放大） ===== */
+/* ===== 简介/优势 ===== */
 .about-wrap{display:grid;grid-template-columns:1.5fr 1fr;gap:46px;align-items:start}
 .about-wrap .lede{font-size:22px;color:var(--ink-2);line-height:1.9}
 .about-wrap .lede b{color:var(--ink)}
@@ -144,8 +147,8 @@ img{display:block;max-width:100%}
 .edge h3 i{color:var(--accent);font-size:19px}
 .edge p{color:var(--ink-2);font-size:17px;max-width:700px}
 
-/* ===== 案例卡片流（统一小卡片 + 标题加重点） ===== */
-.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:26px}
+/* ===== 案例卡片流 ===== */
+.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:26px}
 .case{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
   cursor:pointer;box-shadow:var(--shadow);transition:transform .3s,box-shadow .3s,border-color .3s;display:flex;flex-direction:column}
 .case:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
@@ -223,16 +226,19 @@ img{display:block;max-width:100%}
 .overlay{position:fixed;inset:0;background:rgba(13,14,18,.72);backdrop-filter:blur(6px);z-index:200;
   display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:.3s}
 .overlay.on{opacity:1;visibility:visible}
-.modal{background:var(--panel);border-radius:22px;max-width:960px;width:100%;max-height:92vh;overflow:hidden;
+.modal{background:var(--panel);border-radius:22px;max-width:980px;width:100%;max-height:92vh;overflow:hidden;
   box-shadow:var(--shadow-lg);transform:scale(.94) translateY(10px);transition:.32s cubic-bezier(.2,.8,.2,1);
   display:flex;flex-direction:column}
 .overlay.on .modal{transform:none}
+.modal.full{max-width:96vw;width:96vw;max-height:96vh;height:96vh}
 .modal-cover{height:124px;position:relative;display:flex;align-items:flex-end;padding:20px 24px;color:#fff;flex:0 0 auto}
 .modal-cover .big{position:absolute;top:10px;right:24px;font-family:var(--disp);font-size:74px;font-weight:600;opacity:.2}
 .modal-cover h3{position:relative;z-index:2;font-family:var(--disp);font-size:25px;font-weight:600}
 .modal-x{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;border-radius:50%;border:none;
   background:rgba(255,255,255,.22);color:#fff;font-size:20px;cursor:pointer;transition:.25s;display:grid;place-items:center}
 .modal-x:hover{background:rgba(255,255,255,.4);transform:rotate(90deg)}
+.modal-expand{right:62px}
+.modal-expand:hover{transform:none;background:rgba(255,255,255,.4)}
 /* 标签页 */
 .modal-tabs{display:flex;gap:6px;padding:14px 24px 0;border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--panel)}
 .mtab{border:none;background:transparent;cursor:pointer;font-family:var(--body);font-size:14.5px;font-weight:700;
@@ -241,11 +247,17 @@ img{display:block;max-width:100%}
 .mtab:hover{color:var(--ink)}
 .mtab.active{color:var(--accent)}
 .mtab.active::after{content:'';position:absolute;left:12px;right:12px;bottom:-1px;height:3px;background:var(--accent);border-radius:3px}
-.modal-pane{flex:1 1 auto;overflow:auto;min-height:0}
+.modal-pane{flex:1 1 auto;overflow:auto;min-height:0;display:flex;flex-direction:column}
 .modal-pane[hidden]{display:none}
-/* 预览面板 */
-#mFrame{width:100%;height:min(70vh,640px);border:none;display:block;background:#fff}
-.frame-hint{font-size:12.5px;color:var(--ink-3);padding:10px 24px;background:var(--panel-2);display:flex;align-items:center;gap:8px}
+/* 预览面板：文档切换 + iframe */
+.doc-tabs{display:none;gap:8px;padding:14px 24px 0;background:var(--panel);flex-wrap:wrap;flex:0 0 auto}
+.doc-tab{border:1px solid var(--line);background:var(--panel-2);color:var(--ink-2);font-size:13.5px;font-weight:600;
+  padding:7px 16px;border-radius:20px;cursor:pointer;transition:.2s;font-family:var(--body)}
+.doc-tab:hover{border-color:var(--accent);color:var(--accent)}
+.doc-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#mFrame{width:100%;height:min(66vh,620px);border:none;display:block;background:#fff;flex:1 1 auto}
+.modal.full #mFrame{height:100%}
+.frame-hint{font-size:12.5px;color:var(--ink-3);padding:10px 24px;background:var(--panel-2);display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .frame-hint i{color:var(--accent)}
 /* 详情面板 */
 .modal-body{padding:26px 28px 8px}
@@ -270,6 +282,14 @@ img{display:block;max-width:100%}
 footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);font-size:13px}
 footer a{color:var(--accent);font-weight:600}
 
+/* ===== 全局 toast（点击联系方式弹出） ===== */
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+  background:#15171c;color:#fff;padding:14px 22px;border-radius:14px;font-size:14.5px;line-height:1.55;
+  max-width:min(92vw,540px);text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;transition:.3s;z-index:600}
+.toast b{color:#ffb866}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
 
@@ -280,10 +300,14 @@ footer a{color:var(--accent);font-weight:600}
 @media(max-width:820px){
   .app{flex-direction:column}
   .side{width:100%;flex:none;height:auto;position:sticky;top:0;flex-direction:column;padding:18px 18px 14px}
-  .brand{margin-bottom:0}
+  /* 移动端头部改回横排紧凑 */
+  .brand{flex-direction:row;align-items:center;gap:14px;margin-bottom:0}
+  .avatar,.avatar-fb{width:54px;height:54px;flex:0 0 54px;border-radius:16px;font-size:24px}
+  .brand-txt{margin-top:0}
+  .brand-txt h1{font-size:20px}
   .sign{display:none}
   .search{margin:14px 0 12px}
-  .nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;flex:none}
+  .nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;flex:none;margin-top:0}
   .nav a{font-size:18px;padding:11px 14px;white-space:nowrap}
   .side-foot{display:none}
   .sec{padding:54px 20px}
@@ -308,11 +332,11 @@ footer a{color:var(--accent);font-weight:600}
 <div class="app">
   <aside class="side">
     <div class="brand">
-      <img class="avatar" id="avatar" src="me.jpg" alt="池增历" loading="lazy" decoding="async"
+      <img class="avatar" id="avatar" src="me.jpg" alt="阿历" loading="lazy" decoding="async"
            onerror="this.style.display='none';document.getElementById('avfb').style.display='flex'">
-      <div class="avatar-fb" id="avfb">池</div>
+      <div class="avatar-fb" id="avfb">历</div>
       <div class="brand-txt">
-        <h1>池增历</h1>
+        <h1>阿历的个人主页</h1>
         <p>数据分析师 · Data Analyst</p>
       </div>
     </div>
@@ -332,7 +356,11 @@ footer a{color:var(--accent);font-weight:600}
     </ul>
 
     <div class="side-foot">
-      <a class="mail" href="mailto:chift0707@gmail.com"><i class="fas fa-envelope"></i> chift0707@gmail.com</a>
+      <div class="contact-row">
+        <button class="cbtn" data-contact="wechat" title="微信：点击复制微信号"><i class="fab fa-weixin"></i></button>
+        <button class="cbtn" data-contact="qq" title="QQ：点击复制 QQ 号"><i class="fab fa-qq"></i></button>
+        <button class="cbtn" data-contact="email" title="邮箱：点击复制邮箱"><i class="fas fa-envelope"></i></button>
+      </div>
       <div class="copy">© 2026 池增历</div>
     </div>
   </aside>
@@ -352,7 +380,7 @@ footer a{color:var(--accent);font-weight:600}
           <p><span class="ico">📊</span>多年供应链进销存监控、库存健康度诊断与智能补货模型搭建经验，擅长把模糊的业务需求梳理成清晰的数据模型，为决策提供依据。</p>
           <p><span class="ico">🛒</span>丰富的电商运营数据分析实操经验，熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析</span> 驱动精细化运营落地。</p>
           <p><span class="ico">🧠</span>善于将业务问题转化为可量化的分析框架，输出兼具 <span class="em">方法论可迁移性</span> 与 <span class="em">业务落地价值</span> 的数据产品。</p>
-          <p><span class="ico">✉️</span>如有合作或交流需求，欢迎联系：<a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a></p>
+          <p><span class="ico">✉️</span>如有合作或交流需求，欢迎点击左侧图标添加微信 / QQ，或邮件联系。</p>
         </div>
         <div class="stack">
           <span>Excel</span><span>SQL</span><span>Python</span><span>Power BI</span><span>Tableau</span><span>Pandas</span><span>RFM</span>
@@ -379,7 +407,7 @@ footer a{color:var(--accent);font-weight:600}
         </div>
         <div class="facts">
           <h4>Quick Facts</h4>
-          <div class="fact"><span class="num">5+</span><span class="lab"><b>实战分析案例</b>覆盖用户/库存/复购</span></div>
+          <div class="fact"><span class="num">3</span><span class="lab"><b>大分析方向</b>用户价值 / 进销存 / 复购留存</span></div>
           <div class="fact"><span class="num">4</span><span class="lab"><b>项专业认证</b>CDA / 计算机 / 英语 / 普通话</span></div>
           <div class="fact"><span class="num">5</span><span class="lab"><b>核心工具栈</b>Excel·SQL·Python·BI</span></div>
           <div class="fact"><span class="num">∞</span><span class="lab"><b>好奇心</b>网球·阅读·朗诵·草缸</span></div>
@@ -396,7 +424,7 @@ footer a{color:var(--accent);font-weight:600}
       <div class="reveal">
         <div class="sec-tag">Portfolio</div>
         <h2 class="sec-h">实战案例</h2>
-        <p class="sec-sub">点击任意卡片，在弹窗内直接在线预览报告，或查看能力拆解与源文件下载。所有案例均使用模拟数据。</p>
+        <p class="sec-sub">点击卡片，在弹窗内在线预览报告（含多文档切换），右上角可放大预览，或查看能力拆解与源文件下载。所有案例均使用模拟数据。</p>
       </div>
       <div class="case-grid reveal" id="caseGrid"></div>
     </section>
@@ -409,7 +437,7 @@ footer a{color:var(--accent);font-weight:600}
       </div>
       <div class="post-box reveal">
         <div class="row1">
-          <div class="pav">池</div>
+          <div class="pav">历</div>
           <textarea id="postInput" placeholder="写点什么… 比如今天的一个分析发现、一段学习心得。"></textarea>
         </div>
         <div class="row2">
@@ -437,11 +465,12 @@ footer a{color:var(--accent);font-weight:600}
   </main>
 </div>
 
-<!-- 案例详情模态（含在线预览） -->
+<!-- 案例详情模态（含在线预览 / 多文档切换 / 放大） -->
 <div class="overlay" id="caseModal">
-  <div class="modal">
+  <div class="modal" id="modalEl">
     <div class="modal-cover" id="mCover">
       <span class="big" id="mBig"></span>
+      <button class="modal-x modal-expand" id="mExpand" title="放大 / 还原预览"><i class="fas fa-expand"></i></button>
       <button class="modal-x" data-close>&times;</button>
       <h3 id="mTitle"></h3>
     </div>
@@ -450,8 +479,9 @@ footer a{color:var(--accent);font-weight:600}
       <button class="mtab" data-tab="detail"><i class="fas fa-list-check"></i> 分析详情</button>
     </div>
     <div class="modal-pane" data-pane="preview" id="panePreview">
+      <div class="doc-tabs" id="mDocs"></div>
       <iframe id="mFrame" src="about:blank" title="报告预览"></iframe>
-      <p class="frame-hint"><i class="fas fa-circle-info"></i> 若预览区空白，多为浏览器对本地 PDF 的安全限制；部署上线后即可正常显示，或点下方「在新标签打开」。</p>
+      <p class="frame-hint"><i class="fas fa-circle-info"></i> 多份报告可点上方的标签切换；若预览区空白，多为浏览器对本地 PDF 的安全限制，部署上线后即可正常显示，或点下方「在新标签打开」。点右上角 ⤢ 可放大预览。</p>
     </div>
     <div class="modal-pane" data-pane="detail" id="paneDetail" hidden>
       <div class="modal-body">
@@ -473,49 +503,52 @@ footer a{color:var(--accent);font-weight:600}
   <img class="lb-img" id="lbImg" src="" alt="">
 </div>
 
+<!-- 全局 toast -->
+<div class="toast" id="toast"></div>
+
 <script>
-/* ============ 数据：案例（preview 字段=弹窗内在线预览） ============ */
+/* ============ 数据：案例（preview = 文档数组，弹窗内可切换） ============ */
 const CASES = [
   { color:'linear-gradient(135deg,#e8730c,#ff9d4d)', icon:'fa-layer-group', tag:'USER VALUE',
     title:'RFM 用户价值分析案例',
     desc:'基于 Python(Pandas) 构建 RFM 模型，对线上平台用户做三维度打分与分层，输出可复现的交互式分析报告。',
     tech:['Python','Pandas','Jupyter','RFM'],
-    preview:{type:'html', href:'线上平台用户RFM分析.html'},
+    preview:[{label:'交互式报告', type:'html', href:'线上平台用户RFM分析.html'}],
     cap:['基于 Python(Pandas) 清洗交易数据并构建 RFM 模型','R/F/M 三维度打分与用户分层（重要价值/挽留/流失等）','各层级用户数量、消费金额占比可视化','Jupyter Notebook 交互式分析全流程可复现'],
     val:['精准识别高价值用户群，指导差异化营销资源投放','量化用户流失风险，制定针对性召回策略','提供可复用的 Python 用户分层方法论模板'],
     actions:[{t:'在新标签打开报告',c:'a1',href:'线上平台用户RFM分析.html',target:true},{t:'下载 .ipynb 源码',c:'a2',href:'线上平台用户RFM分析.ipynb',dl:true}] },
-  { color:'linear-gradient(135deg,#2f6fed,#5b8def)', icon:'fa-chart-pie', tag:'INVENTORY',
-    title:'快消品进销存演示案例',
-    desc:'截止 2020-07-22 的进销存数据可视化看板，监控品牌库存、月销量与临期风险。',
-    tech:['Power BI','DAX','Excel'],
-    preview:{type:'pdf', href:'快消品进销存演示案例.pdf'},
-    cap:['截止 2020年7月22日 进销存数据可视化','各品牌库存数量与产品月销量监控','即将临期/过期商品数分布追踪','各产品进货需求分析与销售额趋势展示'],
-    val:['直观呈现库存金额环比(108%) 与销售额环比(21%)','快速定位库存周转异常品牌（如永圣、中粮）','辅助日常供应链管理与终端陈列决策'],
-    actions:[{t:'在新标签打开 PDF',c:'a1',href:'快消品进销存演示案例.pdf',target:true},{t:'下载 .pbix',c:'a2',href:'快消品进销存演示案例.pbix',dl:true}] },
-  { color:'linear-gradient(135deg,#1f9d63,#3ec28a)', icon:'fa-boxes-stacked', tag:'ANALYSIS',
-    title:'快消品进销存案例分析报告',
-    desc:'整体进销存趋势、品牌单品动销(ABC)、库存健康度与智能补货需求的完整分析报告。',
-    tech:['Power BI','ABC分析','SQL'],
-    preview:{type:'pdf', href:'快消品进销存案例分析报告.pdf'},
-    cap:['整体进销存趋势与周转分析','品牌与单品动销分析（ABC 分析）','库存健康度与临期风险诊断','智能采购与补货需求分析'],
-    val:['识别滞销与缺货风险，输出精细化采购与清仓建议','优化高价值商品采购模型，降低资金占用','建立库存健康度预警看板'],
-    actions:[{t:'在新标签打开 PDF',c:'a1',href:'快消品进销存案例分析报告.pdf',target:true},{t:'下载 .pbix',c:'a2',href:'快消品进销存演示案例.pbix',dl:true}] },
-  { color:'linear-gradient(135deg,#8b5cf6,#a78bfa)', icon:'fa-rotate', tag:'RETENTION',
-    title:'复购分析案例',
-    desc:'销售趋势、消费占比、cohort 留存率与新增/复购用户订单拆解的复购专题分析。',
-    tech:['Power BI','Cohort','Excel'],
-    preview:{type:'pdf', href:'复购分析案例.pdf'},
-    cap:['销售金额变化趋势与消费金额占比可视化','首次下单月份 cohorts 留存率统计','不同类别客户消费金额对比','月新增和复购用户订单数及人均订单数追踪'],
-    val:['量化新增(57%) 与复购(43%) 用户的销售贡献度','洞察次月留存高峰期及长期留存衰减规律','支撑精细化运营策略落地与沉睡用户召回'],
-    actions:[{t:'在新标签打开 PDF',c:'a1',href:'复购分析案例.pdf',target:true},{t:'下载 .pbix',c:'a2',href:'复购分析案例.pbix',dl:true}] },
-  { color:'linear-gradient(135deg,#e23b6d,#f06595)', icon:'fa-users', tag:'LIFECYCLE',
-    title:'复购案例分析',
-    desc:'母婴店铺 2014 年 1-7 月销售额趋势、新增/复购拆解与「黄金60天」转化分析。',
-    tech:['Power BI','归因分析','Excel'],
-    preview:{type:'pdf', href:'复购案例分析.pdf'},
-    cap:['母婴店铺 2014年1-7月 销售额趋势分析','新增与复购用户的消费人数及订单拆解','消费金额与人均消费金额归因分析','复购与留存比例分析（黄金60天转化）'],
-    val:['明确收入增长/下降原因（拉新失速、新客转化率低等）','强化新客「黄金60天」转化 SOP','提升复购用户客单价，优化促销节奏与防流失机制'],
-    actions:[{t:'在新标签打开 PDF',c:'a1',href:'复购案例分析.pdf',target:true},{t:'下载 .pbix',c:'a2',href:'复购分析案例.pbix',dl:true}] }
+
+  { color:'linear-gradient(135deg,#2f6fed,#5b8def)', icon:'fa-boxes-stacked', tag:'INVENTORY · ABC',
+    title:'快消品进销存分析',
+    desc:'进销存可视化演示看板 + 完整分析报告：监控品牌库存、月销量与临期风险，并完成 ABC 动销、库存健康度与智能补货诊断。',
+    tech:['Power BI','DAX','ABC分析','SQL','Excel'],
+    preview:[
+      {label:'演示看板', type:'pdf', href:'快消品进销存演示案例.pdf'},
+      {label:'分析报告', type:'pdf', href:'快消品进销存案例分析报告.pdf'}
+    ],
+    cap:['进销存数据可视化看板：品牌库存、月销量、临期/过期分布','整体进销存趋势与周转分析','品牌与单品动销分析（ABC 分析）','库存健康度诊断与智能采购 / 补货需求分析'],
+    val:['直观呈现库存金额环比(108%) 与销售额环比(21%)','快速定位库存周转异常品牌（如永圣、中粮）','识别滞销与缺货风险，输出精细化采购与清仓建议','建立库存健康度预警看板，降低资金占用'],
+    actions:[
+      {t:'新标签打开 演示看板',c:'a1',href:'快消品进销存演示案例.pdf',target:true},
+      {t:'新标签打开 分析报告',c:'a2',href:'快消品进销存案例分析报告.pdf',target:true},
+      {t:'下载 .pbix 源文件',c:'a2',href:'快消品进销存演示案例.pbix',dl:true}
+    ] },
+
+  { color:'linear-gradient(135deg,#8b5cf6,#a78bfa)', icon:'fa-rotate', tag:'RETENTION · LTV',
+    title:'复购与留存分析',
+    desc:'复购专题双报告：销售趋势、消费占比、cohort 留存、新增/复购拆解，以及母婴店铺「黄金60天」转化归因。',
+    tech:['Power BI','Cohort','归因分析','Excel'],
+    preview:[
+      {label:'复购分析案例', type:'pdf', href:'复购分析案例.pdf'},
+      {label:'复购案例分析', type:'pdf', href:'复购案例分析.pdf'}
+    ],
+    cap:['销售金额趋势与消费金额占比可视化','首次下单月份 cohorts 留存率统计','新增与复购用户的消费人数、订单与人均消费拆解','母婴店铺「黄金60天」转化与归因分析'],
+    val:['量化新增(57%) 与复购(43%) 用户的销售贡献度','洞察次月留存高峰及长期留存衰减规律','明确收入增减原因（拉新失速、新客转化率低等）','强化新客「黄金60天」转化 SOP，提升复购客单价'],
+    actions:[
+      {t:'新标签打开 复购分析案例',c:'a1',href:'复购分析案例.pdf',target:true},
+      {t:'新标签打开 复购案例分析',c:'a2',href:'复购案例分析.pdf',target:true},
+      {t:'下载 .pbix 源文件',c:'a2',href:'复购分析案例.pbix',dl:true}
+    ] }
 ];
 
 /* ============ 数据：证书 ============ */
@@ -526,13 +559,20 @@ const CERTS = [
   { name:'普通话', sub:'二甲证书', img:'./certs/putonghua.jpg', click:true }
 ];
 
+/* ============ 联系方式：点击图标复制 ============ */
+const CONTACT = {
+  wechat:{label:'微信号', value:'chieee_ya',        hint:'打开微信「添加朋友」粘贴即可'},
+  qq:    {label:'QQ 号',  value:'954567763',        hint:'打开 QQ 添加好友即可'},
+  email: {label:'邮箱',   value:'chift0707@gmail.com', hint:'粘贴到收件人即可写信'}
+};
+
 /* ============ 证书图路径容错：certs/ 没有 → 退回根目录 → 再没有才占位 ============ */
 function certFallback(img){
   if(!img.dataset.fb){ img.dataset.fb='1'; img.src = img.src.replace('/certs/','/'); }
   else { img.outerHTML = '<i class="ph-ico fas fa-certificate"></i>'; }
 }
 
-/* ============ 渲染案例（统一小卡片，不再横跨整行） ============ */
+/* ============ 渲染案例 ============ */
 const caseGrid = document.getElementById('caseGrid');
 function renderCases(filter=''){
   const f = filter.trim().toLowerCase();
@@ -564,12 +604,17 @@ caseGrid.addEventListener('click', e=>{
 });
 document.getElementById('caseSearch').addEventListener('input', e=> renderCases(e.target.value));
 
-/* ============ 案例模态 + 标签切换 + 在线预览 ============ */
+/* ============ 案例模态 + 标签切换 + 多文档预览 + 放大 ============ */
 const caseModal = document.getElementById('caseModal');
-const mTabs = document.getElementById('mTabs');
+const modalEl   = document.getElementById('modalEl');
+const mTabs     = document.getElementById('mTabs');
 const panePreview = document.getElementById('panePreview');
-const paneDetail = document.getElementById('paneDetail');
-const mFrame = document.getElementById('mFrame');
+const paneDetail  = document.getElementById('paneDetail');
+const mFrame    = document.getElementById('mFrame');
+const mDocs     = document.getElementById('mDocs');
+const mExpand   = document.getElementById('mExpand');
+let currentDocs = [];
+
 function switchTab(name){
   mTabs.querySelectorAll('.mtab').forEach(b=> b.classList.toggle('active', b.dataset.tab===name));
   panePreview.hidden = name!=='preview';
@@ -578,6 +623,21 @@ function switchTab(name){
 mTabs.addEventListener('click', e=>{
   const b = e.target.closest('.mtab'); if(b) switchTab(b.dataset.tab);
 });
+function loadDoc(i){
+  const d = currentDocs[i]; if(!d) return;
+  const hash = d.type==='pdf' ? '#toolbar=1&navpanes=0&view=FitH' : '';
+  mFrame.src = d.href + hash;
+  mDocs.querySelectorAll('.doc-tab').forEach((b,k)=> b.classList.toggle('active', k===i));
+}
+mDocs.addEventListener('click', e=>{
+  const b = e.target.closest('[data-doc]'); if(b) loadDoc(+b.dataset.doc);
+});
+mExpand.addEventListener('click', e=>{
+  e.stopPropagation();
+  const full = modalEl.classList.toggle('full');
+  mExpand.querySelector('i').className = full ? 'fas fa-compress' : 'fas fa-expand';
+});
+
 function openCase(i){
   const c = CASES[i];
   document.getElementById('mCover').style.background = c.color;
@@ -591,18 +651,26 @@ function openCase(i){
     const ico = a.dl ? 'fa-download' : 'fa-up-right-from-square';
     return `<a class="${a.c}" href="${a.href}" ${attr}><i class="fas ${ico}"></i> ${a.t}</a>`;
   }).join('');
-  // 预览逻辑：有 preview 才显示预览标签，并设置 iframe
+  // 预览文档切换
+  currentDocs = c.preview || [];
   const tabPreview = mTabs.querySelector('[data-tab="preview"]');
-  if(c.preview){
+  if(currentDocs.length){
     tabPreview.style.display = '';
-    const hash = c.preview.type==='pdf' ? '#toolbar=1&navpanes=0&view=FitH' : '';
-    mFrame.src = c.preview.href + hash;
+    if(currentDocs.length>1){
+      mDocs.style.display = 'flex';
+      mDocs.innerHTML = currentDocs.map((d,k)=>`<button class="doc-tab ${k===0?'active':''}" data-doc="${k}">${d.label}</button>`).join('');
+    } else { mDocs.style.display = 'none'; mDocs.innerHTML = ''; }
+    loadDoc(0);
     switchTab('preview');
-  }else{
+  } else {
     tabPreview.style.display = 'none';
+    mDocs.style.display = 'none'; mDocs.innerHTML = '';
     mFrame.src = 'about:blank';
     switchTab('detail');
   }
+  // 重置放大状态
+  modalEl.classList.remove('full');
+  mExpand.querySelector('i').className = 'fas fa-expand';
   caseModal.classList.add('on'); lockScroll(true);
 }
 
@@ -631,15 +699,43 @@ document.querySelectorAll('.overlay').forEach(ov=>{
     if(e.target===ov || e.target.closest('[data-close]')){
       ov.classList.remove('on'); lockScroll(false);
       if(ov===lightbox) setTimeout(()=>document.getElementById('lbImg').src='',300);
-      if(ov===caseModal) setTimeout(()=>mFrame.src='about:blank',300); // 释放预览资源/停声音
+      if(ov===caseModal){
+        setTimeout(()=>{ mFrame.src='about:blank'; mDocs.innerHTML=''; },300);
+        modalEl.classList.remove('full');
+        mExpand.querySelector('i').className = 'fas fa-expand';
+      }
     }
   });
 });
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){
     document.querySelectorAll('.overlay.on').forEach(o=>o.classList.remove('on'));
-    lockScroll(false); mFrame.src='about:blank';
+    lockScroll(false); mFrame.src='about:blank'; mDocs.innerHTML='';
+    modalEl.classList.remove('full'); mExpand.querySelector('i').className='fas fa-expand';
   }
+});
+
+/* ============ toast + 联系方式点击复制 ============ */
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function showToast(html, ms=4200){
+  toastEl.innerHTML = html;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), ms);
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){
+    const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} document.body.removeChild(ta); return ok;
+  }
+}
+document.querySelector('.contact-row').addEventListener('click', async e=>{
+  const b = e.target.closest('[data-contact]'); if(!b) return;
+  const c = CONTACT[b.dataset.contact]; if(!c) return;
+  const ok = await copyText(c.value);
+  showToast(`<b>${c.label}：${c.value}</b><br>${ok?'✓ 已复制 · ':'请手动复制 · '}${c.hint}`);
 });
 
 /* ============ 帖子 / 动态 (localStorage 本地) ============ */
@@ -671,8 +767,8 @@ function renderPosts(){
     <div class="post" data-idx="${idx}">
       <button class="del" title="删除" data-del="${idx}"><i class="fas fa-trash-can"></i></button>
       <div class="ph">
-        <div class="pav">池</div>
-        <div><div class="who">池增历</div><div class="when">${relTime(p.ts)}</div></div>
+        <div class="pav">历</div>
+        <div><div class="who">阿历</div><div class="when">${relTime(p.ts)}</div></div>
       </div>
       <div class="ptxt">${esc(p.txt)}</div>
       ${p.tags&&p.tags.length?`<div class="ptags">${p.tags.map(t=>`<span>#${esc(t)}</span>`).join('')}</div>`:''}
