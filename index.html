@@ -3,934 +3,465 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阿历的个人主页 | 数据分析师</title>
+<title>阿历的成长博客 | 数据分析</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
-<!-- 云端实时同步（动态墙） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
-  --side-w:312px;
-  --bg:#f5f6f8; --panel:#ffffff; --panel-2:#fbfbfd;
-  --ink:#15171c; --ink-2:#4a4f5a; --ink-3:#8a909c;
-  --line:#e9ebf0; --line-2:#f0f1f5;
-  --accent:#e8730c; --accent-soft:#fff1e6; --accent-ink:#b85600;
-  --blue:#2f6fed; --green:#1f9d63;
-  --glow:rgba(232,115,12,.06);
-  --shadow:0 10px 30px rgba(20,23,28,.07); --shadow-lg:0 24px 60px rgba(20,23,28,.16);
-  --r:18px; --mono:'JetBrains Mono',ui-monospace,monospace;
-  --disp:'Fredoka','PingFang SC','Hiragino Sans GB','Noto Sans SC',system-ui,sans-serif;
-  --body:'Noto Sans SC','PingFang SC','Hiragino Sans GB',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
-}
-[data-theme="dark"]{
-  --bg:#15110b; --panel:#1d1812; --panel-2:#241e16;
-  --ink:#f3ece1; --ink-2:#c4b7a3; --ink-3:#8c7f6b;
-  --line:#34291c; --line-2:#2a2117;
-  --accent:#ff9a3d; --accent-soft:#2f2010; --accent-ink:#ffc285;
-  --blue:#7aa7ff; --green:#5fd39a;
-  --glow:rgba(255,154,61,.08);
-  --shadow:0 10px 30px rgba(0,0,0,.45); --shadow-lg:0 24px 60px rgba(0,0,0,.62);
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.7;
-  -webkit-font-smoothing:antialiased;transition:background .4s,color .4s;
-  background-image:radial-gradient(900px 520px at 86% -6%, var(--glow), transparent 62%),
-                   radial-gradient(circle at 1px 1px,var(--line) 1px,transparent 0);
-  background-size:auto, 26px 26px;background-repeat:no-repeat, repeat;background-attachment:fixed, fixed}
-a{color:inherit;text-decoration:none}
-img{display:block;max-width:100%}
-::selection{background:var(--accent);color:#fff}
-
+:root{--side-w:312px;--bg:#f5f6f8;--panel:#fff;--panel-2:#fbfbfd;--ink:#15171c;--ink-2:#4a4f5a;--ink-3:#8a909c;--line:#e9ebf0;--line-2:#f0f1f5;--accent:#e8730c;--accent-soft:#fff1e6;--accent-ink:#b85600;--blue:#2f6fed;--green:#1f9d63;--glow:rgba(232,115,12,.06);--shadow:0 10px 30px rgba(20,23,28,.07);--shadow-lg:0 24px 60px rgba(20,23,28,.16);--r:18px;--mono:'JetBrains Mono',ui-monospace,monospace;--disp:'Fredoka','PingFang SC','Noto Sans SC',system-ui,sans-serif;--body:'Noto Sans SC','PingFang SC',-apple-system,'Segoe UI',Roboto,system-ui,sans-serif}
+[data-theme="dark"]{--bg:#15110b;--panel:#1d1812;--panel-2:#241e16;--ink:#f3ece1;--ink-2:#c4b7a3;--ink-3:#8c7f6b;--line:#34291c;--line-2:#2a2117;--accent:#ff9a3d;--accent-soft:#2f2010;--accent-ink:#ffc285;--blue:#7aa7ff;--green:#5fd39a;--glow:rgba(255,154,61,.08);--shadow:0 10px 30px rgba(0,0,0,.45);--shadow-lg:0 24px 60px rgba(0,0,0,.62)}
+*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;transition:background .4s,color .4s;background-image:radial-gradient(900px 520px at 86% -6%,var(--glow),transparent 62%),radial-gradient(circle at 1px 1px,var(--line) 1px,transparent 0);background-size:auto,26px 26px;background-repeat:no-repeat,repeat;background-attachment:fixed,fixed}
+a{color:inherit;text-decoration:none}img{display:block;max-width:100%}::selection{background:var(--accent);color:#fff}
 .app{display:flex;min-height:100vh}
-
-/* ===== 侧边栏 ===== */
-.side{width:var(--side-w);flex:0 0 var(--side-w);height:100vh;position:sticky;top:0;
-  background:var(--panel);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;padding:40px 28px 24px;z-index:60;transition:background .4s,border-color .4s}
+.view{display:none}.view.active{display:block;animation:fade .45s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}.reveal.in{opacity:1;transform:none}
+.side{width:var(--side-w);flex:0 0 var(--side-w);height:100vh;position:sticky;top:0;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:40px 28px 24px;z-index:60;transition:background .4s,border-color .4s}
 .brand{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:14px}
-.avatar{width:108px;height:134px;border-radius:24px;object-fit:contain;flex:0 0 134px;
-  border:2px solid var(--line);box-shadow:var(--shadow);background:var(--accent-soft)}
-.avatar-fb{width:108px;height:134px;border-radius:24px;flex:0 0 134px;display:none;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;font-family:var(--disp);font-weight:700;font-size:46px}
-.brand-txt{margin-top:26px;width:100%}
-.brand-txt h1{font-family:var(--disp);font-size:29px;font-weight:700;letter-spacing:.3px;line-height:1.15}
-.brand-txt p{font-size:16.5px;color:var(--ink-3);margin-top:8px;font-weight:500}
-.sign{font-size:19px;color:var(--ink-2);margin:26px 2px 34px;font-style:italic;
-  border-left:2px solid var(--accent);padding-left:12px}
-
-.search{position:relative;margin-bottom:40px}
-.search input{width:100%;padding:13px 14px 13px 42px;border:1px solid var(--line);border-radius:14px;
-  background:var(--panel-2);color:var(--ink);font-size:17px;font-family:var(--body);transition:.25s}
-.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:14px}
-
-.nav{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1;margin-top:6px}
-.nav a{display:flex;align-items:center;gap:15px;padding:16px 18px;border-radius:15px;
-  font-family:var(--disp);font-size:22px;font-weight:500;color:var(--ink-2);transition:.22s;position:relative}
-.nav a i{width:26px;text-align:center;font-size:19px;color:var(--ink-3);transition:.22s}
-.nav a:hover{background:var(--panel-2);color:var(--ink);transform:translateX(4px)}
-.nav a:hover i{color:var(--accent)}
+.avatar{width:108px;height:134px;border-radius:24px;object-fit:contain;flex:0 0 134px;border:2px solid var(--line);box-shadow:var(--shadow);background:var(--accent-soft)}
+.avatar-fb{width:108px;height:134px;border-radius:24px;flex:0 0 134px;display:none;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;font-family:var(--disp);font-weight:700;font-size:46px}
+.brand-txt{margin-top:26px;width:100%}.brand-txt h1{font-family:var(--disp);font-size:29px;font-weight:700;line-height:1.15}.brand-txt p{font-size:16.5px;color:var(--ink-3);margin-top:8px;font-weight:500}
+.sign{font-size:19px;color:var(--ink-2);margin:26px 2px 30px;font-style:italic;border-left:2px solid var(--accent);padding-left:12px}
+.nav{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1;margin-top:4px}
+.nav a{display:flex;align-items:center;gap:14px;padding:15px 18px;border-radius:15px;font-family:var(--disp);font-size:21px;font-weight:500;color:var(--ink-2);transition:.22s}
+.nav a .nico{width:26px;text-align:center;font-size:19px;line-height:1;transition:.22s}
+.nav a:hover{background:var(--panel-2);color:var(--ink);transform:translateX(4px)}.nav a:hover .nico{transform:scale(1.15)}
 .nav a.active{background:var(--accent);color:#fff;font-weight:600;box-shadow:0 8px 20px rgba(232,115,12,.3)}
-.nav a.active i{color:#fff}
-
 .side-foot{border-top:1px solid var(--line);padding-top:20px;margin-top:18px}
 .contact-row{display:flex;gap:11px;margin-bottom:16px;flex-wrap:wrap}
-.cbtn{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--panel-2);
-  color:var(--ink-2);font-size:19px;cursor:pointer;display:grid;place-items:center;transition:.22s}
+.cbtn{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-2);font-size:19px;cursor:pointer;display:grid;place-items:center;transition:.22s}
 .cbtn:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-3px)}
 .side-foot .copy{font-size:12px;color:var(--ink-3);font-family:var(--mono)}
-
-/* ===== 主区 ===== */
 .main{flex:1;min-width:0}
-.sec{padding:78px clamp(28px,5vw,72px);border-bottom:1px solid var(--line-2);position:relative}
-.sec-tag{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--accent);
-  text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.sec-tag::before{content:'';width:22px;height:2px;background:var(--accent)}
+.sec{padding:74px clamp(28px,5vw,72px)}
+.sec-tag{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}.sec-tag::before{content:'';width:22px;height:2px;background:var(--accent)}
 .sec-h{font-family:var(--disp);font-size:clamp(30px,3.6vw,44px);font-weight:600;letter-spacing:.5px;margin-bottom:8px}
-.sec-sub{color:var(--ink-2);font-size:21px;max-width:720px;margin-bottom:42px}
-
+.sec-sub{color:var(--ink-2);font-size:21px;max-width:740px;margin-bottom:42px}
 .tools{position:fixed;top:22px;right:26px;display:flex;gap:10px;z-index:80}
-.tools button{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel);
-  color:var(--ink-2);font-size:16px;cursor:pointer;box-shadow:var(--shadow);transition:.25s;display:grid;place-items:center}
+.tools button{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);font-size:16px;cursor:pointer;box-shadow:var(--shadow);transition:.25s;display:grid;place-items:center}
 .tools button:hover{color:var(--accent);transform:translateY(-3px) rotate(8deg);border-color:var(--accent)}
-#toTop{opacity:0;pointer-events:none;transform:translateY(8px)}
-#toTop.show{opacity:1;pointer-events:auto;transform:none}
-
-/* ===== 开篇 ===== */
+#toTop{opacity:0;pointer-events:none;transform:translateY(8px)}#toTop.show{opacity:1;pointer-events:auto;transform:none}
 .hi{font-family:var(--disp);font-size:clamp(40px,6vw,72px);font-weight:600;line-height:1.02;letter-spacing:1px}
 .hi .wave{display:inline-block;transform-origin:70% 70%;animation:wave 2.4s ease-in-out infinite}
 @keyframes wave{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(14deg)}20%{transform:rotate(-8deg)}30%{transform:rotate(14deg)}40%{transform:rotate(-4deg)}50%{transform:rotate(10deg)}}
 .hi .accent{color:var(--accent)}
-
-.datebar{display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;margin:24px 0 34px;
-  padding:13px 24px;border:1px solid var(--line);border-radius:40px;background:var(--panel);box-shadow:var(--shadow)}
-.datebar .d{font-size:18.5px;color:var(--ink-2)}
-.datebar .d b{color:var(--ink);font-weight:700}
-.datebar .sep{width:1px;height:16px;background:var(--line)}
-.datebar .clock{font-family:var(--mono);font-size:18.5px;font-weight:700;color:var(--accent);letter-spacing:1px}
-
-.intro p{font-size:24px;color:var(--ink-2);max-width:860px;margin-bottom:22px}
-.intro p .em{color:var(--ink);font-weight:700}
-.intro p .lead{font-size:31px}
-.intro .ico{margin-right:6px}
-a.mailinline{color:var(--blue);font-weight:700;border-bottom:2px solid transparent;transition:.2s}
-a.mailinline:hover{border-color:var(--blue)}
-.contact-note{font-size:17px;color:var(--ink-3);margin-top:30px;max-width:800px;line-height:1.7}
-
-/* ===== 简介/优势 ===== */
+.datebar{display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;margin:24px 0 34px;padding:13px 24px;border:1px solid var(--line);border-radius:40px;background:var(--panel);box-shadow:var(--shadow)}
+.datebar .d{font-size:18.5px;color:var(--ink-2)}.datebar .d b{color:var(--ink);font-weight:700}.datebar .sep{width:1px;height:16px;background:var(--line)}.datebar .clock{font-family:var(--mono);font-size:18.5px;font-weight:700;color:var(--accent);letter-spacing:1px}
+.intro p{font-size:24px;color:var(--ink-2);max-width:860px;margin-bottom:22px}.intro p .em{color:var(--ink);font-weight:700}.intro p .lead{font-size:31px}.intro .ico{margin-right:6px}
+a.mailinline{color:var(--blue);font-weight:700;border-bottom:2px solid transparent;transition:.2s}a.mailinline:hover{border-color:var(--blue)}
+.contact-note{font-size:17px;color:var(--ink-3);margin-top:30px;max-width:800px}
+.guide-h{font-family:var(--disp);font-size:25px;font-weight:600;margin:62px 0 18px;display:flex;align-items:center;gap:12px}.guide-h i{color:var(--accent)}
+.tour{display:flex;flex-direction:column}
+.tour a{display:grid;grid-template-columns:78px 1fr auto;gap:22px;align-items:center;padding:26px 6px;border-top:1px solid var(--line);transition:.25s}
+.tour a:hover{padding-left:14px;border-color:var(--accent)}
+.tour .tno{font-family:var(--disp);font-size:50px;font-weight:600;color:var(--line);line-height:1;transition:.25s}.tour a:hover .tno{color:var(--accent)}
+.tour .tmain b{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:700;margin-bottom:5px}.tour .tmain b .emo{font-size:24px}
+.tour .tmain span{font-size:17.5px;color:var(--ink-2)}.tour .tgo{color:var(--ink-3);font-size:20px;transition:.2s}.tour a:hover .tgo{color:var(--accent);transform:translateX(6px)}
 .about-wrap{display:grid;grid-template-columns:1.5fr 1fr;gap:46px;align-items:start}
-.about-wrap .lede{font-size:25px;color:var(--ink-2);line-height:1.9}
-.about-wrap .lede b{color:var(--ink)}
+.about-wrap .lede{font-size:25px;color:var(--ink-2);line-height:1.9}.about-wrap .lede b{color:var(--ink)}
 .facts{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow)}
 .facts h4{font-family:var(--disp);font-size:16px;letter-spacing:1px;color:var(--ink-3);text-transform:uppercase;margin-bottom:18px;font-weight:600}
-.fact{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px dashed var(--line)}
-.fact:last-child{border-bottom:none}
-.fact .num{font-family:var(--disp);font-size:34px;font-weight:600;color:var(--accent);line-height:1}
-.fact .lab{font-size:17.5px;color:var(--ink-2)}
-.fact .lab b{display:block;color:var(--ink);font-size:18.5px}
-
-.edges{margin-top:48px;display:flex;flex-direction:column;gap:0}
-.edge{display:grid;grid-template-columns:96px 1fr;gap:24px;padding:28px 0;border-top:1px solid var(--line);transition:.25s}
-.edge:hover{padding-left:10px}
-.edge .no{font-family:var(--disp);font-size:52px;font-weight:600;color:var(--line);line-height:1;transition:.25s}
-.edge:hover .no{color:var(--accent)}
-.edge h3{font-size:25px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.edge h3 i{color:var(--accent);font-size:20px}
-.edge p{color:var(--ink-2);font-size:19px;max-width:720px}
-
-.block-h{font-family:var(--disp);font-size:27px;font-weight:600;margin:58px 0 24px;display:flex;align-items:center;gap:13px;letter-spacing:.3px}
-.block-h i{color:var(--accent);font-size:22px}
-.block-h .k{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--ink-3);font-weight:500;margin-left:4px}
-
+.fact{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px dashed var(--line)}.fact:last-child{border-bottom:none}
+.fact .num{font-family:var(--disp);font-size:34px;font-weight:600;color:var(--accent);line-height:1}.fact .lab{font-size:17.5px;color:var(--ink-2)}.fact .lab b{display:block;color:var(--ink);font-size:18.5px}
+.edges{margin-top:48px;display:flex;flex-direction:column}
+.edge{display:grid;grid-template-columns:96px 1fr;gap:24px;padding:28px 0;border-top:1px solid var(--line);transition:.25s}.edge:hover{padding-left:10px}
+.edge .no{font-family:var(--disp);font-size:52px;font-weight:600;color:var(--line);line-height:1;transition:.25s}.edge:hover .no{color:var(--accent)}
+.edge h3{font-size:25px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}.edge h3 i{color:var(--accent);font-size:20px}.edge p{color:var(--ink-2);font-size:19px;max-width:720px}
+.block-h{font-family:var(--disp);font-size:27px;font-weight:600;margin:58px 0 24px;display:flex;align-items:center;gap:13px}.block-h i{color:var(--accent);font-size:22px}.block-h .k{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--ink-3);font-weight:500;margin-left:4px}
 .skill-list{display:flex;flex-direction:column;gap:14px}
-.skill{display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;background:var(--panel);
-  border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);transition:.25s}
+.skill{display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);transition:.25s}
 .skill:hover{transform:translateX(6px);border-color:var(--accent);box-shadow:var(--shadow-lg)}
-.skill .si{width:56px;height:56px;border-radius:15px;background:var(--accent-soft);color:var(--accent-ink);
-  display:grid;place-items:center;font-size:23px}
-[data-theme="dark"] .skill .si{color:var(--accent)}
-.skill h4{font-size:21.5px;font-weight:700;margin-bottom:5px}
-.skill p{font-size:18.5px;color:var(--ink-2);line-height:1.7}
-
-.honor a{display:flex;align-items:center;gap:18px;background:var(--panel);border:1px solid var(--line);
-  border-radius:16px;padding:20px 22px;box-shadow:var(--shadow);transition:.25s}
+.skill .si{width:56px;height:56px;border-radius:15px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-size:23px}[data-theme="dark"] .skill .si{color:var(--accent)}
+.skill h4{font-size:21.5px;font-weight:700;margin-bottom:5px}.skill p{font-size:18.5px;color:var(--ink-2);line-height:1.7}
+.honor a{display:flex;align-items:center;gap:18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow);transition:.25s}
 .honor a:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:var(--shadow-lg)}
-.honor .hi-ico{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
-  color:#fff;display:grid;place-items:center;font-size:23px;flex:0 0 56px}
-.honor .ht{flex:1;min-width:0}
-.honor .ht b{display:block;font-size:20.5px;font-weight:700;margin-bottom:5px}
-.honor .ht span{font-size:17px;color:var(--ink-2)}
-.honor .go{color:var(--accent);font-size:19px;transition:.2s;flex:0 0 auto}
-.honor a:hover .go{transform:translateX(5px)}
-
-.resume-card{display:flex;align-items:center;gap:22px;flex-wrap:wrap;
-  background:linear-gradient(135deg,var(--accent-soft),var(--panel));
-  border:1.5px solid var(--accent);border-radius:20px;padding:24px 26px;box-shadow:var(--shadow)}
-.resume-card .ri{width:62px;height:62px;border-radius:16px;background:var(--accent);color:#fff;
-  display:grid;place-items:center;font-size:26px;flex:0 0 62px}
-.resume-card .rt{flex:1;min-width:220px}
-.resume-card .rt b{display:block;font-size:19.5px;font-weight:700;margin-bottom:5px;word-break:break-all;line-height:1.4}
-.resume-card .rt span{font-size:16px;color:var(--ink-2)}
+.honor .hi-ico{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;display:grid;place-items:center;font-size:23px;flex:0 0 56px}
+.honor .ht{flex:1;min-width:0}.honor .ht b{display:block;font-size:20.5px;font-weight:700;margin-bottom:5px}.honor .ht span{font-size:17px;color:var(--ink-2)}.honor .go{color:var(--accent);font-size:19px;transition:.2s}.honor a:hover .go{transform:translateX(5px)}
+.resume-card{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:linear-gradient(135deg,var(--accent-soft),var(--panel));border:1.5px solid var(--accent);border-radius:20px;padding:24px 26px;box-shadow:var(--shadow)}
+.resume-card .ri{width:62px;height:62px;border-radius:16px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:26px;flex:0 0 62px}
+.resume-card .rt{flex:1;min-width:220px}.resume-card .rt b{display:block;font-size:19.5px;font-weight:700;margin-bottom:5px;word-break:break-all;line-height:1.4}.resume-card .rt span{font-size:16px;color:var(--ink-2)}
 .resume-actions{display:flex;gap:12px;flex-wrap:wrap}
-.ra-btn{padding:12px 20px;border-radius:12px;font-weight:700;font-size:14.5px;cursor:pointer;
-  display:inline-flex;align-items:center;gap:8px;transition:.22s;font-family:var(--body);text-decoration:none}
-.ra-primary{background:var(--accent);color:#fff;border:none}
-.ra-primary:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}
-.ra-ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
-.ra-ghost:hover{border-color:var(--accent);color:var(--accent)}
-
-/* ===== 案例卡片流 ===== */
-.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:26px}
-.case{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
-  cursor:pointer;box-shadow:var(--shadow);transition:transform .3s,box-shadow .3s,border-color .3s;display:flex;flex-direction:column}
-.case:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
-.case-cover{height:172px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:18px;color:#fff}
-.case-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.45))}
-.case-cover .big{position:absolute;top:14px;right:18px;font-family:var(--disp);font-size:64px;font-weight:600;opacity:.22;line-height:1}
-.case-cover .ci{position:absolute;top:18px;left:18px;font-size:24px;opacity:.92}
-.case-cover .ctag{position:relative;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;
-  background:rgba(255,255,255,.2);backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px}
-.case-body{padding:22px;flex:1;display:flex;flex-direction:column}
-.case-body h3{font-size:24px;font-weight:700;line-height:1.3;margin-bottom:11px;letter-spacing:.2px}
-.case-body p{font-size:17.5px;color:var(--ink-2);flex:1;margin-bottom:16px}
-.case-foot{display:flex;align-items:center;justify-content:space-between}
-.case-tech{display:flex;gap:6px;flex-wrap:wrap}
-.case-tech span{font-family:var(--mono);font-size:14px;color:var(--ink-3);background:var(--panel-2);padding:4px 10px;border-radius:6px}
-.case-more{font-size:15px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px}
-.case-more i{transition:.2s}
-.case:hover .case-more i{transform:translateX(4px)}
-.no-result{grid-column:1/-1;text-align:center;color:var(--ink-3);padding:50px;font-size:17px}
-
-/* ===== 帖子/动态（云端实时） ===== */
-.post-mode{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink-3);
-  background:var(--panel-2);border:1px solid var(--line);padding:5px 12px;border-radius:20px;margin-left:12px;vertical-align:middle}
-.post-mode i{color:var(--accent)}
-.post-mode.live{color:var(--green);border-color:var(--green);background:transparent}
-.post-mode.live i{color:var(--green)}
-.post-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);margin-bottom:30px}
-.post-box .row1{display:flex;gap:14px}
-.post-box .pav{width:42px;height:42px;border-radius:13px;flex:0 0 42px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
-  color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:600}
-.post-box textarea{flex:1;resize:vertical;min-height:74px;border:1px solid var(--line);border-radius:14px;
-  padding:12px 14px;font-family:var(--body);font-size:18px;color:var(--ink);background:var(--panel-2);transition:.2s}
-.post-box textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.post-box .row2{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
-.post-box input.tags{flex:1;min-width:160px;border:1px solid var(--line);border-radius:12px;padding:9px 13px;
-  font-family:var(--mono);font-size:15px;color:var(--ink);background:var(--panel-2)}
-.post-box input.tags:focus{border-color:var(--accent);outline:none}
-.post-box .hint{font-size:13px;color:var(--ink-3)}
-.btn{border:none;cursor:pointer;font-family:var(--body);font-weight:700;border-radius:12px;transition:.22s;font-size:15px}
-.btn-pub{background:var(--accent);color:#fff;padding:10px 22px}
-.btn-pub:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}
-.btn-pub:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
-
-.posts{display:flex;flex-direction:column;gap:18px}
-.post{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);
-  position:relative;transition:.25s;animation:pop .35s ease}
-@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.post:hover{border-color:var(--accent)}
-.post .ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.post .ph .pav{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
-  color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:15px}
-.post .ph .who{font-weight:700;font-size:17.5px}
-.post .ph .when{font-size:13px;color:var(--ink-3);font-family:var(--mono)}
-.post .ptxt{font-size:19.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
-.post .ptags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
-.post .ptags span{font-size:14.5px;color:var(--accent-ink);background:var(--accent-soft);padding:3px 10px;border-radius:20px;font-weight:600}
-
-/* ===== 证书 ===== */
+.ra-btn{padding:12px 20px;border-radius:12px;font-weight:700;font-size:14.5px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.22s;font-family:var(--body);text-decoration:none}
+.ra-primary{background:var(--accent);color:#fff;border:none}.ra-primary:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}
+.ra-ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line)}.ra-ghost:hover{border-color:var(--accent);color:var(--accent)}
 .cert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px}
-.cert{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:.25s}
-.cert.click{cursor:pointer}
-.cert.click:hover{transform:translateY(-6px);border-color:var(--accent);box-shadow:var(--shadow-lg)}
+.cert{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:.25s;cursor:pointer}
+.cert:hover{transform:translateY(-6px);border-color:var(--accent);box-shadow:var(--shadow-lg)}
 .cert .thumb{aspect-ratio:4/3;background:var(--panel-2);position:relative;overflow:hidden;display:grid;place-items:center}
-.cert .thumb img{width:100%;height:100%;object-fit:contain;padding:8px;transition:.4s}
-.cert.click:hover .thumb img{transform:scale(1.05)}
-.cert .thumb .zoom{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,23,28,.5);color:#fff;
-  font-size:14px;font-weight:600;gap:8px;opacity:0;transition:.25s;flex-direction:column}
-.cert.click:hover .thumb .zoom{opacity:1}
-.cert .cn{padding:14px 16px;font-size:16px;font-weight:700;text-align:center}
-.cert .cn small{display:block;color:var(--ink-3);font-weight:500;font-size:13px;margin-top:3px}
-.cert .thumb .ph-ico{font-size:34px;color:var(--line)}
-
-/* ===== 模态 / 预览 / Lightbox ===== */
-.overlay{position:fixed;inset:0;background:rgba(13,14,18,.72);backdrop-filter:blur(6px);z-index:200;
-  display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:.3s}
-.overlay.on{opacity:1;visibility:visible}
-.modal{background:var(--panel);border-radius:22px;max-width:980px;width:100%;max-height:92vh;overflow:hidden;
-  box-shadow:var(--shadow-lg);transform:scale(.94) translateY(10px);transition:.32s cubic-bezier(.2,.8,.2,1);
-  display:flex;flex-direction:column}
-.overlay.on .modal{transform:none}
-.modal.full{max-width:96vw;width:96vw;max-height:96vh;height:96vh}
-.modal-cover{height:124px;position:relative;display:flex;align-items:flex-end;padding:20px 24px;color:#fff;flex:0 0 auto}
-.modal-cover .big{position:absolute;top:10px;right:24px;font-family:var(--disp);font-size:64px;font-weight:600;opacity:.2}
-.modal-cover h3{position:relative;z-index:2;font-family:var(--disp);font-size:25px;font-weight:600}
-.modal-x{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;border-radius:50%;border:none;
-  background:rgba(255,255,255,.22);color:#fff;font-size:20px;cursor:pointer;transition:.25s;display:grid;place-items:center}
-.modal-x:hover{background:rgba(255,255,255,.4);transform:rotate(90deg)}
-.modal-expand{right:62px}
-.modal-expand:hover{transform:none;background:rgba(255,255,255,.4)}
-.modal-tabs{display:flex;gap:6px;padding:14px 24px 0;border-bottom:1px solid var(--line);flex:0 0 auto;background:var(--panel)}
-.mtab{border:none;background:transparent;cursor:pointer;font-family:var(--body);font-size:14.5px;font-weight:700;
-  color:var(--ink-3);padding:10px 16px;border-radius:12px 12px 0 0;position:relative;transition:.2s;display:flex;align-items:center;gap:8px}
-.mtab i{font-size:13px}
-.mtab:hover{color:var(--ink)}
-.mtab.active{color:var(--accent)}
-.mtab.active::after{content:'';position:absolute;left:12px;right:12px;bottom:-1px;height:3px;background:var(--accent);border-radius:3px}
-.modal-pane{flex:1 1 auto;overflow:auto;min-height:0;display:flex;flex-direction:column}
-.modal-pane[hidden]{display:none}
-.doc-tabs{display:none;gap:8px;padding:14px 24px 0;background:var(--panel);flex-wrap:wrap;flex:0 0 auto}
-.doc-tab{border:1px solid var(--line);background:var(--panel-2);color:var(--ink-2);font-size:13.5px;font-weight:600;
-  padding:7px 16px;border-radius:20px;cursor:pointer;transition:.2s;font-family:var(--body)}
-.doc-tab:hover{border-color:var(--accent);color:var(--accent)}
-.doc-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-#mFrame{width:100%;height:min(66vh,620px);border:none;display:block;background:#fff;flex:1 1 auto}
-.modal.full #mFrame{height:100%}
-.frame-hint{font-size:12.5px;color:var(--ink-3);padding:10px 24px;background:var(--panel-2);display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.frame-hint i{color:var(--accent)}
-.modal-body{padding:26px 28px 8px}
-.modal-body .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:22px}
-.modal-body h4{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.modal-body h4 i{color:var(--accent)}
-.modal-body ul{list-style:none}
-.modal-body li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14.5px;color:var(--ink-2)}
-.modal-body li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
-.modal-tech{display:flex;flex-wrap:wrap;gap:8px}
-.modal-tech span{font-family:var(--mono);font-size:12px;background:var(--accent-soft);color:var(--accent-ink);padding:5px 12px;border-radius:8px;font-weight:600}
-.modal-actions{display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:18px 24px;flex:0 0 auto;background:var(--panel)}
-.modal-actions a{flex:1;min-width:150px;text-align:center;padding:12px;border-radius:12px;font-weight:700;font-size:14px;transition:.22s}
-.modal-actions .a1{background:var(--accent);color:#fff}
-.modal-actions .a1:hover{filter:brightness(1.07);transform:translateY(-2px)}
-.modal-actions .a2{background:var(--panel-2);color:var(--ink);border:1px solid var(--line)}
-.modal-actions .a2:hover{border-color:var(--accent);color:var(--accent)}
-
-.lb-img{max-width:92vw;max-height:86vh;border-radius:12px;box-shadow:var(--shadow-lg);background:#fff;transform:scale(.92);transition:.32s}
-.overlay.on .lb-img{transform:none}
-
-footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);font-size:13px}
-footer a{color:var(--accent);font-weight:600}
-
-.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
-  background:#15171c;color:#fff;padding:14px 22px;border-radius:14px;font-size:14.5px;line-height:1.55;
-  max-width:min(92vw,540px);text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4);
-  opacity:0;pointer-events:none;transition:.3s;z-index:600}
-.toast b{color:#ffb866}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
-.reveal.in{opacity:1;transform:none}
-
-@media(max-width:980px){
-  .about-wrap{grid-template-columns:1fr;gap:28px}
-  .modal-body .cols{grid-template-columns:1fr;gap:18px}
-}
-@media(max-width:820px){
-  .app{flex-direction:column}
-  .side{width:100%;flex:none;height:auto;position:sticky;top:0;flex-direction:column;padding:18px 18px 14px}
-  .brand{flex-direction:row;align-items:center;gap:14px;margin-bottom:0}
-  .avatar,.avatar-fb{width:50px;height:62px;flex:0 0 62px;border-radius:14px;font-size:26px}
-  .brand-txt{margin-top:0}
-  .brand-txt h1{font-size:20px}
-  .sign{display:none}
-  .search{margin:14px 0 12px}
-  .nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;flex:none;margin-top:0}
-  .nav a{font-size:18px;padding:11px 14px;white-space:nowrap}
-  .side-foot{display:none}
-  .sec{padding:54px 20px}
-  .tools{top:14px;right:14px}
-  .intro p{font-size:21px}
-  .intro p .lead{font-size:26px}
-  .contact-note{font-size:15.5px}
-  .about-wrap .lede{font-size:22px}
-  .edge{grid-template-columns:64px 1fr;gap:14px}
-  .edge .no{font-size:40px}
-  .edge h3{font-size:21px}
-  .edge p{font-size:17px}
-  .block-h{font-size:23px;margin:42px 0 18px}
-  .case-body p{font-size:16px}
-  .post .ptxt{font-size:17.5px}
-}
+.cert .thumb img{width:100%;height:100%;object-fit:contain;padding:8px;transition:.4s}.cert:hover .thumb img{transform:scale(1.05)}
+.cert .thumb .zoom{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,23,28,.5);color:#fff;font-size:14px;font-weight:600;gap:8px;opacity:0;transition:.25s;flex-direction:column}.cert:hover .thumb .zoom{opacity:1}
+.cert .cn{padding:14px 16px;font-size:16px;font-weight:700;text-align:center}.cert .cn small{display:block;color:var(--ink-3);font-weight:500;font-size:13px;margin-top:3px}
+.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:26px}
+.case{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:.3s;display:flex;flex-direction:column}
+.case:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
+.case-cover{height:168px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:18px;color:#fff;cursor:pointer}.case-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.45))}
+.case-cover .big{position:absolute;top:14px;right:18px;font-family:var(--disp);font-size:64px;font-weight:600;opacity:.22;line-height:1}.case-cover .ci{position:absolute;top:18px;left:18px;font-size:24px;opacity:.92}
+.case-cover .ctag{position:relative;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px}
+.case-body{padding:22px;flex:1;display:flex;flex-direction:column}
+.case-body h3{font-size:24px;font-weight:700;line-height:1.3;margin-bottom:11px}.case-body p{font-size:17.5px;color:var(--ink-2);flex:1;margin-bottom:16px}
+.case-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.case-tech{display:flex;gap:6px;flex-wrap:wrap}.case-tech span{font-family:var(--mono);font-size:14px;color:var(--ink-3);background:var(--panel-2);padding:4px 10px;border-radius:6px}
+.case-dl{font-size:13.5px;font-weight:700;color:var(--accent);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:.2s}.case-dl:hover{gap:9px}
+.no-result{grid-column:1/-1;text-align:center;color:var(--ink-3);padding:50px;font-size:17px}
+.editor{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);margin-bottom:40px}
+.editor .etitle{font-family:var(--disp);font-size:18px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:10px}.editor .etitle i{color:var(--accent)}
+.editor input.ti,.editor textarea.co{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px 15px;font-family:var(--body);color:var(--ink);background:var(--panel-2);transition:.2s;font-size:17px}
+.editor input.ti{font-size:20px;font-weight:700;margin-bottom:12px}.editor textarea.co{min-height:150px;resize:vertical;line-height:1.85;margin-bottom:14px}
+.editor input.ti:focus,.editor textarea.co:focus,.editor input.li:focus,.editor .tags-in:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);outline:none}
+.lr-block{margin-bottom:16px}.lr-block .lbl{font-size:14px;font-weight:700;color:var(--ink-2);margin-bottom:9px;display:flex;align-items:center;gap:8px}.lr-block .lbl i{color:var(--accent)}
+.lr-thumbs{display:flex;gap:10px;flex-wrap:wrap}
+.lr-thumb{position:relative;width:96px;height:96px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}.lr-thumb img{width:100%;height:100%;object-fit:cover}
+.lr-thumb button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(20,23,28,.7);color:#fff;cursor:pointer;font-size:13px;display:grid;place-items:center}.lr-thumb button:hover{background:#e23b3b}
+.file-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;border:1px dashed var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:700;font-size:14.5px;cursor:pointer;transition:.2s;margin-top:10px}[data-theme="dark"] .file-btn{color:var(--accent)}.file-btn:hover{background:var(--accent);color:#fff;border-style:solid}
+.lr-linkrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.lr-linkrow input.li{flex:1;min-width:140px;border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-family:var(--body);font-size:15px;color:var(--ink);background:var(--panel-2)}
+.lr-links{display:flex;flex-direction:column;gap:8px}
+.lr-linkitem{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:9px 13px;font-size:14.5px}
+.lr-linkitem i.lk{color:var(--accent)}.lr-linkitem .lt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lr-linkitem .lt small{color:var(--ink-3);margin-left:8px}
+.lr-linkitem button{border:none;background:transparent;color:var(--ink-3);cursor:pointer;font-size:14px}.lr-linkitem button:hover{color:#e23b3b}
+.editor .tags-in{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-family:var(--mono);font-size:15px;color:var(--ink);background:var(--panel-2)}
+.editor .erow2{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.btn{border:none;cursor:pointer;font-family:var(--body);font-weight:700;border-radius:12px;transition:.22s;font-size:15px;display:inline-flex;align-items:center;gap:8px}
+.btn-pub{background:var(--accent);color:#fff;padding:12px 24px}.btn-pub:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}
+.btn-ghost{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);padding:12px 20px}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
+.editor .hint{font-size:13px;color:var(--ink-3)}
+.blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:26px}
+.postcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:.3s;display:flex;flex-direction:column}
+.postcard:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
+.postcard .pc-cover{height:160px;position:relative;background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:16px;color:#fff}.postcard .pc-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 25%,rgba(0,0,0,.5))}
+.postcard .pc-cover .pc-emoji{position:absolute;top:14px;left:16px;font-size:26px;opacity:.95}.postcard .pc-cover .pc-date{position:relative;z-index:2;font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.2);backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px}
+.postcard .pc-body{padding:20px 22px;flex:1;display:flex;flex-direction:column}
+.postcard .pc-body h3{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:10px}.postcard .pc-body .pc-ex{font-size:16.5px;color:var(--ink-2);flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.postcard .pc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}.postcard .pc-tags span{font-size:13px;color:var(--accent-ink);background:var(--accent-soft);padding:3px 10px;border-radius:20px;font-weight:600}
+.preview-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:14px;padding:14px 18px;margin-bottom:28px;font-size:15px;color:var(--accent-ink);font-weight:600}[data-theme="dark"] .preview-bar{color:var(--accent)}.preview-bar i{font-size:18px}
+.back-link{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:26px;cursor:pointer;transition:.2s}.back-link:hover{gap:12px}
+.article{max-width:820px}.article-title{font-family:var(--disp);font-size:clamp(30px,4.4vw,46px);font-weight:700;line-height:1.18;letter-spacing:.3px;margin-bottom:18px}
+.article-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14.5px;color:var(--ink-3);font-family:var(--mono);padding-bottom:22px;margin-bottom:30px;border-bottom:1px solid var(--line)}
+.article-meta .mtag{color:var(--accent-ink);background:var(--accent-soft);padding:3px 11px;border-radius:20px;font-family:var(--body);font-weight:600;font-size:13px}
+.article-body{font-size:20px;line-height:2;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.article-body a{color:var(--blue);font-weight:600;border-bottom:1px solid transparent;transition:.2s;word-break:break-all}.article-body a:hover{border-color:var(--blue)}
+.article-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin:34px 0}
+.gal-item{border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid var(--line);box-shadow:var(--shadow);transition:.25s;aspect-ratio:4/3;background:var(--panel-2)}.gal-item:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.gal-item img{width:100%;height:100%;object-fit:cover;transition:.4s}.gal-item:hover img{transform:scale(1.05)}
+.article-refs{margin:36px 0}.article-refs h4{font-family:var(--disp);font-size:20px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:10px}.article-refs h4 i{color:var(--accent)}
+.ref-card{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:12px;box-shadow:var(--shadow);transition:.25s}
+.ref-card:hover{transform:translateX(6px);border-color:var(--accent)}.ref-card>i:first-child{color:var(--accent);font-size:18px}
+.ref-card span{flex:1;min-width:0}.ref-card span b{display:block;font-size:16.5px;font-weight:700;margin-bottom:2px}.ref-card span small{color:var(--ink-3);font-size:13px;word-break:break-all}
+.ref-card>i:last-child{color:var(--ink-3);transition:.2s}.ref-card:hover>i:last-child{color:var(--accent);transform:translate(3px,-3px)}
+.article-nav{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:48px;padding-top:34px;border-top:1px solid var(--line)}
+.an{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;cursor:pointer;transition:.25s;box-shadow:var(--shadow)}
+.an:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow-lg)}.an.next{flex-direction:row-reverse;text-align:right}
+.an i{font-size:22px;color:var(--accent);flex:0 0 auto;transition:.2s}.an:hover i.fa-arrow-left{transform:translateX(-4px)}.an:hover i.fa-arrow-right{transform:translateX(4px)}
+.an span small{display:block;font-size:13px;color:var(--ink-3);margin-bottom:3px}.an span b{font-size:17px;font-weight:700;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.an.disabled{cursor:default;opacity:.5;box-shadow:none}.an.disabled:hover{transform:none;border-color:var(--line);box-shadow:none}
+.post-mode{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink-3);background:var(--panel-2);border:1px solid var(--line);padding:5px 12px;border-radius:20px;margin-left:12px;vertical-align:middle}.post-mode i{color:var(--accent)}
+.post-mode.live{color:var(--green);border-color:var(--green);background:transparent}.post-mode.live i{color:var(--green)}
+.post-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);margin-bottom:30px}
+.post-box .row1{display:flex;gap:14px}.post-box .pav{width:42px;height:42px;border-radius:13px;flex:0 0 42px;background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:600}
+.post-box textarea{flex:1;resize:vertical;min-height:74px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-family:var(--body);font-size:18px;color:var(--ink);background:var(--panel-2);transition:.2s}.post-box textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.post-box .row2{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.post-box input.tags{flex:1;min-width:160px;border:1px solid var(--line);border-radius:12px;padding:9px 13px;font-family:var(--mono);font-size:15px;color:var(--ink);background:var(--panel-2)}.post-box input.tags:focus{border-color:var(--accent);outline:none}
+.post-box .hint{font-size:13px;color:var(--ink-3)}
+.btn-pub2{background:var(--accent);color:#fff;padding:10px 22px}.btn-pub2:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}.btn-pub2:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
+.posts{display:flex;flex-direction:column;gap:18px}
+.post{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);position:relative;transition:.25s;animation:pop .35s ease}@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.post:hover{border-color:var(--accent)}.post .ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.post .ph .pav{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:15px}
+.post .ph .who{font-weight:700;font-size:17.5px}.post .ph .when{font-size:13px;color:var(--ink-3);font-family:var(--mono)}
+.post .ptxt{font-size:19.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}.post .ptags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.post .ptags span{font-size:14.5px;color:var(--accent-ink);background:var(--accent-soft);padding:3px 10px;border-radius:20px;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(13,14,18,.72);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:.3s}.overlay.on{opacity:1;visibility:visible}
+.lb-img{max-width:92vw;max-height:86vh;border-radius:12px;box-shadow:var(--shadow-lg);background:#fff;transform:scale(.92);transition:.32s}.overlay.on .lb-img{transform:none}
+footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);font-size:13px}footer a{color:var(--accent);font-weight:600}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:#15171c;color:#fff;padding:14px 22px;border-radius:14px;font-size:14.5px;line-height:1.55;max-width:min(92vw,540px);text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.3s;z-index:600}.toast b{color:#ffb866}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:980px){.about-wrap{grid-template-columns:1fr;gap:28px}.article-nav{grid-template-columns:1fr}}
+@media(max-width:820px){.app{flex-direction:column}.side{width:100%;flex:none;height:auto;position:sticky;top:0;padding:18px 18px 14px}.brand{flex-direction:row;align-items:center;gap:14px;margin-bottom:0}.avatar,.avatar-fb{width:50px;height:62px;flex:0 0 62px;border-radius:14px;font-size:26px}.brand-txt{margin-top:0}.brand-txt h1{font-size:20px}.sign{display:none}.nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;flex:none;margin-top:14px}.nav a{font-size:17px;padding:11px 13px;white-space:nowrap}.side-foot{display:none}.sec{padding:50px 20px}.tools{top:14px;right:14px}.intro p{font-size:21px}.intro p .lead{font-size:26px}.about-wrap .lede{font-size:22px}.edge{grid-template-columns:64px 1fr;gap:14px}.edge .no{font-size:40px}.edge h3{font-size:21px}.edge p{font-size:17px}.block-h{font-size:23px;margin:42px 0 18px}.tour a{grid-template-columns:54px 1fr auto;gap:14px}.tour .tno{font-size:36px}.tour .tmain b{font-size:20px}.article-body{font-size:18px}.post .ptxt{font-size:17.5px}}
 </style>
 </head>
 <body>
-
 <div class="tools">
-  <button id="themeBtn" title="切换深色/浅色" aria-label="切换主题"><i class="fas fa-moon"></i></button>
-  <button id="toTop" title="回到顶部" aria-label="回到顶部"><i class="fas fa-arrow-up"></i></button>
+  <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
+  <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </div>
-
 <div class="app">
   <aside class="side">
     <div class="brand">
-      <img class="avatar" id="avatar" src="me.jpg" alt="阿历" loading="lazy" decoding="async"
-           onerror="this.style.display='none';document.getElementById('avfb').style.display='flex'">
+      <img class="avatar" src="me.jpg" alt="阿历" loading="lazy" onerror="this.style.display='none';document.getElementById('avfb').style.display='flex'">
       <div class="avatar-fb" id="avfb">历</div>
-      <div class="brand-txt">
-        <h1>阿历的个人主页</h1>
-        <p>数据分析师 · Data Analyst</p>
-      </div>
+      <div class="brand-txt"><h1>阿历的个人主页</h1><p>数据分析 · 成长博客</p></div>
     </div>
     <p class="sign">用数据讲好业务的故事</p>
-
-    <div class="search">
-      <i class="fas fa-search"></i>
-      <input id="caseSearch" type="text" placeholder="搜索案例…" autocomplete="off">
-    </div>
-
     <ul class="nav" id="nav">
-      <li><a href="#home" class="active"><i class="fas fa-house"></i><span>首页</span></a></li>
-      <li><a href="#about"><i class="fas fa-user-pen"></i><span>个人简介</span></a></li>
-      <li><a href="#cases"><i class="fas fa-diagram-project"></i><span>实战案例</span></a></li>
-      <li><a href="#posts"><i class="fas fa-feather-pointed"></i><span>动态</span></a></li>
-      <li><a href="#certs"><i class="fas fa-award"></i><span>专业证书</span></a></li>
+      <li><a href="#home" data-nav="home"><span class="nico">🏠</span><span>首页</span></a></li>
+      <li><a href="#about" data-nav="about"><span class="nico">👤</span><span>关于我</span></a></li>
+      <li><a href="#projects" data-nav="projects"><span class="nico">💼</span><span>项目案例</span></a></li>
+      <li><a href="#learning" data-nav="learning"><span class="nico">📚</span><span>学习成长</span></a></li>
+      <li><a href="#life" data-nav="life"><span class="nico">🌱</span><span>生活随笔</span></a></li>
     </ul>
-
     <div class="side-foot">
       <div class="contact-row">
-        <button class="cbtn" data-contact="wechat" title="微信：点击复制微信号"><i class="fab fa-weixin"></i></button>
-        <button class="cbtn" data-contact="qq" title="QQ：点击复制 QQ 号"><i class="fab fa-qq"></i></button>
-        <button class="cbtn" data-contact="phone" title="电话：点击复制号码"><i class="fas fa-phone"></i></button>
-        <button class="cbtn" data-contact="email" title="邮箱：点击复制邮箱"><i class="fas fa-envelope"></i></button>
+        <button class="cbtn" data-contact="wechat" title="微信"><i class="fab fa-weixin"></i></button>
+        <button class="cbtn" data-contact="qq" title="QQ"><i class="fab fa-qq"></i></button>
+        <button class="cbtn" data-contact="phone" title="电话"><i class="fas fa-phone"></i></button>
+        <button class="cbtn" data-contact="email" title="邮箱"><i class="fas fa-envelope"></i></button>
       </div>
       <div class="copy">© 2026 池增历</div>
     </div>
   </aside>
-
   <main class="main">
-
-    <section class="sec" id="home">
-      <div class="reveal">
-        <h2 class="hi">你好呀<span class="accent">！</span> <span class="wave">👋</span></h2>
-        <div class="datebar">
-          <span class="d" id="dateText">今天…</span>
-          <span class="sep"></span>
-          <span class="clock" id="clock">--:--:--</span>
-        </div>
-        <div class="intro">
-          <p class="lead">我是 <span class="em">池增历</span>，一名深耕快消品与电商领域的数据分析师。</p>
-          <p><span class="ico">📊</span>多年供应链进销存监控、库存健康度诊断与智能补货模型搭建经验，擅长把模糊的业务需求梳理成清晰的数据模型，为决策提供依据。</p>
-          <p><span class="ico">🛒</span>丰富的电商运营数据分析实操经验，熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析</span> 驱动精细化运营落地。</p>
-          <p><span class="ico">🧠</span>善于将业务问题转化为可量化的分析框架，输出兼具 <span class="em">方法论可迁移性</span> 与 <span class="em">业务落地价值</span> 的数据产品。</p>
-        </div>
-        <p class="contact-note">📮 合作或交流，欢迎直接邮件 <a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>，或点击左侧图标添加微信 / QQ / 拨打电话。</p>
+    <section class="view active" data-view="home"><div class="sec"><div class="reveal">
+      <h2 class="hi">你好呀<span class="accent">！</span> <span class="wave">👋</span></h2>
+      <div class="datebar"><span class="d" id="dateText">今天…</span><span class="sep"></span><span class="clock" id="clock">--:--:--</span></div>
+      <div class="intro">
+        <p class="lead">我是 <span class="em">池增历</span>，一名深耕快消品与电商领域的数据分析师。</p>
+        <p><span class="ico">📊</span>多年供应链进销存监控、库存健康度诊断与智能补货模型搭建经验，擅长把模糊的业务需求梳理成清晰的数据模型。</p>
+        <p><span class="ico">🛒</span>熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析</span> 驱动精细化运营落地。</p>
+        <p><span class="ico">🌱</span>这里是我的<b>成长博客</b>——记录学习、项目、工作与生活，内容会一直长，欢迎常来。</p>
       </div>
-    </section>
-
-    <section class="sec" id="about">
-      <div class="reveal">
-        <div class="sec-tag">About Me</div>
-        <h2 class="sec-h">个人简介 &amp; 优势</h2>
-        <p class="sec-sub">不只是产出报表，更在意分析结论能否真正落地、能否被复用。</p>
+      <p class="contact-note">📮 合作或交流，欢迎邮件 <a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>，或点左侧图标加微信 / QQ / 拨打电话。</p>
+      <h3 class="guide-h reveal"><i class="fas fa-compass"></i>逛逛这几个板块</h3>
+      <div class="tour reveal">
+        <a href="#projects"><span class="tno">01</span><span class="tmain"><b><span class="emo">💼</span>项目案例</b><span>RFM 用户分层、进销存监控、复购归因——可在线预览的完整作品</span></span><i class="tgo fas fa-arrow-right"></i></a>
+        <a href="#learning"><span class="tno">02</span><span class="tmain"><b><span class="emo">📚</span>学习成长</b><span>像博客一样记录每一次学习：图文 + 链接 + 心得，持续更新</span></span><i class="tgo fas fa-arrow-right"></i></a>
+        <a href="#life"><span class="tno">03</span><span class="tmain"><b><span class="emo">🌱</span>生活随笔</b><span>分析之外的日常碎片与碎碎念，实时同步、想到就写</span></span><i class="tgo fas fa-arrow-right"></i></a>
+        <a href="#about"><span class="tno">04</span><span class="tmain"><b><span class="emo">👤</span>关于我</b><span>简介优势 · 技能 · 荣誉论文 · 简历 · 证书</span></span><i class="tgo fas fa-arrow-right"></i></a>
       </div>
+    </div></div></section>
+
+    <section class="view" data-view="about"><div class="sec">
+      <div class="reveal"><div class="sec-tag">About Me</div><h2 class="sec-h">关于我</h2><p class="sec-sub">不只是产出报表，更在意分析结论能否真正落地、能否被复用。</p></div>
       <div class="about-wrap reveal">
-        <div class="lede">
-          我把数据分析看作一门<b>翻译</b>的手艺——把模糊的业务焦虑，翻译成可计算、可验证、可执行的指标与策略。从快消品的进销存周转，到电商用户的生命周期价值，我习惯先搭框架、再下钻归因、最后给出带优先级的行动建议。
-          <br><br>
-          我相信好的分析应当<b>自我解释</b>：一张看板、一份报告，要让没参与建模的人也能在三分钟内看懂结论与下一步。这也是我每个案例都坚持「方法论 + 可复现源码 + 业务价值」三件套的原因。
-        </div>
-        <div class="facts">
-          <h4>Quick Facts</h4>
+        <div class="lede">我把数据分析看作一门<b>翻译</b>的手艺——把模糊的业务焦虑，翻译成可计算、可验证、可执行的指标与策略。从快消品的进销存周转，到电商用户的生命周期价值，我习惯先搭框架、再下钻归因、最后给出带优先级的行动建议。<br><br>我相信好的分析应当<b>自我解释</b>：一张看板、一份报告，要让没参与建模的人也能在三分钟内看懂结论与下一步。这也是我每个案例都坚持「方法论 + 可复现源码 + 业务价值」三件套的原因。</div>
+        <div class="facts"><h4>Quick Facts</h4>
           <div class="fact"><span class="num">3</span><span class="lab"><b>大分析方向</b>用户价值 / 进销存 / 复购留存</span></div>
           <div class="fact"><span class="num">4</span><span class="lab"><b>项专业认证</b>CDA / 计算机 / 英语 / 普通话</span></div>
           <div class="fact"><span class="num">5</span><span class="lab"><b>核心工具栈</b>Excel·SQL·Python·BI</span></div>
           <div class="fact"><span class="num">1</span><span class="lab"><b>篇期刊论文</b>《科技创业月刊》DEA 模型</span></div>
         </div>
       </div>
-
       <div class="edges reveal">
         <div class="edge"><div class="no">01</div><div><h3><i class="fas fa-magnifying-glass-chart"></i>数据洞察</h3><p>从海量交易与行为数据中定位异常与机会，用 RFM、漏斗、同期群等方法论把「感觉」变成「证据」。</p></div></div>
         <div class="edge"><div class="no">02</div><div><h3><i class="fas fa-code"></i>技术全面</h3><p>Python(Pandas/NumPy) 清洗建模、SQL 处理大规模数据、Power BI / Tableau 搭建自动化看板，全流程可复现。</p></div></div>
         <div class="edge"><div class="no">03</div><div><h3><i class="fas fa-bullseye"></i>业务落地</h3><p>分析结论永远带「所以呢」——给出带优先级的运营、采购、召回建议，让数据真正影响决策与结果。</p></div></div>
       </div>
-
       <h3 class="block-h reveal"><i class="fas fa-toolbox"></i>技能专长<span class="k">SKILLS</span></h3>
       <div class="skill-list reveal">
         <div class="skill"><div class="si"><i class="fas fa-file-excel"></i></div><div><h4>Excel</h4><p>熟练使用 VLOOKUP、数据透视表、常用函数进行数据整理及分析。</p></div></div>
-        <div class="skill"><div class="si"><i class="fas fa-database"></i></div><div><h4>SQL</h4><p>掌握单表查询、多表关联（JOIN）、分组聚合（GROUP BY）、CASE WHEN、子查询等，能够完成常见数据分析需求。</p></div></div>
+        <div class="skill"><div class="si"><i class="fas fa-database"></i></div><div><h4>SQL</h4><p>掌握单表查询、多表关联（JOIN）、分组聚合、CASE WHEN、子查询等，能够完成常见数据分析需求。</p></div></div>
         <div class="skill"><div class="si"><i class="fab fa-python"></i></div><div><h4>Python</h4><p>掌握 Pandas 进行数据清洗、数据处理及统计分析。</p></div></div>
         <div class="skill"><div class="si"><i class="fas fa-chart-column"></i></div><div><h4>数据可视化</h4><p>能够使用 Power BI、Tableau 制作数据分析报表及可视化。</p></div></div>
         <div class="skill"><div class="si"><i class="fas fa-brain"></i></div><div><h4>数据分析方法</h4><p>了解 K-Means 聚类、线性回归、逻辑回归等常用分析方法。</p></div></div>
       </div>
-
       <h3 class="block-h reveal"><i class="fas fa-trophy"></i>荣誉 / 成果<span class="k">HONORS</span></h3>
-      <div class="honor reveal">
-        <a href="https://kns.cnki.net/kcms2/article/abstract?v=sFGZ-GfRoEUQfF9Go9N0p9gss-V29J2moLpuG8E2wwRPKud-4ATPJtjP_Z_8bwPIs3Hqcl7zTu5UXphl4omoXa70FfYItmbwqUcfJxpWYTyRYYxfmLgLLjsXWgiO1ixclCdYk_BzAqRLS9kDyFMvcoQpW3M8HD5ugI3ubxXXCh7kCCneMYIPjQ==&uniplatform=NZKPT&language=CHS" target="_blank" rel="noopener">
-          <div class="hi-ico"><i class="fas fa-scroll"></i></div>
-          <div class="ht">
-            <b>《科技创业月刊》期刊论文</b>
-            <span>基于 DEA 数据模型的相关分析文章 · 点击跳转知网原文</span>
-          </div>
-          <i class="go fas fa-arrow-up-right-from-square"></i>
-        </a>
-      </div>
-
+      <div class="honor reveal"><a href="https://kns.cnki.net/kcms2/article/abstract?v=sFGZ-GfRoEUQfF9Go9N0p9gss-V29J2moLpuG8E2wwRPKud-4ATPJtjP_Z_8bwPIs3Hqcl7zTu5UXphl4omoXa70FfYItmbwqUcfJxpWYTyRYYxfmLgLLjsXWgiO1ixclCdYk_BzAqRLS9kDyFMvcoQpW3M8HD5ugI3ubxXXCh7kCCneMYIPjQ==&uniplatform=NZKPT&language=CHS" target="_blank" rel="noopener"><div class="hi-ico"><i class="fas fa-scroll"></i></div><div class="ht"><b>《科技创业月刊》期刊论文</b><span>基于 DEA 数据模型的相关分析文章 · 点击跳转知网原文</span></div><i class="go fas fa-arrow-up-right-from-square"></i></a></div>
       <h3 class="block-h reveal"><i class="fas fa-file-arrow-down"></i>个人简历<span class="k">RESUME</span></h3>
-      <div class="resume-card reveal">
-        <div class="ri"><i class="fas fa-file-pdf"></i></div>
-        <div class="rt">
-          <b>池增历-市场数据运营3年-市场营销专业-本科.pdf</b>
-          <span>市场数据运营 · 3 年经验 · 市场营销本科 ｜ 可在线预览或下载，面试时直接转发即可</span>
-        </div>
-        <div class="resume-actions">
-          <button class="ra-btn ra-primary" onclick="openResume()"><i class="fas fa-eye"></i> 在线预览</button>
-          <a class="ra-btn ra-ghost" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" download><i class="fas fa-download"></i> 下载 PDF</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="sec" id="cases">
-      <div class="reveal">
-        <div class="sec-tag">Portfolio</div>
-        <h2 class="sec-h">实战案例</h2>
-        <p class="sec-sub">点击卡片，在弹窗内在线预览报告（含多文档切换），右上角可放大预览，或查看能力拆解与源文件下载。所有案例均使用模拟数据。</p>
-      </div>
-      <div class="case-grid reveal" id="caseGrid"></div>
-    </section>
-
-    <section class="sec" id="posts">
-      <div class="reveal">
-        <div class="sec-tag">Updates</div>
-        <h2 class="sec-h">动态 · 随笔<span class="post-mode live"><i class="fas fa-tower-broadcast"></i> 实时同步</span></h2>
-        <p class="sec-sub">记录分析灵感、学习进度与生活片段。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到最新动态。</p>
-      </div>
-      <div class="post-box reveal">
-        <div class="row1">
-          <div class="pav">历</div>
-          <textarea id="postInput" placeholder="写点什么… 比如今天的一个分析发现、一段学习心得。"></textarea>
-        </div>
-        <div class="row2">
-          <input class="tags" id="postTags" type="text" placeholder="标签，用逗号分隔，如：复盘, SQL">
-          <span class="hint">Ctrl + Enter 发布</span>
-          <button class="btn btn-pub" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
-        </div>
-      </div>
-      <div class="posts reveal" id="postList"><div class="no-result">正在连接云端…</div></div>
-    </section>
-
-    <section class="sec" id="certs">
-      <div class="reveal">
-        <div class="sec-tag">Certificates</div>
-        <h2 class="sec-h">专业证书</h2>
-        <p class="sec-sub">点击证书可查看清晰大图。</p>
-      </div>
+      <div class="resume-card reveal"><div class="ri"><i class="fas fa-file-pdf"></i></div><div class="rt"><b>池增历-市场数据运营3年-市场营销专业-本科.pdf</b><span>市场数据运营 · 3 年经验 · 市场营销本科 ｜ 可在线预览或下载</span></div><div class="resume-actions"><a class="ra-btn ra-primary" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" target="_blank" rel="noopener"><i class="fas fa-eye"></i> 在线预览</a><a class="ra-btn ra-ghost" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" download><i class="fas fa-download"></i> 下载 PDF</a></div></div>
+      <h3 class="block-h reveal"><i class="fas fa-award"></i>专业证书<span class="k">CERTIFICATES</span></h3>
       <div class="cert-grid reveal" id="certGrid"></div>
-    </section>
+    </div></section>
 
-    <footer>
-      © 2026 池增历 · 数据分析作品集 ｜ 所有报告基于模拟数据构建，仅用于方法论展示与技术交流<br>
-      创作者：游学者、池鹅 ｜ 联系 <a href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>
-    </footer>
+    <section class="view" data-view="projects"><div class="sec">
+      <div class="reveal"><div class="sec-tag">Portfolio</div><h2 class="sec-h">项目案例</h2><p class="sec-sub">点击卡片封面在线预览报告，或下载源文件。所有案例均使用模拟数据。</p></div>
+      <div class="case-grid reveal" id="caseGrid"></div>
+    </div></section>
+
+    <section class="view" data-view="learning"><div class="sec">
+      <div class="reveal"><div class="sec-tag">Learning</div><h2 class="sec-h">学习成长</h2><p class="sec-sub">像博客一样记录每一次学习——文字、图片、参考链接，发布后同步到云端。</p></div>
+      <div class="editor reveal" id="lrEditor">
+        <div class="etitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</div>
+        <input class="ti" id="lrTitle" type="text" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
+        <textarea class="co" id="lrContent" placeholder="正文… 支持多行；正文里粘贴的网址会自动变成可点链接。"></textarea>
+        <div class="lr-block"><div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div><div class="lr-thumbs" id="lrThumbs"></div><label class="file-btn"><i class="fas fa-plus"></i> 选择图片<input type="file" id="lrFile" accept="image/*" multiple hidden></label></div>
+        <div class="lr-block"><div class="lbl"><i class="fas fa-link"></i> 参考链接（可选，可加多条）</div>
+          <div class="lr-linkrow"><input class="li" id="lrLinkText" type="text" placeholder="链接名称，如：Pandas 官方文档"><input class="li" id="lrLinkUrl" type="text" placeholder="https://..."><button class="btn btn-ghost" id="lrAddLink"><i class="fas fa-plus"></i> 添加</button></div>
+          <div class="lr-links" id="lrLinkList"></div>
+        </div>
+        <div class="lr-block" style="margin-bottom:0"><div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔）</div><input class="tags-in" id="lrTags" type="text" placeholder="如：DAX, 复购, 笔记"></div>
+        <div class="erow2"><button class="btn btn-pub" id="lrPub"><i class="fas fa-paper-plane"></i> 发布</button><button class="btn btn-ghost" id="lrPreview"><i class="fas fa-eye"></i> 预览</button><span class="hint">Ctrl + Enter 发布 ｜ 预览无需联网</span></div>
+      </div>
+      <div class="blog-grid reveal" id="learningGrid"><div class="no-result">正在加载学习记录…</div></div>
+    </div></section>
+
+    <section class="view" data-view="read"><div class="sec"><div id="readInner"></div></div></section>
+
+    <section class="view" data-view="life"><div class="sec">
+      <div class="reveal"><div class="sec-tag">Life</div><h2 class="sec-h">生活随笔<span class="post-mode live" id="postModeBadge"><i class="fas fa-tower-broadcast"></i> 实时同步</span></h2><p class="sec-sub" id="postSubText">分析之外的日常碎片。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到。</p></div>
+      <div class="post-box reveal"><div class="row1"><div class="pav">历</div><textarea id="postInput" placeholder="写点什么… 今天的一个小发现、一段心情。"></textarea></div><div class="row2"><input class="tags" id="postTags" type="text" placeholder="标签，逗号分隔，如：日常, 网球"><span class="hint">Ctrl + Enter 发布</span><button class="btn btn-pub2" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button></div></div>
+      <div class="posts reveal" id="postList"><div class="no-result">正在连接云端…</div></div>
+    </div></section>
+
+    <footer>© 2026 池增历 · 数据分析成长博客 ｜ 项目报告基于模拟数据，仅用于方法论展示<br>创作者：游学者、池鹅 ｜ 联系 <a href="mailto:chift0707@gmail.com">chift0707@gmail.com</a></footer>
   </main>
 </div>
-
-<!-- 案例 / 简历 通用模态 -->
-<div class="overlay" id="caseModal">
-  <div class="modal" id="modalEl">
-    <div class="modal-cover" id="mCover">
-      <span class="big" id="mBig"></span>
-      <button class="modal-x modal-expand" id="mExpand" title="放大 / 还原预览"><i class="fas fa-expand"></i></button>
-      <button class="modal-x" data-close>&times;</button>
-      <h3 id="mTitle"></h3>
-    </div>
-    <div class="modal-tabs" id="mTabs">
-      <button class="mtab active" data-tab="preview"><i class="fas fa-eye"></i> 在线预览</button>
-      <button class="mtab" data-tab="detail"><i class="fas fa-list-check"></i> 分析详情</button>
-    </div>
-    <div class="modal-pane" data-pane="preview" id="panePreview">
-      <div class="doc-tabs" id="mDocs"></div>
-      <iframe id="mFrame" src="about:blank" title="报告预览"></iframe>
-      <p class="frame-hint"><i class="fas fa-circle-info"></i> 多份报告可点上方的标签切换；若预览区空白，多为浏览器对本地 PDF 的安全限制，部署上线后即可正常显示，或点下方「在新标签打开」。点右上角 ⤢ 可放大预览。</p>
-    </div>
-    <div class="modal-pane" data-pane="detail" id="paneDetail" hidden>
-      <div class="modal-body">
-        <div class="cols">
-          <div><h4><i class="fas fa-cogs"></i>核心能力</h4><ul id="mCap"></ul></div>
-          <div><h4><i class="fas fa-chart-line"></i>业务价值</h4><ul id="mVal"></ul></div>
-        </div>
-        <h4 style="margin-bottom:10px"><i class="fas fa-layer-group"></i>技术栈</h4>
-        <div class="modal-tech" id="mTech"></div>
-      </div>
-    </div>
-    <div class="modal-actions" id="mActions"></div>
-  </div>
-</div>
-
-<!-- 证书大图 -->
-<div class="overlay" id="lightbox" data-close>
-  <button class="modal-x" data-close style="position:fixed;top:22px;right:28px">&times;</button>
-  <img class="lb-img" id="lbImg" src="" alt="">
-</div>
-
+<div class="overlay" id="lightbox" data-close><button class="modal-x" data-close style="position:fixed;top:22px;right:28px;width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,.22);color:#fff;font-size:20px;cursor:pointer">&times;</button><img class="lb-img" id="lbImg" src="" alt=""></div>
 <div class="toast" id="toast"></div>
-
 <script>
-/* ============ 云端配置（动态墙实时同步） ============ */
-const SUPABASE_URL = 'https://bqdhqnviozvqljigzys.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZGhxbnZpb3p2cWxqaWd6eXMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0NzgxNTI2NSwiZXhwIjoyMDYzMzkwODY1fQ.xTjGvZkPwJKvXlOlMqJGOkhOmJgCm3OoJjGqsQXZpEw';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* ============ 简历 PDF ============ */
-const RESUME_PDF = './池增历-市场数据运营3年-市场营销专业-本科.pdf';
-
-/* ============ 数据：案例（已修正：进销存突出 SQL；复购去 Cohort 加 DAX） ============ */
-const CASES = [
-  { color:'linear-gradient(135deg,#e8730c,#ff9d4d)', icon:'fa-layer-group', tag:'USER VALUE',
-    title:'RFM 用户价值分析案例',
-    desc:'基于 Python(Pandas) 构建 RFM 模型，对线上平台用户做三维度打分与分层，输出可复现的交互式分析报告。',
-    tech:['Python','Pandas','Jupyter','RFM'],
-    preview:[{label:'交互式报告', type:'html', href:'线上平台用户RFM分析.html'}],
-    cap:['基于 Python(Pandas) 清洗交易数据并构建 RFM 模型','R/F/M 三维度打分与用户分层（重要价值/挽留/流失等）','各层级用户数量、消费金额占比可视化','Jupyter Notebook 交互式分析全流程可复现'],
-    val:['精准识别高价值用户群，指导差异化营销资源投放','量化用户流失风险，制定针对性召回策略','提供可复用的 Python 用户分层方法论模板'],
-    actions:[{t:'在新标签打开报告',c:'a1',href:'线上平台用户RFM分析.html',target:true},{t:'下载 .ipynb 源码',c:'a2',href:'线上平台用户RFM分析.ipynb',dl:true}] },
-
-  { color:'linear-gradient(135deg,#2f6fed,#5b8def)', icon:'fa-boxes-stacked', tag:'SQL · INVENTORY',
-    title:'快消品进销存分析',
-    desc:'以 SQL 完成多表取数与清洗，搭建进销存可视化演示看板 + 完整分析报告：监控品牌库存、月销量与临期风险，并完成 ABC 动销、库存健康度与智能补货诊断。',
-    tech:['SQL','Power BI','DAX','ABC分析','Excel'],
-    preview:[
-      {label:'演示看板', type:'pdf', href:'快消品进销存演示案例.pdf'},
-      {label:'分析报告', type:'pdf', href:'快消品进销存案例分析报告.pdf'}
-    ],
-    cap:['用 SQL 完成多表取数、关联（JOIN）与聚合，构建分析宽表','进销存数据可视化看板：品牌库存、月销量、临期/过期分布','整体进销存趋势与周转分析','品牌与单品动销分析（ABC 分析）与智能补货需求诊断'],
-    val:['直观呈现库存金额环比(108%) 与销售额环比(21%)','快速定位库存周转异常品牌（如永圣、中粮）','识别滞销与缺货风险，输出精细化采购与清仓建议','建立库存健康度预警看板，降低资金占用'],
-    actions:[
-      {t:'新标签打开 演示看板',c:'a1',href:'快消品进销存演示案例.pdf',target:true},
-      {t:'新标签打开 分析报告',c:'a2',href:'快消品进销存案例分析报告.pdf',target:true},
-      {t:'下载 .pbix 源文件',c:'a2',href:'快消品进销存演示案例.pbix',dl:true}
-    ] },
-
-  { color:'linear-gradient(135deg,#8b5cf6,#a78bfa)', icon:'fa-rotate', tag:'RETENTION · LTV',
-    title:'复购与留存分析',
-    desc:'复购专题双报告：销售趋势、消费占比、留存分析、新增/复购拆解，以及母婴店铺「黄金60天」转化归因，核心度量以 DAX 实现。',
-    tech:['Power BI','DAX','归因分析','Excel'],
-    preview:[
-      {label:'复购分析案例', type:'pdf', href:'复购分析案例.pdf'},
-      {label:'复购案例分析', type:'pdf', href:'复购案例分析.pdf'}
-    ],
-    cap:['销售金额趋势与消费金额占比可视化','用 DAX 构建留存率、复购率与人均消费等核心度量','新增与复购用户的消费人数、订单与人均消费拆解','母婴店铺「黄金60天」转化与归因分析'],
-    val:['量化新增(57%) 与复购(43%) 用户的销售贡献度','洞察次月留存高峰及长期留存衰减规律','明确收入增减原因（拉新失速、新客转化率低等）','强化新客「黄金60天」转化 SOP，提升复购客单价'],
-    actions:[
-      {t:'新标签打开 复购分析案例',c:'a1',href:'复购分析案例.pdf',target:true},
-      {t:'新标签打开 复购案例分析',c:'a2',href:'复购案例分析.pdf',target:true},
-      {t:'下载 .pbix 源文件',c:'a2',href:'复购分析案例.pbix',dl:true}
-    ] }
-];
-
-/* ============ 数据：证书 ============ */
-const CERTS = [
-  { name:'CDA 数据分析师', sub:'LEVEL-1', img:'./certs/CDA-LEVEL1.jpg', click:true },
-  { name:'Office 计算机', sub:'二级证书', img:'./certs/office_level2.jpg', click:true },
-  { name:'英语六级', sub:'CET-6', img:'./certs/CET6.jpg', click:true },
-  { name:'普通话', sub:'二甲证书', img:'./certs/putonghua.jpg', click:true }
-];
-
-/* ============ 联系方式：点击图标复制 ============ */
-const CONTACT = {
-  wechat:{label:'微信号', value:'chieee_ya',          hint:'打开微信「添加朋友」粘贴即可'},
-  qq:    {label:'QQ 号',  value:'954567763',          hint:'打开 QQ 添加好友即可'},
-  phone: {label:'电话',   value:'18271645570',        hint:'可直接拨打，或复制后添加微信'},
-  email: {label:'邮箱',   value:'chift0707@gmail.com',hint:'粘贴到收件人即可写信'}
-};
-
-/* ============ 工具函数 ============ */
-function certFallback(img){
-  if(!img.dataset.fb){ img.dataset.fb='1'; img.src = img.src.replace('/certs/','/'); }
-  else { img.outerHTML = '<i class="ph-ico fas fa-certificate"></i>'; }
-}
-function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function relTime(ts){
-  const s = Math.floor((Date.now()-ts)/1000);
-  if(s<60) return '刚刚';
-  if(s<3600) return Math.floor(s/60)+' 分钟前';
-  if(s<86400) return Math.floor(s/3600)+' 小时前';
-  if(s<86400*30) return Math.floor(s/86400)+' 天前';
-  const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-const toastEl = document.getElementById('toast');
-let toastTimer = null;
-function showToast(html, ms=4200){
-  toastEl.innerHTML = html; toastEl.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(()=> toastEl.classList.remove('show'), ms);
-}
-async function copyText(t){
-  try{ await navigator.clipboard.writeText(t); return true; }catch(e){
-    const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} document.body.removeChild(ta); return ok;
+/* ===== 云端 ===== */
+const SUPABASE_URL='https://bqdhqnviozvqljigzys.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZGhxbnZpb3p2cWxqaWd6eXMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0NzgxNTI2NSwiZXhwIjoyMDYzMzkwODY1fQ.xTjGvZkPwJKvXlOlMqJGOkhOmJgCm3OoJjGqsQXZpEw';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+/* ===== 工具 ===== */
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const withTimeout=(p,ms)=>Promise.race([Promise.resolve(p),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
+function relTime(ts){const s=Math.floor((Date.now()-ts)/1000);if(s<60)return'刚刚';if(s<3600)return Math.floor(s/60)+' 分钟前';if(s<86400)return Math.floor(s/3600)+' 小时前';if(s<86400*30)return Math.floor(s/86400)+' 天前';const d=new Date(ts);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+const fmtDate=iso=>{const d=new Date(iso);return`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;};
+const toastEl=document.getElementById('toast');let toastTimer=null;
+function showToast(h,ms=4200){toastEl.innerHTML=h;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),ms);}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy');}catch(_){}document.body.removeChild(a);return ok;}}
+function compress(file,max=1200,q=0.82){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>max||h>max){if(w>h){h=h*max/w;w=max;}else{w=w*max/h;h=max;}}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q));};img.src=r.result;};r.readAsDataURL(file);});}
+const linkify=h=>esc(h).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+function lockScroll(on){document.body.style.overflow=on?'hidden':'';}
+/* ===== 路由 ===== */
+const views=[...document.querySelectorAll('.view')];
+const navLinks=[...document.querySelectorAll('#nav a')];
+function revealIn(v){const els=v.querySelectorAll('.reveal');els.forEach(e=>e.classList.remove('in'));requestAnimationFrame(()=>requestAnimationFrame(()=>{let i=0;els.forEach(e=>{e.style.transitionDelay=(Math.min(i++,7)*0.05)+'s';e.classList.add('in');});}));}
+function showView(n){views.forEach(v=>v.classList.toggle('active',v.dataset.view===n));const c=document.querySelector('.view.active');if(c)revealIn(c);window.scrollTo(0,0);}
+function setNav(n){navLinks.forEach(a=>a.classList.toggle('active',a.dataset.nav===n));}
+async function route(){
+  const h=(location.hash.replace(/^#/,'')||'home');const [view,param]=h.split('/');
+  if(view==='read'){
+    const r=await loadLearning();if(!r.ok){location.hash='learning';return;}
+    const art=learningList.find(a=>String(a.id)===param);
+    if(art){renderRead(art,false);showView('read');setNav('learning');}else location.hash='learning';
+    return;
   }
+  if(view==='learning'){const r=await loadLearning();renderLearningList(r.ok);}
+  const valid=['home','about','projects','learning','life'].includes(view)?view:'home';
+  showView(valid);setNav(valid);
 }
-
-/* ============ 渲染案例 ============ */
-const caseGrid = document.getElementById('caseGrid');
-function renderCases(filter=''){
-  const f = filter.trim().toLowerCase();
-  const list = CASES.map((c,i)=>({c,i})).filter(({c})=>{
-    if(!f) return true;
-    return (c.title+c.desc+c.tag+c.tech.join(' ')).toLowerCase().includes(f);
-  });
-  if(!list.length){ caseGrid.innerHTML='<div class="no-result"><i class="fas fa-magnifying-glass"></i> 没有匹配「'+filter+'」的案例</div>'; return; }
-  caseGrid.innerHTML = list.map(({c,i})=>`
-    <article class="case" data-i="${i}">
-      <div class="case-cover" style="background:${c.color}">
-        <span class="big">${String(i+1).padStart(2,'0')}</span>
-        <i class="ci fas ${c.icon}"></i>
-        <span class="ctag">${c.tag}</span>
-      </div>
-      <div class="case-body">
-        <h3>${c.title}</h3>
-        <p>${c.desc}</p>
-        <div class="case-foot">
-          <div class="case-tech">${c.tech.slice(0,3).map(t=>`<span>${t}</span>`).join('')}</div>
-          <span class="case-more">详情 <i class="fas fa-arrow-right"></i></span>
-        </div>
-      </div>
-    </article>`).join('');
-}
-renderCases();
-caseGrid.addEventListener('click', e=>{
-  const card = e.target.closest('.case'); if(card) openCase(+card.dataset.i);
-});
-document.getElementById('caseSearch').addEventListener('input', e=> renderCases(e.target.value));
-
-/* ============ 模态：标签 / 多文档 / 放大 ============ */
-const caseModal = document.getElementById('caseModal');
-const modalEl   = document.getElementById('modalEl');
-const mTabs     = document.getElementById('mTabs');
-const panePreview = document.getElementById('panePreview');
-const paneDetail  = document.getElementById('paneDetail');
-const mFrame    = document.getElementById('mFrame');
-const mDocs     = document.getElementById('mDocs');
-const mExpand   = document.getElementById('mExpand');
-let currentDocs = [];
-
-function switchTab(name){
-  mTabs.querySelectorAll('.mtab').forEach(b=> b.classList.toggle('active', b.dataset.tab===name));
-  panePreview.hidden = name!=='preview';
-  paneDetail.hidden  = name!=='detail';
-}
-mTabs.addEventListener('click', e=>{
-  const b = e.target.closest('.mtab'); if(b) switchTab(b.dataset.tab);
-});
-function loadDoc(i){
-  const d = currentDocs[i]; if(!d) return;
-  const hash = d.type==='pdf' ? '#toolbar=1&navpanes=0&view=FitH' : '';
-  mFrame.src = d.href + hash;
-  mDocs.querySelectorAll('.doc-tab').forEach((b,k)=> b.classList.toggle('active', k===i));
-}
-mDocs.addEventListener('click', e=>{
-  const b = e.target.closest('[data-doc]'); if(b) loadDoc(+b.dataset.doc);
-});
-mExpand.addEventListener('click', e=>{
-  e.stopPropagation();
-  const full = modalEl.classList.toggle('full');
-  mExpand.querySelector('i').className = full ? 'fas fa-compress' : 'fas fa-expand';
-});
-function openCase(i){
-  const c = CASES[i];
-  mTabs.querySelectorAll('.mtab').forEach(t=> t.style.display='');
-  document.getElementById('mCover').style.background = c.color;
-  document.getElementById('mBig').textContent = String(i+1).padStart(2,'0');
-  document.getElementById('mTitle').textContent = c.title;
-  document.getElementById('mCap').innerHTML = c.cap.map(x=>`<li>${x}</li>`).join('');
-  document.getElementById('mVal').innerHTML = c.val.map(x=>`<li>${x}</li>`).join('');
-  document.getElementById('mTech').innerHTML = c.tech.map(t=>`<span>${t}</span>`).join('');
-  document.getElementById('mActions').innerHTML = c.actions.map(a=>{
-    const attr = a.dl ? 'download' : (a.target ? 'target="_blank" rel="noopener"' : '');
-    const ico = a.dl ? 'fa-download' : 'fa-up-right-from-square';
-    return `<a class="${a.c}" href="${a.href}" ${attr}><i class="fas ${ico}"></i> ${a.t}</a>`;
+window.addEventListener('hashchange',route);
+/* ===== 项目案例（卡片→新窗口打开报告） ===== */
+const CASES=[
+ {color:'linear-gradient(135deg,#e8730c,#ff9d4d)',icon:'fa-layer-group',tag:'USER VALUE',title:'RFM 用户价值分析案例',desc:'基于 Python(Pandas) 构建 RFM 模型，对线上平台用户做三维度打分与分层，输出可复现的交互式分析报告。',tech:['Python','Pandas','Jupyter'],report:'线上平台用户RFM分析.html',dl:'线上平台用户RFM分析.ipynb'},
+ {color:'linear-gradient(135deg,#2f6fed,#5b8def)',icon:'fa-boxes-stacked',tag:'SQL · INVENTORY',title:'快消品进销存分析',desc:'以 SQL 完成多表取数与清洗，搭建进销存看板 + 分析报告：监控库存、月销与临期风险，完成 ABC 动销与智能补货诊断。',tech:['SQL','Power BI','DAX'],report:'快消品进销存演示案例.pdf',dl:'快消品进销存演示案例.pbix'},
+ {color:'linear-gradient(135deg,#8b5cf6,#a78bfa)',icon:'fa-rotate',tag:'RETENTION · LTV',title:'复购与留存分析',desc:'复购专题双报告：销售趋势、留存、新增/复购拆解，以及母婴店铺「黄金60天」转化归因，核心度量以 DAX 实现。',tech:['Power BI','DAX','归因分析'],report:'复购分析案例.pdf',dl:'复购分析案例.pbix'}
+];
+function renderCases(){document.getElementById('caseGrid').innerHTML=CASES.map((c,i)=>`<article class="case"><div class="case-cover" style="background:${c.color}" data-report="${esc(c.report)}"><span class="big">${String(i+1).padStart(2,'0')}</span><i class="ci fas ${c.icon}"></i><span class="ctag">${c.tag}</span></div><div class="case-body"><h3>${esc(c.title)}</h3><p>${esc(c.desc)}</p><div class="case-foot"><div class="case-tech">${c.tech.map(t=>`<span>${esc(t)}</span>`).join('')}</div><a class="case-dl" href="${esc(c.dl)}" download><i class="fas fa-download"></i> 源文件</a></div></div></article>`).join('');}
+document.getElementById('caseGrid').addEventListener('click',e=>{const cv=e.target.closest('.case-cover');if(cv&&!e.target.closest('.case-dl'))window.open(cv.dataset.report,'_blank');});
+/* ===== 证书 ===== */
+const CERTS=[{n:'CDA 数据分析师',s:'LEVEL-1',img:'./certs/CDA-LEVEL1.jpg'},{n:'Office 计算机',s:'二级证书',img:'./certs/office_level2.jpg'},{n:'英语六级',s:'CET-6',img:'./certs/CET6.jpg'},{n:'普通话',s:'二甲证书',img:'./certs/putonghua.jpg'}];
+function renderCerts(){document.getElementById('certGrid').innerHTML=CERTS.map(c=>`<div class="cert" data-img="${esc(c.img)}"><div class="thumb"><img src="${esc(c.img)}" alt="${esc(c.n)}" loading="lazy" onerror="this.style.display='none'"><div class="zoom"><i class="fas fa-magnifying-glass-plus"></i>查看大图</div></div><div class="cn">${esc(c.n)}<small>${esc(c.s)}</small></div></div>`).join('');}
+document.getElementById('certGrid').addEventListener('click',e=>{const el=e.target.closest('[data-img]');if(el)openLB(el.dataset.img);});
+function openLB(src){document.getElementById('lbImg').src=src;document.getElementById('lightbox').classList.add('on');lockScroll(true);}
+/* ===== 学习成长：数据 + seed 兜底 ===== */
+const GRADS=['linear-gradient(135deg,#e8730c,#ff9d4d)','linear-gradient(135deg,#2f6fed,#5b8def)','linear-gradient(135deg,#1f9d63,#46c98a)','linear-gradient(135deg,#8b5cf6,#a78bfa)'];
+const SEED_LEARNING=[
+ {id:'seed-1',title:'我用 RFM 把 10 万用户分成 8 类，召回效率翻了一倍',content:'刚入职那会儿，运营问我"哪些用户该发券"，我下意识想拉消费 Top。后来才发现，高消费不等于该召回——昨天刚买的人发券，纯属浪费预算。\n\nRFM 三个维度对应三句人话：R 多久没来、F 来得勤不勤、M 花得多不多。\n\n我踩过最大的坑：阈值用均值。skewed 分布下均值会被大户带偏，改成分位数后分层稳多了。\n\n分完之后：重要挽留（R低F高M高）优先人工回访；一般发展（R高F低M低）用黄金60天 nurturing；流失用户低成本触达即可。\n\n方法论的价值在于可迁移——换家公司，把字段对上，框架照样跑。',images:[],links:[{text:'RFM 模型维基百科',url:'https://en.wikipedia.org/wiki/RFM_(market_research)'}],tags:['RFM','Python','用户分层'],emoji:'🎯',created_at:'2026-07-18T09:00:00Z'},
+ {id:'seed-2',title:'SQL 窗口函数：从看不懂到离不开的 30 天',content:'第一次见 OVER (PARTITION BY ... ORDER BY ...) 我是懵的。直到把它理解成"在每个分组里按时间排好队，然后回头看"，瞬间通了。\n\n三个最常用场景：\n1. 取每组最新一条——ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY order_time DESC)\n2. 环比——和上一行比，用 LAG\n3. 累计——SUM() OVER (ORDER BY ...) 不加 partition 即全局累计\n\n我的练习法：别只看书，给自己出 20 道业务真题，写不出来就看答案，但一定自己敲一遍。\n\n30 天后，窗口函数从加分项变成了默认武器。',images:[],links:[{text:'PostgreSQL 窗口函数教程',url:'https://www.postgresqltutorial.com/postgresql-window-function/'}],tags:['SQL','窗口函数','复盘'],emoji:'🪟',created_at:'2026-07-10T09:00:00Z'},
+ {id:'seed-3',title:'转行数据分析这一年，我踩过的 5 个认知坑',content:'一年前我还在为 VLOOKUP 写不对焦虑。今天想聊的不是函数，而是那些没人教、但差点让我放弃的认知坑。\n\n坑1 把"会工具"当成"会分析"。工具是笔，分析是写字。\n坑2 一上来就建模。80% 的时间该花在理解问题上。\n坑3 不敢问业务。问清口径，比闷头算错强一万倍。\n坑4 报告写给自己看。发给外行朋友，他看不懂就是我的问题。\n坑5 只输入不输出。这个博客就是逼自己输出的产物——写出来，才算真的会。\n\n如果你也在转行路上，别急。这条路不卷速度，卷的是持续。共勉。',images:[],links:[],tags:['转行','成长','随笔'],emoji:'🌱',created_at:'2026-06-28T09:00:00Z'}
+];
+let learningList=[],_lp=null;
+function loadLearning(){if(_lp)return _lp;return _lp=(async()=>{
+  try{const res=await withTimeout(sb.from('learning').select('*').order('created_at',{ascending:false}).limit(100),6000);
+    if(!res.error&&res.data&&res.data.length){learningList=res.data.map(p=>({...p,emoji:p.emoji||'📝'}));return{ok:true,cloud:true};}}catch(e){}
+  learningList=SEED_LEARNING.slice();return{ok:true,cloud:false};
+})();}
+function invalidateLearning(){_lp=null;}
+function renderLearningList(){
+  const g=document.getElementById('learningGrid');
+  if(!learningList.length){g.innerHTML='<div class="no-result">还没有学习记录，写第一篇吧 ✍️</div>';return;}
+  g.innerHTML=learningList.map((p,i)=>{
+    const ts=p.created_at?new Date(p.created_at).getTime():Date.now();
+    const imgs=p.images||[];const cover=imgs[0]?`background-image:url('${imgs[0]}')`:`background:${GRADS[i%GRADS.length]}`;
+    const tags=(p.tags||[]).slice(0,3).map(t=>`<span>${esc(t)}</span>`).join('');
+    const ex=(p.content||'').replace(/https?:\/\/\S+/g,'').slice(0,90);
+    return`<article class="postcard" data-id="${esc(p.id)}"><div class="pc-cover" style="${cover}"><span class="pc-emoji">${p.emoji||'📝'}</span><span class="pc-date">${fmtDate(p.created_at||new Date().toISOString())}</span></div><div class="pc-body"><h3>${esc(p.title||'无标题')}</h3><p class="pc-ex">${esc(ex)}</p><div class="pc-tags">${tags}</div></div></article>`;
   }).join('');
-  currentDocs = c.preview || [];
-  const tabPreview = mTabs.querySelector('[data-tab="preview"]');
-  if(currentDocs.length){
-    tabPreview.style.display = '';
-    if(currentDocs.length>1){
-      mDocs.style.display = 'flex';
-      mDocs.innerHTML = currentDocs.map((d,k)=>`<button class="doc-tab ${k===0?'active':''}" data-doc="${k}">${d.label}</button>`).join('');
-    } else { mDocs.style.display = 'none'; mDocs.innerHTML = ''; }
-    loadDoc(0); switchTab('preview');
-  } else {
-    tabPreview.style.display = 'none'; mDocs.style.display = 'none'; mDocs.innerHTML = '';
-    mFrame.src = 'about:blank'; switchTab('detail');
+}
+document.getElementById('learningGrid').addEventListener('click',e=>{const c=e.target.closest('.postcard');if(c)location.hash='read/'+encodeURIComponent(c.dataset.id);});
+function renderRead(p,preview){
+  const ts=p.created_at?new Date(p.created_at).getTime():Date.now();
+  const tags=(p.tags||[]).map(t=>`<span class="mtag">${esc(t)}</span>`).join('');
+  const imgs=p.images||[];
+  const gallery=imgs.length?`<div class="article-gallery">${imgs.map(s=>`<div class="gal-item" data-img="${s}"><img src="${s}" alt=""></div>`).join('')}</div>`:'';
+  const links=p.links||[];
+  const refs=links.length?`<div class="article-refs"><h4><i class="fas fa-link"></i> 参考链接</h4>${links.map(l=>`<a class="ref-card" href="${esc(l.url)}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i><span><b>${esc(l.text||l.url)}</b><small>${esc(l.url)}</small></span><i class="fas fa-external-link-alt"></i></a>`).join('')}</div>`:'';
+  let nav='';
+  if(!preview){
+    const idx=learningList.findIndex(a=>String(a.id)===String(p.id));
+    const newer=idx>0?learningList[idx-1]:null;const older=idx>=0&&idx<learningList.length-1?learningList[idx+1]:null;
+    const card=(a,dir,cls)=>a?`<div class="an ${cls}" data-id="${esc(a.id)}"><i class="fas fa-arrow-${dir}"></i><span><small>${dir==='left'?'上一篇':'下一篇'}</small><b>${esc(a.title||'无标题')}</b></span></div>`:`<div class="an disabled"><i class="fas fa-arrow-${dir}"></i><span><small>${dir==='left'?'上一篇':'下一篇'}</small><b>没有了</b></span></div>`;
+    nav=`<div class="article-nav">${card(older,'left','')}${card(newer,'right','next')}</div>`;
   }
-  modalEl.classList.remove('full'); mExpand.querySelector('i').className = 'fas fa-expand';
-  caseModal.classList.add('on'); lockScroll(true);
+  const bar=preview?`<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>`:`<div class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</div>`;
+  document.getElementById('readInner').innerHTML=`${bar}<article class="article"><h1 class="article-title">${esc(p.title||'无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at||new Date().toISOString())}</span>${tags}</div><div class="article-body">${linkify(p.content||'')}</div>${gallery}${refs}${nav}</article>`;
+  document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g=>g.onclick=()=>openLB(g.dataset.img));
+  const bl=document.getElementById('backList');if(bl)bl.onclick=()=>location.hash='learning';
+  const be=document.getElementById('backEdit');if(be)be.onclick=()=>location.hash='learning';
+  document.getElementById('readInner').querySelectorAll('.an[data-id]').forEach(a=>a.onclick=()=>location.hash='read/'+encodeURIComponent(a.dataset.id));
 }
-function openResume(){
-  mTabs.querySelectorAll('.mtab').forEach(t=> t.style.display = (t.dataset.tab==='detail' ? 'none' : ''));
-  document.getElementById('mCover').style.background = 'linear-gradient(135deg,#e8730c,#ff9d4d)';
-  document.getElementById('mBig').textContent = 'CV';
-  document.getElementById('mTitle').textContent = '个人简历 · 池增历';
-  mDocs.style.display = 'none'; mDocs.innerHTML = '';
-  mFrame.src = RESUME_PDF + '#toolbar=1&navpanes=0&view=FitH';
-  switchTab('preview');
-  document.getElementById('mActions').innerHTML =
-    `<a class="a1" href="${RESUME_PDF}" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> 在新标签打开简历</a>`+
-    `<a class="a2" href="${RESUME_PDF}" download><i class="fas fa-download"></i> 下载简历 PDF</a>`;
-  modalEl.classList.remove('full'); mExpand.querySelector('i').className = 'fas fa-expand';
-  caseModal.classList.add('on'); lockScroll(true);
-}
-
-/* ============ 渲染证书 ============ */
-document.getElementById('certGrid').innerHTML = CERTS.map((c,i)=>`
-  <div class="cert ${c.click?'click':''}" ${c.click?`data-cert="${c.img}"`:''}>
-    <div class="thumb">
-      ${c.img
-        ? `<img src="${c.img}" alt="${c.name}" loading="lazy" decoding="async" onerror="certFallback(this)">
-           <div class="zoom"><i class="fas fa-magnifying-glass-plus"></i>点击查看大图</div>`
-        : `<i class="ph-ico fas ${c.icon}"></i>`}
-    </div>
-    <div class="cn">${c.name}<small>${c.sub}</small></div>
-  </div>`).join('');
-const lightbox = document.getElementById('lightbox');
-document.getElementById('certGrid').addEventListener('click', e=>{
-  const el = e.target.closest('[data-cert]'); if(!el) return;
-  document.getElementById('lbImg').src = el.dataset.cert;
-  lightbox.classList.add('on'); lockScroll(true);
+/* ===== 学习成长：编辑器 ===== */
+let lrImages=[],lrLinks=[];
+function renderThumbs(){document.getElementById('lrThumbs').innerHTML=lrImages.map((s,i)=>`<div class="lr-thumb"><img src="${s}" alt=""><button data-rmimg="${i}">&times;</button></div>`).join('');}
+function renderLinkList(){document.getElementById('lrLinkList').innerHTML=lrLinks.map((l,i)=>`<div class="lr-linkitem"><i class="lk fas fa-link"></i><span class="lt">${esc(l.text||l.url)}<small>${esc(l.url)}</small></span><button data-rmlink="${i}"><i class="fas fa-times"></i></button></div>`).join('');}
+document.getElementById('lrFile').addEventListener('change',async e=>{
+  const files=[...e.target.files];for(const f of files){if(!f.type.startsWith('image/'))continue;lrImages.push(await compress(f));}renderThumbs();e.target.value='';
 });
-
-/* ============ 通用关闭 ============ */
-function lockScroll(on){ document.body.style.overflow = on ? 'hidden' : ''; }
-document.querySelectorAll('.overlay').forEach(ov=>{
-  ov.addEventListener('click', e=>{
-    if(e.target===ov || e.target.closest('[data-close]')){
-      ov.classList.remove('on'); lockScroll(false);
-      if(ov===lightbox) setTimeout(()=>document.getElementById('lbImg').src='',300);
-      if(ov===caseModal){
-        setTimeout(()=>{ mFrame.src='about:blank'; mDocs.innerHTML=''; },300);
-        modalEl.classList.remove('full'); mExpand.querySelector('i').className = 'fas fa-expand';
-      }
-    }
-  });
+document.getElementById('lrThumbs').addEventListener('click',e=>{const b=e.target.closest('[data-rmimg]');if(b){lrImages.splice(+b.dataset.rmimg,1);renderThumbs();}});
+document.getElementById('lrAddLink').addEventListener('click',()=>{
+  const t=document.getElementById('lrLinkText'),u=document.getElementById('lrLinkUrl');
+  const url=u.value.trim();if(!url){u.focus();return;}lrLinks.push({text:t.value.trim()||url,url});t.value='';u.value='';renderLinkList();
 });
-document.addEventListener('keydown', e=>{
-  if(e.key==='Escape'){
-    document.querySelectorAll('.overlay.on').forEach(o=>o.classList.remove('on'));
-    lockScroll(false); mFrame.src='about:blank'; mDocs.innerHTML='';
-    modalEl.classList.remove('full'); mExpand.querySelector('i').className='fas fa-expand';
-  }
-});
-
-/* ============ 联系方式点击复制 ============ */
-document.querySelector('.contact-row').addEventListener('click', async e=>{
-  const b = e.target.closest('[data-contact]'); if(!b) return;
-  const c = CONTACT[b.dataset.contact]; if(!c) return;
-  const ok = await copyText(c.value);
-  showToast(`<b>${c.label}：${c.value}</b><br>${ok?'✓ 已复制 · ':'请手动复制 · '}${c.hint}`);
-});
-
-/* ============ 动态墙：云端实时同步 ============ */
-const postList  = document.getElementById('postList');
-const postInput = document.getElementById('postInput');
-const postTags  = document.getElementById('postTags');
-const postPub   = document.getElementById('postPub');
-const PUB_HTML  = postPub.innerHTML;
-const seenIds   = new Set();   // 去重：防止首次加载与实时推送重复
-
-function postHTML(p){
-  const txt  = esc(p.content ?? p.txt ?? '');
-  const ts   = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
-  const tags = (p.tags||[]).map(t=>`<span>#${esc(t)}</span>`).join('');
-  return `<div class="post"><div class="ph"><div class="pav">历</div>
-    <div><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div></div>
-    <div class="ptxt">${txt}</div>${tags?`<div class="ptags">${tags}</div>`:''}</div>`;
+document.getElementById('lrLinkList').addEventListener('click',e=>{const b=e.target.closest('[data-rmlink]');if(b){lrLinks.splice(+b.dataset.rmlink,1);renderLinkList();}});
+function gatherPost(){return{title:document.getElementById('lrTitle').value.trim(),content:document.getElementById('lrContent').value.trim(),images:lrImages.slice(),links:lrLinks.slice(),tags:document.getElementById('lrTags').value.split(/[,，]/).map(t=>t.trim()).filter(Boolean)};}
+document.getElementById('lrPreview').addEventListener('click',()=>{const p=gatherPost();if(!p.title&&!p.content){showToast('先写点标题或正文再预览');return;}renderRead({...p,created_at:new Date().toISOString(),emoji:'👀'},true);showView('read');setNav('learning');});
+document.getElementById('lrPub').addEventListener('click',publishLearning);
+document.getElementById('lrContent').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();publishLearning();}});
+async function publishLearning(){
+  const p=gatherPost();if(!p.title){document.getElementById('lrTitle').focus();showToast('请填写标题');return;}
+  const btn=document.getElementById('lrPub');btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 发布中…';
+  let err=null;
+  try{const res=await withTimeout(sb.from('learning').insert({title:p.title,content:p.content,images:p.images,links:p.links,tags:p.tags}),8000);err=res.error;}catch(e){err=e;}
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> 发布';
+  if(err){showToast('发布没成功：'+(err.message||err)+'<br>你的内容已保留在编辑框，可切手机热点后重试',6500);return;}
+  document.getElementById('lrTitle').value='';document.getElementById('lrContent').value='';document.getElementById('lrTags').value='';lrImages=[];lrLinks=[];renderThumbs();renderLinkList();
+  invalidateLearning();await loadLearning();renderLearningList();
+  showToast('已发布 ✓ 同步到云端，所有设备可见');
 }
-function renderPosts(posts){
-  if(!posts || !posts.length){ postList.innerHTML='<div class="no-result">还没有动态，发布第一条吧 ✍️</div>'; return; }
-  postList.innerHTML = posts.map(postHTML).join('');
-}
-async function loadPosts(){
-  const {data, error} = await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(50);
-  if(error){ showToast('动态加载失败：'+error.message); postList.innerHTML='<div class="no-result">动态加载失败，请刷新重试</div>'; return; }
-  seenIds.clear();
-  (data||[]).forEach(p=> seenIds.add(p.id));
-  renderPosts(data);
-}
-function subscribeRealtime(){
-  sb.channel('posts-rt')
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},(pl)=>{
-      const p = pl.new; if(!p || seenIds.has(p.id)) return;
-      seenIds.add(p.id);
-      const empty = postList.querySelector('.no-result'); if(empty) empty.remove();
-      postList.insertAdjacentHTML('afterbegin', postHTML(p));
-    })
-    .subscribe();
-}
-async function publish(){
-  const content = postInput.value.trim(); if(!content){ postInput.focus(); return; }
-  const tags = postTags.value.split(/[,，]/).map(t=>t.trim()).filter(Boolean);
-  postPub.disabled = true; postPub.textContent = '发布中…';
-  const {error} = await sb.from('posts').insert({content, tags});
-  postPub.innerHTML = PUB_HTML; postPub.disabled = false;
-  if(error){ showToast('发布失败：'+error.message); return; }
-  postInput.value=''; postTags.value='';
-  showToast('已发布 ✓ 正在实时同步到所有设备…');
-  // 新条目由实时订阅推回渲染（含自己这条），无需手动插入，避免重复
-}
-postPub.addEventListener('click', publish);
-postInput.addEventListener('keydown', e=>{
-  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); publish(); }
-});
-loadPosts(); subscribeRealtime();
-
-/* ============ 实时日期 / 时钟 / 农历 ============ */
-const WK = ['日','一','二','三','四','五','六'];
-function getLunar(d){
-  try{
-    const parts = new Intl.DateTimeFormat('zh-CN-u-ca-chinese',{month:'numeric',day:'numeric'}).formatToParts(d);
-    const m = parts.find(p=>p.type==='month'), day = parts.find(p=>p.type==='day');
-    if(m && day) return '农历'+m.value+'月'+day.value;
-  }catch(e){}
-  return '';
-}
-function greet(h){ return h<5?'夜深了':h<11?'早上好':h<13?'中午好':h<18?'下午好':'晚上好'; }
-function tick(){
-  const d = new Date();
-  const lunar = getLunar(d);
-  document.getElementById('dateText').innerHTML =
-    `今天是 <b>${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日</b>，周${WK[d.getDay()]}${lunar?'，'+lunar:''} · ${greet(d.getHours())}`;
-  const p = n=>String(n).padStart(2,'0');
-  document.getElementById('clock').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-tick(); setInterval(tick,1000);
-
-/* ============ 主题切换 ============ */
-const root = document.documentElement;
-const themeBtn = document.getElementById('themeBtn');
-function setTheme(t){
-  root.setAttribute('data-theme', t);
-  localStorage.setItem('chi_theme', t);
-  themeBtn.innerHTML = t==='dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-}
-setTheme(localStorage.getItem('chi_theme') || (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
-themeBtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark'));
-
-/* ============ 导航平滑跳转 + 滚动高亮 ============ */
-const navLinks = [...document.querySelectorAll('#nav a')];
-const secs = navLinks.map(a=>document.querySelector(a.getAttribute('href')));
-navLinks.forEach(a=> a.addEventListener('click', e=>{
-  e.preventDefault();
-  const t = document.querySelector(a.getAttribute('href'));
-  if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
-}));
-const toTop = document.getElementById('toTop');
-function onScroll(){
-  const y = window.scrollY + window.innerHeight*0.32;
-  let cur = 0;
-  secs.forEach((s,i)=>{ if(s && s.offsetTop<=y) cur=i; });
-  navLinks.forEach((a,i)=> a.classList.toggle('active', i===cur));
-  toTop.classList.toggle('show', window.scrollY>500);
-}
-window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
-toTop.addEventListener('click', ()=> window.scrollTo({top:0,behavior:'smooth'}));
-
-/* ============ 滚动 reveal ============ */
-const io = new IntersectionObserver(es=>{
-  es.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
-},{threshold:.12});
-document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
+/* ===== 生活随笔：实时同步 + 降级 ===== */
+const postList=document.getElementById('postList'),postInput=document.getElementById('postInput'),postTags=document.getElementById('postTags'),postPub=document.getElementById('postPub');
+const PUB_HTML=postPub.innerHTML,seenIds=new Set(),LKEY='chi_posts_local_v1';let cloudOK=true;
+const SEED_LIFE=[{id:'sl1',content:'今天把进销存看板的"该补货吗"挪到了第一屏。看板的第一屏只该回答一个问题。',tags:['复盘'],created_at:'2026-07-20T21:30:00Z'},{id:'sl2',content:'周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾',tags:['生活'],created_at:'2026-07-13T18:00:00Z'}];
+function loadLocal(){try{const r=JSON.parse(localStorage.getItem(LKEY));if(Array.isArray(r))return r;}catch(e){}return[];}
+function saveLocal(p){localStorage.setItem(LKEY,JSON.stringify(p));}
+function setLiveBadge(on){const el=document.getElementById('postModeBadge');if(on){el.className='post-mode live';el.innerHTML='<i class="fas fa-tower-broadcast"></i> 实时同步';}else{el.className='post-mode';el.innerHTML='<i class="fas fa-hard-drive"></i> 本机暂存';}}
+function setSubText(on){document.getElementById('postSubText').innerHTML=on?'分析之外的日常碎片。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到。':'分析之外的日常碎片。<b>云端暂时连不上</b>，已自动切到<b>本机暂存</b>（仅本机可见；恢复后刷新即实时同步）。';}
+function postHTML(p){const txt=esc(p.content??p.txt??'');const ts=p.created_at?new Date(p.created_at).getTime():(p.ts||Date.now());const tags=(p.tags||[]).map(t=>`<span>#${esc(t)}</span>`).join('');return`<div class="post"><div class="ph"><div class="pav">历</div><div><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div></div><div class="ptxt">${txt}</div>${tags?`<div class="ptags">${tags}</div>`:''}</div>`;}
+function renderPosts(posts,off){if(!posts||!posts.length){postList.innerHTML=off?'<div class="no-result">离线暂存模式，先写一条存本机吧 ✍️</div>':'<div class="no-result">还没有随笔，写第一条吧 ✍️</div>';return;}postList.innerHTML=posts.map(postHTML).join('');}
+async function loadPosts(){let data=null,err=null;try{const res=await withTimeout(sb.from('posts').select('*').order('created_at',{ascending:false}).limit(50),6000);data=res.data;err=res.error;}catch(e){err=e;}
+  if(err||data===null){cloudOK=false;setLiveBadge(false);setSubText(false);renderPosts(loadLocal(),true);return;}
+  cloudOK=true;setLiveBadge(true);setSubText(true);seenIds.clear();(data||[]).forEach(p=>seenIds.add(p.id));renderPosts(data,false);}
+function subscribeRT(){try{sb.channel('posts-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},pl=>{if(!cloudOK)return;const p=pl.new;if(!p||seenIds.has(p.id))return;seenIds.add(p.id);const e=postList.querySelector('.no-result');if(e)e.remove();postList.insertAdjacentHTML('afterbegin',postHTML(p));}).subscribe();}catch(e){}}
+async function publishLife(){const content=postInput.value.trim();if(!content){postInput.focus();return;}const tags=postTags.value.split(/[,，]/).map(t=>t.trim()).filter(Boolean);postPub.disabled=true;postPub.textContent='发布中…';
+  if(cloudOK){let err=null;try{const res=await withTimeout(sb.from('posts').insert({content,tags}),6000);err=res.error;}catch(e){err=e;}postPub.innerHTML=PUB_HTML;postPub.disabled=false;
+    if(!err){postInput.value='';postTags.value='';showToast('已发布 ✓ 实时同步中…');return;}
+    cloudOK=false;setLiveBadge(false);setSubText(false);const l=loadLocal();l.unshift({content,tags,ts:Date.now()});saveLocal(l);renderPosts(l,true);postInput.value='';postTags.value='';showToast('云端连不上，已暂存本机',5200);return;}
+  const l=loadLocal();l.unshift({content,tags,ts:Date.now()});saveLocal(l);renderPosts(l,true);postPub.innerHTML=PUB_HTML;postPub.disabled=false;postInput.value='';postTags.value='';showToast('已暂存本机 · 恢复后刷新即同步',5200);}
+postPub.addEventListener('click',publishLife);
+postInput.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();publishLife();}});
+/* ===== 联系方式 ===== */
+const CONTACT={wechat:{l:'微信号',v:'chieee_ya',h:'打开微信「添加朋友」粘贴'},qq:{l:'QQ 号',v:'954567763',h:'打开 QQ 添加好友'},phone:{l:'电话',v:'18271645570',h:'可直接拨打'},email:{l:'邮箱',v:'chift0707@gmail.com',h:'粘贴到收件人写信'}};
+document.querySelector('.contact-row').addEventListener('click',async e=>{const b=e.target.closest('[data-contact]');if(!b)return;const c=CONTACT[b.dataset.contact];if(!c)return;const ok=await copyText(c.v);showToast(`<b>${c.l}：${c.v}</b><br>${ok?'✓ 已复制 · ':'请手动复制 · '}${c.h}`);});
+/* ===== 关闭 lightbox ===== */
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target.id==='lightbox'||e.target.closest('[data-close]')){document.getElementById('lightbox').classList.remove('on');lockScroll(false);setTimeout(()=>document.getElementById('lbImg').src='',300);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('lightbox').classList.remove('on');lockScroll(false);}});
+/* ===== 主题 / 时钟 / 回顶 ===== */
+const root=document.documentElement,themeBtn=document.getElementById('themeBtn');
+function setTheme(t){root.setAttribute('data-theme',t);localStorage.setItem('chi_theme',t);themeBtn.innerHTML=t==='dark'?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>';}
+setTheme(localStorage.getItem('chi_theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+themeBtn.onclick=()=>setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+const WK=['日','一','二','三','四','五','六'];
+function getLunar(d){try{const p=new Intl.DateTimeFormat('zh-CN-u-ca-chinese',{month:'numeric',day:'numeric'}).formatToParts(d);const m=p.find(x=>x.type==='month'),day=p.find(x=>x.type==='day');if(m&&day)return'农历'+m.value+'月'+day.value;}catch(e){}return'';}
+function greet(h){return h<5?'夜深了':h<11?'早上好':h<13?'中午好':h<18?'下午好':'晚上好';}
+function tick(){const d=new Date(),l=getLunar(d);document.getElementById('dateText').innerHTML=`今天是 <b>${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日</b>，周${WK[d.getDay()]}${l?'，'+l:''} · ${greet(d.getHours())}`;const p=n=>String(n).padStart(2,'0');document.getElementById('clock').textContent=`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;}
+tick();setInterval(tick,1000);
+const toTop=document.getElementById('toTop');
+window.addEventListener('scroll',()=>toTop.classList.toggle('show',window.scrollY>500),{passive:true});
+toTop.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+/* ===== 启动 ===== */
+renderCases();renderCerts();loadPosts();subscribeRT();route();
 </script>
 </body>
 </html>
