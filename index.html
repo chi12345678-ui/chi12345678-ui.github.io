@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>欢迎访问我的数据分析作品集 | Data Analytics Portfolio</title>
+    <title>欢迎来到我的数据分析作品集 | Data Analytics Portfolio</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
@@ -13,7 +13,7 @@
             --gray: #e0e0e0;
             --dark: #2c3e50;
             --success: #27ae60;
-            --accent: #e74c3c; /* 主案例强调色 */
+            --accent: #e74c3c;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,12 +24,15 @@
             color: var(--dark);
             background-color: #fafafa;
             padding: 20px;
+            position: relative;
+            min-height: 100vh;
         }
 
-        .container { 
+        .container {
             max-width: 1600px;
-            margin: 0 auto; 
+            margin: 0 auto;
             width: 95%;
+            padding-bottom: 60px;
         }
 
         header { text-align: center; margin-bottom: 40px; padding: 20px; }
@@ -63,6 +66,7 @@
             box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         }
 
+        /* ========== 通用卡片样式（Power BI 案例沿用） ========== */
         .case-card {
             display: flex;
             flex-wrap: wrap;
@@ -74,36 +78,6 @@
             margin-bottom: 32px;
             border: 1px solid var(--gray);
             min-height: 900px;
-        }
-
-        /* 🔥 主案例样式强化 */
-        .case-card.featured {
-            border: 2px solid var(--secondary);
-            box-shadow: 0 6px 30px rgba(52, 152, 219, 0.15);
-            position: relative;
-        }
-        .case-card.featured::before {
-            content: '⭐ 主推案例';
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--secondary);
-            color: white;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 4px 14px;
-            border-bottom-left-radius: 8px;
-            z-index: 10;
-            letter-spacing: 1px;
-        }
-        .case-card.featured .case-info {
-            background: linear-gradient(135deg, #f8f9fa 0%, #eaf2f8 100%);
-        }
-        .case-card.featured .btn-primary {
-            background: var(--accent);
-        }
-        .case-card.featured .btn-primary:hover {
-            background: #c0392b;
         }
 
         .case-info {
@@ -148,6 +122,7 @@
             padding-top: 20px;
             border-top: 1px dashed var(--gray);
         }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -173,7 +148,6 @@
             position: relative;
             background: #fff;
         }
-
         .pdf-preview iframe {
             width: 100%;
             height: 100%;
@@ -182,12 +156,119 @@
             display: block;
         }
 
+        /* ========== 🔥 RFM 主案例：全宽长条卡片 ========== */
+        .case-card.featured {
+            flex-direction: column;
+            min-height: auto;
+            border: 2px solid var(--secondary);
+            box-shadow: 0 6px 30px rgba(52, 152, 219, 0.15);
+            position: relative;
+        }
+        .case-card.featured::before {
+            content: '⭐ 主推案例';
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--secondary);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 14px;
+            border-bottom-left-radius: 8px;
+            z-index: 10;
+            letter-spacing: 1px;
+        }
+        .case-card.featured .case-info {
+            flex: none;
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--gray);
+            background: linear-gradient(135deg, #f8f9fa 0%, #eaf2f8 100%);
+            padding: 40px 50px;
+        }
+        .case-card.featured .case-info h3 {
+            font-size: 1.6rem;
+            margin-bottom: 24px;
+        }
+        .case-card.featured .featured-body {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        .case-card.featured .featured-body .capabilities,
+        .case-card.featured .featured-body .value {
+            flex: 1;
+            min-width: 280px;
+            margin-bottom: 0;
+        }
+        .case-card.featured .actions {
+            border-top: none;
+            padding-top: 28px;
+            gap: 16px;
+        }
+        .case-card.featured .btn-primary {
+            background: var(--accent);
+            padding: 14px 32px;
+            font-size: 1rem;
+        }
+        .case-card.featured .btn-primary:hover {
+            background: #c0392b;
+        }
+        .case-card.featured .btn-outline {
+            padding: 14px 32px;
+            font-size: 1rem;
+        }
+        /* 主案例预览提示条 */
+        .featured-preview-bar {
+            background: #f0f4f8;
+            border-top: 1px solid var(--gray);
+            padding: 20px 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: #555;
+            font-size: 0.95rem;
+        }
+        .featured-preview-bar i { color: var(--secondary); font-size: 1.2rem; }
+        .featured-preview-bar a {
+            color: var(--secondary);
+            font-weight: 600;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .featured-preview-bar a:hover { color: var(--accent); }
+
+        /* ========== 右下角创作者署名 ========== */
+        .creator-badge {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            background: white;
+            color: var(--dark);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            border: 1px solid var(--gray);
+        }
+        .creator-badge i { color: var(--secondary); }
+
+        /* ========== 响应式 ========== */
         @media (max-width: 900px) {
-            .container { width: 100%; padding: 0 10px; }
+            .container { width: 100%; padding: 0 10px 80px; }
             .case-card { flex-direction: column; min-height: auto; }
             .case-info { flex: none; width: 100%; border-right: none; border-bottom: 1px solid var(--gray); }
             .pdf-preview iframe { min-height: 600px; height: 600px; }
-            .case-card.featured::before { font-size: 0.65rem; padding: 3px 10px; }
+            .case-card.featured .case-info { padding: 25px 20px; }
+            .case-card.featured .featured-body { flex-direction: column; gap: 20px; }
+            .featured-preview-bar { padding: 16px 20px; flex-direction: column; text-align: center; }
+            .creator-badge { right: 12px; bottom: 12px; font-size: 0.8rem; padding: 8px 16px; }
         }
 
         footer {
@@ -198,43 +279,54 @@
             margin-top: 40px;
             border-top: 1px solid var(--gray);
         }
+        footer a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        footer a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📊 分析案例展示</h1>
+            <h1>欢迎来到我的数据分析作品集</h1>
             <p class="intro">基于 Python 与 Power BI 构建的实战分析报告，支持在线预览与源文件下载。所有案例均使用模拟数据，聚焦方法论可迁移性。</p>
         </header>
 
-        <!-- ✅ 主案例：RFM用户价值分析（置顶 + 视觉强化） -->
+        <!-- ✅ 主案例：RFM用户价值分析（全宽长条卡片） -->
         <div class="case-card featured">
             <div class="case-info">
                 <h3><i class="fas fa-layer-group"></i> RFM用户价值分析案例</h3>
-                <div class="capabilities">
-                    <h4><i class="fas fa-cogs"></i> 核心能力</h4>
-                    <ul>
-                        <li>基于Python(Pandas)清洗交易数据并构建RFM模型</li>
-                        <li>R/F/M三维度打分与用户分层（重要价值/挽留/流失等）</li>
-                        <li>各层级用户数量、消费金额占比可视化</li>
-                        <li>Jupyter Notebook交互式分析全流程可复现</li>
-                    </ul>
-                </div>
-                <div class="value">
-                    <h4><i class="fas fa-chart-line"></i> 业务价值</h4>
-                    <ul>
-                        <li>精准识别高价值用户群，指导差异化营销资源投放</li>
-                        <li>量化用户流失风险，制定针对性召回策略</li>
-                        <li>提供可复用的Python用户分层方法论模板</li>
-                    </ul>
+                <div class="featured-body">
+                    <div class="capabilities">
+                        <h4><i class="fas fa-cogs"></i> 核心能力</h4>
+                        <ul>
+                            <li>基于Python(Pandas)清洗交易数据并构建RFM模型</li>
+                            <li>R/F/M三维度打分与用户分层（重要价值/挽留/流失等）</li>
+                            <li>各层级用户数量、消费金额占比可视化</li>
+                            <li>Jupyter Notebook交互式分析全流程可复现</li>
+                        </ul>
+                    </div>
+                    <div class="value">
+                        <h4><i class="fas fa-chart-line"></i> 业务价值</h4>
+                        <ul>
+                            <li>精准识别高价值用户群，指导差异化营销资源投放</li>
+                            <li>量化用户流失风险，制定针对性召回策略</li>
+                            <li>提供可复用的Python用户分层方法论模板</li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="actions">
-                    <a href="RFM用户价值分析案例.html" class="btn btn-primary" target="_blank"><i class="fas fa-external-link-alt"></i> 在线预览</a>
-                    <a href="RFM用户价值分析案例.ipynb" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .ipynb</a>
+                    <a href="RFM用户价值分析案例.html" class="btn btn-primary" target="_blank"><i class="fas fa-external-link-alt"></i> 新标签页预览报告</a>
+                    <a href="RFM用户价值分析案例.ipynb" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .ipynb 源码</a>
                 </div>
             </div>
-            <div class="pdf-preview">
-                <iframe src="RFM用户价值分析案例.html" allowfullscreen></iframe>
+            <!-- 预览提示条（替代有问题的iframe） -->
+            <div class="featured-preview-bar">
+                <i class="fas fa-info-circle"></i>
+                <span>该报告为 Jupyter Notebook 导出的交互式 HTML，含动态图表与代码。</span>
+                <a href="RFM用户价值分析案例.html" target="_blank">👉 点击此处在新标签页中完整预览</a>
             </div>
         </div>
 
@@ -363,9 +455,15 @@
         </div>
 
         <footer>
-            © 2025 数据分析作品集 | 所有报告基于模拟数据构建，仅用于方法论展示与技术交流<br>
-            💡 提示：PDF 在移动端建议点击「下载」后用阅读器查看以获得最佳体验
+            © 2026 数据分析作品集 | 所有报告基于模拟数据构建，仅用于方法论展示与技术交流<br>
+            💡 提示：PDF 在移动端建议点击「下载」后用阅读器查看以获得最佳体验<br>
+            📧 联系邮箱：<a href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>
         </footer>
+    </div>
+
+    <!-- 右下角创作者署名 -->
+    <div class="creator-badge">
+        <i class="fas fa-pen-nib"></i> 创作者：池鹅
     </div>
 </body>
 </html>
