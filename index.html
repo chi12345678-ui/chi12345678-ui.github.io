@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!-- 云端实时同步（动态墙） -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --side-w:312px;
@@ -48,7 +50,6 @@ img{display:block;max-width:100%}
 .side{width:var(--side-w);flex:0 0 var(--side-w);height:100vh;position:sticky;top:0;
   background:var(--panel);border-right:1px solid var(--line);
   display:flex;flex-direction:column;padding:40px 28px 24px;z-index:60;transition:background .4s,border-color .4s}
-/* 头部：头像在上、名字在下，完整缩放 + 舒展留白 */
 .brand{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:14px}
 .avatar{width:108px;height:134px;border-radius:24px;object-fit:contain;flex:0 0 134px;
   border:2px solid var(--line);box-shadow:var(--shadow);background:var(--accent-soft)}
@@ -56,13 +57,13 @@ img{display:block;max-width:100%}
   background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;font-family:var(--disp);font-weight:700;font-size:46px}
 .brand-txt{margin-top:26px;width:100%}
 .brand-txt h1{font-family:var(--disp);font-size:29px;font-weight:700;letter-spacing:.3px;line-height:1.15}
-.brand-txt p{font-size:15.5px;color:var(--ink-3);margin-top:8px;font-weight:500}
-.sign{font-size:18px;color:var(--ink-2);margin:26px 2px 34px;font-style:italic;
+.brand-txt p{font-size:16.5px;color:var(--ink-3);margin-top:8px;font-weight:500}
+.sign{font-size:19px;color:var(--ink-2);margin:26px 2px 34px;font-style:italic;
   border-left:2px solid var(--accent);padding-left:12px}
 
 .search{position:relative;margin-bottom:40px}
 .search input{width:100%;padding:13px 14px 13px 42px;border:1px solid var(--line);border-radius:14px;
-  background:var(--panel-2);color:var(--ink);font-size:16px;font-family:var(--body);transition:.25s}
+  background:var(--panel-2);color:var(--ink);font-size:17px;font-family:var(--body);transition:.25s}
 .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:14px}
 
@@ -89,7 +90,7 @@ img{display:block;max-width:100%}
   text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .sec-tag::before{content:'';width:22px;height:2px;background:var(--accent)}
 .sec-h{font-family:var(--disp);font-size:clamp(30px,3.6vw,44px);font-weight:600;letter-spacing:.5px;margin-bottom:8px}
-.sec-sub{color:var(--ink-2);font-size:19.5px;max-width:700px;margin-bottom:42px}
+.sec-sub{color:var(--ink-2);font-size:21px;max-width:720px;margin-bottom:42px}
 
 .tools{position:fixed;top:22px;right:26px;display:flex;gap:10px;z-index:80}
 .tools button{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel);
@@ -106,47 +107,44 @@ img{display:block;max-width:100%}
 
 .datebar{display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;margin:24px 0 34px;
   padding:13px 24px;border:1px solid var(--line);border-radius:40px;background:var(--panel);box-shadow:var(--shadow)}
-.datebar .d{font-size:17px;color:var(--ink-2)}
+.datebar .d{font-size:18.5px;color:var(--ink-2)}
 .datebar .d b{color:var(--ink);font-weight:700}
 .datebar .sep{width:1px;height:16px;background:var(--line)}
-.datebar .clock{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--accent);letter-spacing:1px}
+.datebar .clock{font-family:var(--mono);font-size:18.5px;font-weight:700;color:var(--accent);letter-spacing:1px}
 
-.intro p{font-size:22px;color:var(--ink-2);max-width:840px;margin-bottom:20px}
+.intro p{font-size:24px;color:var(--ink-2);max-width:860px;margin-bottom:22px}
 .intro p .em{color:var(--ink);font-weight:700}
-.intro p .lead{font-size:28px}
+.intro p .lead{font-size:31px}
 .intro .ico{margin-right:6px}
 a.mailinline{color:var(--blue);font-weight:700;border-bottom:2px solid transparent;transition:.2s}
 a.mailinline:hover{border-color:var(--blue)}
-/* 联系注脚：小字 + 高亮邮箱，放在最后 */
-.contact-note{font-size:15.5px;color:var(--ink-3);margin-top:30px;max-width:780px;line-height:1.7}
+.contact-note{font-size:17px;color:var(--ink-3);margin-top:30px;max-width:800px;line-height:1.7}
 
 /* ===== 简介/优势 ===== */
 .about-wrap{display:grid;grid-template-columns:1.5fr 1fr;gap:46px;align-items:start}
-.about-wrap .lede{font-size:23px;color:var(--ink-2);line-height:1.9}
+.about-wrap .lede{font-size:25px;color:var(--ink-2);line-height:1.9}
 .about-wrap .lede b{color:var(--ink)}
 .facts{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow)}
 .facts h4{font-family:var(--disp);font-size:16px;letter-spacing:1px;color:var(--ink-3);text-transform:uppercase;margin-bottom:18px;font-weight:600}
 .fact{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px dashed var(--line)}
 .fact:last-child{border-bottom:none}
 .fact .num{font-family:var(--disp);font-size:34px;font-weight:600;color:var(--accent);line-height:1}
-.fact .lab{font-size:16px;color:var(--ink-2)}
-.fact .lab b{display:block;color:var(--ink);font-size:17px}
+.fact .lab{font-size:17.5px;color:var(--ink-2)}
+.fact .lab b{display:block;color:var(--ink);font-size:18.5px}
 
 .edges{margin-top:48px;display:flex;flex-direction:column;gap:0}
 .edge{display:grid;grid-template-columns:96px 1fr;gap:24px;padding:28px 0;border-top:1px solid var(--line);transition:.25s}
 .edge:hover{padding-left:10px}
 .edge .no{font-family:var(--disp);font-size:52px;font-weight:600;color:var(--line);line-height:1;transition:.25s}
 .edge:hover .no{color:var(--accent)}
-.edge h3{font-size:23px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.edge h3 i{color:var(--accent);font-size:19px}
-.edge p{color:var(--ink-2);font-size:17.5px;max-width:700px}
+.edge h3{font-size:25px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.edge h3 i{color:var(--accent);font-size:20px}
+.edge p{color:var(--ink-2);font-size:19px;max-width:720px}
 
-/* 个人简介内的小标题 */
-.block-h{font-family:var(--disp);font-size:25px;font-weight:600;margin:58px 0 24px;display:flex;align-items:center;gap:13px;letter-spacing:.3px}
-.block-h i{color:var(--accent);font-size:21px}
+.block-h{font-family:var(--disp);font-size:27px;font-weight:600;margin:58px 0 24px;display:flex;align-items:center;gap:13px;letter-spacing:.3px}
+.block-h i{color:var(--accent);font-size:22px}
 .block-h .k{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--ink-3);font-weight:500;margin-left:4px}
 
-/* 技能专长 */
 .skill-list{display:flex;flex-direction:column;gap:14px}
 .skill{display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:start;background:var(--panel);
   border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);transition:.25s}
@@ -154,30 +152,28 @@ a.mailinline:hover{border-color:var(--blue)}
 .skill .si{width:56px;height:56px;border-radius:15px;background:var(--accent-soft);color:var(--accent-ink);
   display:grid;place-items:center;font-size:23px}
 [data-theme="dark"] .skill .si{color:var(--accent)}
-.skill h4{font-size:19.5px;font-weight:700;margin-bottom:5px}
-.skill p{font-size:16.5px;color:var(--ink-2);line-height:1.7}
+.skill h4{font-size:21.5px;font-weight:700;margin-bottom:5px}
+.skill p{font-size:18.5px;color:var(--ink-2);line-height:1.7}
 
-/* 荣誉 / 成果 */
 .honor a{display:flex;align-items:center;gap:18px;background:var(--panel);border:1px solid var(--line);
   border-radius:16px;padding:20px 22px;box-shadow:var(--shadow);transition:.25s}
 .honor a:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:var(--shadow-lg)}
 .honor .hi-ico{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
   color:#fff;display:grid;place-items:center;font-size:23px;flex:0 0 56px}
 .honor .ht{flex:1;min-width:0}
-.honor .ht b{display:block;font-size:18.5px;font-weight:700;margin-bottom:5px}
-.honor .ht span{font-size:15.5px;color:var(--ink-2)}
+.honor .ht b{display:block;font-size:20.5px;font-weight:700;margin-bottom:5px}
+.honor .ht span{font-size:17px;color:var(--ink-2)}
 .honor .go{color:var(--accent);font-size:19px;transition:.2s;flex:0 0 auto}
 .honor a:hover .go{transform:translateX(5px)}
 
-/* 简历卡片 */
 .resume-card{display:flex;align-items:center;gap:22px;flex-wrap:wrap;
   background:linear-gradient(135deg,var(--accent-soft),var(--panel));
   border:1.5px solid var(--accent);border-radius:20px;padding:24px 26px;box-shadow:var(--shadow)}
 .resume-card .ri{width:62px;height:62px;border-radius:16px;background:var(--accent);color:#fff;
   display:grid;place-items:center;font-size:26px;flex:0 0 62px}
 .resume-card .rt{flex:1;min-width:220px}
-.resume-card .rt b{display:block;font-size:18px;font-weight:700;margin-bottom:5px;word-break:break-all;line-height:1.4}
-.resume-card .rt span{font-size:14.5px;color:var(--ink-2)}
+.resume-card .rt b{display:block;font-size:19.5px;font-weight:700;margin-bottom:5px;word-break:break-all;line-height:1.4}
+.resume-card .rt span{font-size:16px;color:var(--ink-2)}
 .resume-actions{display:flex;gap:12px;flex-wrap:wrap}
 .ra-btn{padding:12px 20px;border-radius:12px;font-weight:700;font-size:14.5px;cursor:pointer;
   display:inline-flex;align-items:center;gap:8px;transition:.22s;font-family:var(--body);text-decoration:none}
@@ -198,35 +194,38 @@ a.mailinline:hover{border-color:var(--blue)}
 .case-cover .ctag{position:relative;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;
   background:rgba(255,255,255,.2);backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px}
 .case-body{padding:22px;flex:1;display:flex;flex-direction:column}
-.case-body h3{font-size:22px;font-weight:700;line-height:1.3;margin-bottom:11px;letter-spacing:.2px}
-.case-body p{font-size:15.5px;color:var(--ink-2);flex:1;margin-bottom:16px}
+.case-body h3{font-size:24px;font-weight:700;line-height:1.3;margin-bottom:11px;letter-spacing:.2px}
+.case-body p{font-size:17.5px;color:var(--ink-2);flex:1;margin-bottom:16px}
 .case-foot{display:flex;align-items:center;justify-content:space-between}
 .case-tech{display:flex;gap:6px;flex-wrap:wrap}
-.case-tech span{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);background:var(--panel-2);padding:3px 9px;border-radius:6px}
-.case-more{font-size:14px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px}
+.case-tech span{font-family:var(--mono);font-size:14px;color:var(--ink-3);background:var(--panel-2);padding:4px 10px;border-radius:6px}
+.case-more{font-size:15px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px}
 .case-more i{transition:.2s}
 .case:hover .case-more i{transform:translateX(4px)}
-.no-result{grid-column:1/-1;text-align:center;color:var(--ink-3);padding:50px;font-size:16px}
+.no-result{grid-column:1/-1;text-align:center;color:var(--ink-3);padding:50px;font-size:17px}
 
-/* ===== 帖子/动态 ===== */
+/* ===== 帖子/动态（云端实时） ===== */
 .post-mode{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink-3);
   background:var(--panel-2);border:1px solid var(--line);padding:5px 12px;border-radius:20px;margin-left:12px;vertical-align:middle}
 .post-mode i{color:var(--accent)}
+.post-mode.live{color:var(--green);border-color:var(--green);background:transparent}
+.post-mode.live i{color:var(--green)}
 .post-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);margin-bottom:30px}
 .post-box .row1{display:flex;gap:14px}
 .post-box .pav{width:42px;height:42px;border-radius:13px;flex:0 0 42px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
   color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:600}
 .post-box textarea{flex:1;resize:vertical;min-height:74px;border:1px solid var(--line);border-radius:14px;
-  padding:12px 14px;font-family:var(--body);font-size:16.5px;color:var(--ink);background:var(--panel-2);transition:.2s}
+  padding:12px 14px;font-family:var(--body);font-size:18px;color:var(--ink);background:var(--panel-2);transition:.2s}
 .post-box textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .post-box .row2{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
 .post-box input.tags{flex:1;min-width:160px;border:1px solid var(--line);border-radius:12px;padding:9px 13px;
-  font-family:var(--mono);font-size:14px;color:var(--ink);background:var(--panel-2)}
+  font-family:var(--mono);font-size:15px;color:var(--ink);background:var(--panel-2)}
 .post-box input.tags:focus{border-color:var(--accent);outline:none}
 .post-box .hint{font-size:13px;color:var(--ink-3)}
 .btn{border:none;cursor:pointer;font-family:var(--body);font-weight:700;border-radius:12px;transition:.22s;font-size:15px}
 .btn-pub{background:var(--accent);color:#fff;padding:10px 22px}
 .btn-pub:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}
+.btn-pub:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
 
 .posts{display:flex;flex-direction:column;gap:18px}
 .post{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);
@@ -236,15 +235,11 @@ a.mailinline:hover{border-color:var(--blue)}
 .post .ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .post .ph .pav{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
   color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:600;font-size:15px}
-.post .ph .who{font-weight:700;font-size:16px}
+.post .ph .who{font-weight:700;font-size:17.5px}
 .post .ph .when{font-size:13px;color:var(--ink-3);font-family:var(--mono)}
-.post .ptxt{font-size:17.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.post .ptxt{font-size:19.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
 .post .ptags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
-.post .ptags span{font-size:13px;color:var(--accent-ink);background:var(--accent-soft);padding:3px 10px;border-radius:20px;font-weight:600}
-.post .del{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:9px;border:none;background:transparent;
-  color:var(--ink-3);cursor:pointer;transition:.2s;display:grid;place-items:center}
-.post .del:hover{background:#fdecea;color:#e23b3b}
-[data-theme="dark"] .post .del:hover{background:#3a2420}
+.post .ptags span{font-size:14.5px;color:var(--accent-ink);background:var(--accent-soft);padding:3px 10px;border-radius:20px;font-weight:600}
 
 /* ===== 证书 ===== */
 .cert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px}
@@ -346,15 +341,17 @@ footer a{color:var(--accent);font-weight:600}
   .side-foot{display:none}
   .sec{padding:54px 20px}
   .tools{top:14px;right:14px}
-  .intro p{font-size:19px}
-  .intro p .lead{font-size:24px}
-  .contact-note{font-size:14.5px}
-  .about-wrap .lede{font-size:20px}
+  .intro p{font-size:21px}
+  .intro p .lead{font-size:26px}
+  .contact-note{font-size:15.5px}
+  .about-wrap .lede{font-size:22px}
   .edge{grid-template-columns:64px 1fr;gap:14px}
   .edge .no{font-size:40px}
-  .edge h3{font-size:19px}
-  .edge p{font-size:15.5px}
-  .block-h{font-size:22px;margin:42px 0 18px}
+  .edge h3{font-size:21px}
+  .edge p{font-size:17px}
+  .block-h{font-size:23px;margin:42px 0 18px}
+  .case-body p{font-size:16px}
+  .post .ptxt{font-size:17.5px}
 }
 </style>
 </head>
@@ -449,7 +446,6 @@ footer a{color:var(--accent);font-weight:600}
         <div class="edge"><div class="no">03</div><div><h3><i class="fas fa-bullseye"></i>业务落地</h3><p>分析结论永远带「所以呢」——给出带优先级的运营、采购、召回建议，让数据真正影响决策与结果。</p></div></div>
       </div>
 
-      <!-- 技能专长 -->
       <h3 class="block-h reveal"><i class="fas fa-toolbox"></i>技能专长<span class="k">SKILLS</span></h3>
       <div class="skill-list reveal">
         <div class="skill"><div class="si"><i class="fas fa-file-excel"></i></div><div><h4>Excel</h4><p>熟练使用 VLOOKUP、数据透视表、常用函数进行数据整理及分析。</p></div></div>
@@ -459,7 +455,6 @@ footer a{color:var(--accent);font-weight:600}
         <div class="skill"><div class="si"><i class="fas fa-brain"></i></div><div><h4>数据分析方法</h4><p>了解 K-Means 聚类、线性回归、逻辑回归等常用分析方法。</p></div></div>
       </div>
 
-      <!-- 荣誉 / 成果 -->
       <h3 class="block-h reveal"><i class="fas fa-trophy"></i>荣誉 / 成果<span class="k">HONORS</span></h3>
       <div class="honor reveal">
         <a href="https://kns.cnki.net/kcms2/article/abstract?v=sFGZ-GfRoEUQfF9Go9N0p9gss-V29J2moLpuG8E2wwRPKud-4ATPJtjP_Z_8bwPIs3Hqcl7zTu5UXphl4omoXa70FfYItmbwqUcfJxpWYTyRYYxfmLgLLjsXWgiO1ixclCdYk_BzAqRLS9kDyFMvcoQpW3M8HD5ugI3ubxXXCh7kCCneMYIPjQ==&uniplatform=NZKPT&language=CHS" target="_blank" rel="noopener">
@@ -472,7 +467,6 @@ footer a{color:var(--accent);font-weight:600}
         </a>
       </div>
 
-      <!-- 简历附件 -->
       <h3 class="block-h reveal"><i class="fas fa-file-arrow-down"></i>个人简历<span class="k">RESUME</span></h3>
       <div class="resume-card reveal">
         <div class="ri"><i class="fas fa-file-pdf"></i></div>
@@ -499,8 +493,8 @@ footer a{color:var(--accent);font-weight:600}
     <section class="sec" id="posts">
       <div class="reveal">
         <div class="sec-tag">Updates</div>
-        <h2 class="sec-h">动态 · 随笔<span class="post-mode"><i class="fas fa-hard-drive"></i> 本地模式</span></h2>
-        <p class="sec-sub">记录分析灵感、学习进度与生活片段。<b>当前为本地模式</b>：内容只保存在你这台浏览器，换设备或别人打开都看不到。想要"发布后全网同步"，需要接一个云端存储（见页面说明 / 联系我开通）。</p>
+        <h2 class="sec-h">动态 · 随笔<span class="post-mode live"><i class="fas fa-tower-broadcast"></i> 实时同步</span></h2>
+        <p class="sec-sub">记录分析灵感、学习进度与生活片段。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到最新动态。</p>
       </div>
       <div class="post-box reveal">
         <div class="row1">
@@ -513,7 +507,7 @@ footer a{color:var(--accent);font-weight:600}
           <button class="btn btn-pub" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
         </div>
       </div>
-      <div class="posts reveal" id="postList"></div>
+      <div class="posts reveal" id="postList"><div class="no-result">正在连接云端…</div></div>
     </section>
 
     <section class="sec" id="certs">
@@ -573,10 +567,15 @@ footer a{color:var(--accent);font-weight:600}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============ 简历 PDF（请确保该文件已上传到仓库根目录） ============ */
+/* ============ 云端配置（动态墙实时同步） ============ */
+const SUPABASE_URL = 'https://bqdhqnviozvqljigzys.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZGhxbnZpb3p2cWxqaWd6eXMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0NzgxNTI2NSwiZXhwIjoyMDYzMzkwODY1fQ.xTjGvZkPwJKvXlOlMqJGOkhOmJgCm3OoJjGqsQXZpEw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============ 简历 PDF ============ */
 const RESUME_PDF = './池增历-市场数据运营3年-市场营销专业-本科.pdf';
 
-/* ============ 数据：案例 ============ */
+/* ============ 数据：案例（已修正：进销存突出 SQL；复购去 Cohort 加 DAX） ============ */
 const CASES = [
   { color:'linear-gradient(135deg,#e8730c,#ff9d4d)', icon:'fa-layer-group', tag:'USER VALUE',
     title:'RFM 用户价值分析案例',
@@ -587,15 +586,15 @@ const CASES = [
     val:['精准识别高价值用户群，指导差异化营销资源投放','量化用户流失风险，制定针对性召回策略','提供可复用的 Python 用户分层方法论模板'],
     actions:[{t:'在新标签打开报告',c:'a1',href:'线上平台用户RFM分析.html',target:true},{t:'下载 .ipynb 源码',c:'a2',href:'线上平台用户RFM分析.ipynb',dl:true}] },
 
-  { color:'linear-gradient(135deg,#2f6fed,#5b8def)', icon:'fa-boxes-stacked', tag:'INVENTORY · ABC',
+  { color:'linear-gradient(135deg,#2f6fed,#5b8def)', icon:'fa-boxes-stacked', tag:'SQL · INVENTORY',
     title:'快消品进销存分析',
-    desc:'进销存可视化演示看板 + 完整分析报告：监控品牌库存、月销量与临期风险，并完成 ABC 动销、库存健康度与智能补货诊断。',
-    tech:['Power BI','DAX','ABC分析','SQL','Excel'],
+    desc:'以 SQL 完成多表取数与清洗，搭建进销存可视化演示看板 + 完整分析报告：监控品牌库存、月销量与临期风险，并完成 ABC 动销、库存健康度与智能补货诊断。',
+    tech:['SQL','Power BI','DAX','ABC分析','Excel'],
     preview:[
       {label:'演示看板', type:'pdf', href:'快消品进销存演示案例.pdf'},
       {label:'分析报告', type:'pdf', href:'快消品进销存案例分析报告.pdf'}
     ],
-    cap:['进销存数据可视化看板：品牌库存、月销量、临期/过期分布','整体进销存趋势与周转分析','品牌与单品动销分析（ABC 分析）','库存健康度诊断与智能采购 / 补货需求分析'],
+    cap:['用 SQL 完成多表取数、关联（JOIN）与聚合，构建分析宽表','进销存数据可视化看板：品牌库存、月销量、临期/过期分布','整体进销存趋势与周转分析','品牌与单品动销分析（ABC 分析）与智能补货需求诊断'],
     val:['直观呈现库存金额环比(108%) 与销售额环比(21%)','快速定位库存周转异常品牌（如永圣、中粮）','识别滞销与缺货风险，输出精细化采购与清仓建议','建立库存健康度预警看板，降低资金占用'],
     actions:[
       {t:'新标签打开 演示看板',c:'a1',href:'快消品进销存演示案例.pdf',target:true},
@@ -605,13 +604,13 @@ const CASES = [
 
   { color:'linear-gradient(135deg,#8b5cf6,#a78bfa)', icon:'fa-rotate', tag:'RETENTION · LTV',
     title:'复购与留存分析',
-    desc:'复购专题双报告：销售趋势、消费占比、cohort 留存、新增/复购拆解，以及母婴店铺「黄金60天」转化归因。',
-    tech:['Power BI','Cohort','归因分析','Excel'],
+    desc:'复购专题双报告：销售趋势、消费占比、留存分析、新增/复购拆解，以及母婴店铺「黄金60天」转化归因，核心度量以 DAX 实现。',
+    tech:['Power BI','DAX','归因分析','Excel'],
     preview:[
       {label:'复购分析案例', type:'pdf', href:'复购分析案例.pdf'},
       {label:'复购案例分析', type:'pdf', href:'复购案例分析.pdf'}
     ],
-    cap:['销售金额趋势与消费金额占比可视化','首次下单月份 cohorts 留存率统计','新增与复购用户的消费人数、订单与人均消费拆解','母婴店铺「黄金60天」转化与归因分析'],
+    cap:['销售金额趋势与消费金额占比可视化','用 DAX 构建留存率、复购率与人均消费等核心度量','新增与复购用户的消费人数、订单与人均消费拆解','母婴店铺「黄金60天」转化与归因分析'],
     val:['量化新增(57%) 与复购(43%) 用户的销售贡献度','洞察次月留存高峰及长期留存衰减规律','明确收入增减原因（拉新失速、新客转化率低等）','强化新客「黄金60天」转化 SOP，提升复购客单价'],
     actions:[
       {t:'新标签打开 复购分析案例',c:'a1',href:'复购分析案例.pdf',target:true},
@@ -636,10 +635,32 @@ const CONTACT = {
   email: {label:'邮箱',   value:'chift0707@gmail.com',hint:'粘贴到收件人即可写信'}
 };
 
-/* ============ 证书图路径容错 ============ */
+/* ============ 工具函数 ============ */
 function certFallback(img){
   if(!img.dataset.fb){ img.dataset.fb='1'; img.src = img.src.replace('/certs/','/'); }
   else { img.outerHTML = '<i class="ph-ico fas fa-certificate"></i>'; }
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function relTime(ts){
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return '刚刚';
+  if(s<3600) return Math.floor(s/60)+' 分钟前';
+  if(s<86400) return Math.floor(s/3600)+' 小时前';
+  if(s<86400*30) return Math.floor(s/86400)+' 天前';
+  const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function showToast(html, ms=4200){
+  toastEl.innerHTML = html; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=> toastEl.classList.remove('show'), ms);
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){
+    const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} document.body.removeChild(ta); return ok;
+  }
 }
 
 /* ============ 渲染案例 ============ */
@@ -707,10 +728,8 @@ mExpand.addEventListener('click', e=>{
   const full = modalEl.classList.toggle('full');
   mExpand.querySelector('i').className = full ? 'fas fa-compress' : 'fas fa-expand';
 });
-
 function openCase(i){
   const c = CASES[i];
-  // 恢复标签按钮显示（防止被简历模式隐藏后没还原）
   mTabs.querySelectorAll('.mtab').forEach(t=> t.style.display='');
   document.getElementById('mCover').style.background = c.color;
   document.getElementById('mBig').textContent = String(i+1).padStart(2,'0');
@@ -731,20 +750,14 @@ function openCase(i){
       mDocs.style.display = 'flex';
       mDocs.innerHTML = currentDocs.map((d,k)=>`<button class="doc-tab ${k===0?'active':''}" data-doc="${k}">${d.label}</button>`).join('');
     } else { mDocs.style.display = 'none'; mDocs.innerHTML = ''; }
-    loadDoc(0);
-    switchTab('preview');
+    loadDoc(0); switchTab('preview');
   } else {
-    tabPreview.style.display = 'none';
-    mDocs.style.display = 'none'; mDocs.innerHTML = '';
-    mFrame.src = 'about:blank';
-    switchTab('detail');
+    tabPreview.style.display = 'none'; mDocs.style.display = 'none'; mDocs.innerHTML = '';
+    mFrame.src = 'about:blank'; switchTab('detail');
   }
-  modalEl.classList.remove('full');
-  mExpand.querySelector('i').className = 'fas fa-expand';
+  modalEl.classList.remove('full'); mExpand.querySelector('i').className = 'fas fa-expand';
   caseModal.classList.add('on'); lockScroll(true);
 }
-
-/* ============ 简历预览（复用同一弹窗，仅预览 + 下载） ============ */
 function openResume(){
   mTabs.querySelectorAll('.mtab').forEach(t=> t.style.display = (t.dataset.tab==='detail' ? 'none' : ''));
   document.getElementById('mCover').style.background = 'linear-gradient(135deg,#e8730c,#ff9d4d)';
@@ -756,8 +769,7 @@ function openResume(){
   document.getElementById('mActions').innerHTML =
     `<a class="a1" href="${RESUME_PDF}" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> 在新标签打开简历</a>`+
     `<a class="a2" href="${RESUME_PDF}" download><i class="fas fa-download"></i> 下载简历 PDF</a>`;
-  modalEl.classList.remove('full');
-  mExpand.querySelector('i').className = 'fas fa-expand';
+  modalEl.classList.remove('full'); mExpand.querySelector('i').className = 'fas fa-expand';
   caseModal.classList.add('on'); lockScroll(true);
 }
 
@@ -788,8 +800,7 @@ document.querySelectorAll('.overlay').forEach(ov=>{
       if(ov===lightbox) setTimeout(()=>document.getElementById('lbImg').src='',300);
       if(ov===caseModal){
         setTimeout(()=>{ mFrame.src='about:blank'; mDocs.innerHTML=''; },300);
-        modalEl.classList.remove('full');
-        mExpand.querySelector('i').className = 'fas fa-expand';
+        modalEl.classList.remove('full'); mExpand.querySelector('i').className = 'fas fa-expand';
       }
     }
   });
@@ -802,22 +813,7 @@ document.addEventListener('keydown', e=>{
   }
 });
 
-/* ============ toast + 联系方式点击复制 ============ */
-const toastEl = document.getElementById('toast');
-let toastTimer = null;
-function showToast(html, ms=4200){
-  toastEl.innerHTML = html;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), ms);
-}
-async function copyText(t){
-  try{ await navigator.clipboard.writeText(t); return true; }catch(e){
-    const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} document.body.removeChild(ta); return ok;
-  }
-}
+/* ============ 联系方式点击复制 ============ */
 document.querySelector('.contact-row').addEventListener('click', async e=>{
   const b = e.target.closest('[data-contact]'); if(!b) return;
   const c = CONTACT[b.dataset.contact]; if(!c) return;
@@ -825,61 +821,59 @@ document.querySelector('.contact-row').addEventListener('click', async e=>{
   showToast(`<b>${c.label}：${c.value}</b><br>${ok?'✓ 已复制 · ':'请手动复制 · '}${c.hint}`);
 });
 
-/* ============ 帖子 / 动态 (localStorage 本地) ============ */
-const PKEY = 'chi_posts_v1';
-const SEED = [
-  { txt:'刚把 RFM 案例的 Notebook 重构了一遍，把分层阈值改成按业务分位数动态计算，比写死的均值稳健多了。方法论可迁移性 +1 ✅', tags:['复盘','Python'], ts:Date.now()-1000*60*42 },
-  { txt:'今天读到一个观点：看板的第一屏只该回答一个问题。深以为然——下次做进销存看板，先把「现在该补货吗」放在最上面。', tags:['思考','可视化'], ts:Date.now()-1000*60*60*26 },
-  { txt:'周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾', tags:['生活'], ts:Date.now()-1000*60*60*72 }
-];
-function loadPosts(){
-  try{ const r = JSON.parse(localStorage.getItem(PKEY)); if(Array.isArray(r)) return r; }catch(e){}
-  localStorage.setItem(PKEY, JSON.stringify(SEED)); return SEED;
+/* ============ 动态墙：云端实时同步 ============ */
+const postList  = document.getElementById('postList');
+const postInput = document.getElementById('postInput');
+const postTags  = document.getElementById('postTags');
+const postPub   = document.getElementById('postPub');
+const PUB_HTML  = postPub.innerHTML;
+const seenIds   = new Set();   // 去重：防止首次加载与实时推送重复
+
+function postHTML(p){
+  const txt  = esc(p.content ?? p.txt ?? '');
+  const ts   = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
+  const tags = (p.tags||[]).map(t=>`<span>#${esc(t)}</span>`).join('');
+  return `<div class="post"><div class="ph"><div class="pav">历</div>
+    <div><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div></div>
+    <div class="ptxt">${txt}</div>${tags?`<div class="ptags">${tags}</div>`:''}</div>`;
 }
-function savePosts(p){ localStorage.setItem(PKEY, JSON.stringify(p)); }
-function relTime(ts){
-  const s = Math.floor((Date.now()-ts)/1000);
-  if(s<60) return '刚刚';
-  if(s<3600) return Math.floor(s/60)+' 分钟前';
-  if(s<86400) return Math.floor(s/3600)+' 小时前';
-  if(s<86400*30) return Math.floor(s/86400)+' 天前';
-  const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function renderPosts(posts){
+  if(!posts || !posts.length){ postList.innerHTML='<div class="no-result">还没有动态，发布第一条吧 ✍️</div>'; return; }
+  postList.innerHTML = posts.map(postHTML).join('');
 }
-function esc(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-const postList = document.getElementById('postList');
-function renderPosts(){
-  const posts = loadPosts();
-  if(!posts.length){ postList.innerHTML='<div class="no-result">还没有动态，写第一条吧 ✍️</div>'; return; }
-  postList.innerHTML = posts.map((p,idx)=>`
-    <div class="post" data-idx="${idx}">
-      <button class="del" title="删除" data-del="${idx}"><i class="fas fa-trash-can"></i></button>
-      <div class="ph">
-        <div class="pav">历</div>
-        <div><div class="who">阿历</div><div class="when">${relTime(p.ts)}</div></div>
-      </div>
-      <div class="ptxt">${esc(p.txt)}</div>
-      ${p.tags&&p.tags.length?`<div class="ptags">${p.tags.map(t=>`<span>#${esc(t)}</span>`).join('')}</div>`:''}
-    </div>`).join('');
+async function loadPosts(){
+  const {data, error} = await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(50);
+  if(error){ showToast('动态加载失败：'+error.message); postList.innerHTML='<div class="no-result">动态加载失败，请刷新重试</div>'; return; }
+  seenIds.clear();
+  (data||[]).forEach(p=> seenIds.add(p.id));
+  renderPosts(data);
 }
-renderPosts();
-function publish(){
-  const inp = document.getElementById('postInput');
-  const txt = inp.value.trim(); if(!txt){ inp.focus(); return; }
-  const tags = document.getElementById('postTags').value.split(/[,，]/).map(t=>t.trim()).filter(Boolean);
-  const posts = loadPosts();
-  posts.unshift({ txt, tags, ts:Date.now() });
-  savePosts(posts);
-  inp.value=''; document.getElementById('postTags').value='';
-  renderPosts();
+function subscribeRealtime(){
+  sb.channel('posts-rt')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},(pl)=>{
+      const p = pl.new; if(!p || seenIds.has(p.id)) return;
+      seenIds.add(p.id);
+      const empty = postList.querySelector('.no-result'); if(empty) empty.remove();
+      postList.insertAdjacentHTML('afterbegin', postHTML(p));
+    })
+    .subscribe();
 }
-document.getElementById('postPub').addEventListener('click', publish);
-document.getElementById('postInput').addEventListener('keydown', e=>{
+async function publish(){
+  const content = postInput.value.trim(); if(!content){ postInput.focus(); return; }
+  const tags = postTags.value.split(/[,，]/).map(t=>t.trim()).filter(Boolean);
+  postPub.disabled = true; postPub.textContent = '发布中…';
+  const {error} = await sb.from('posts').insert({content, tags});
+  postPub.innerHTML = PUB_HTML; postPub.disabled = false;
+  if(error){ showToast('发布失败：'+error.message); return; }
+  postInput.value=''; postTags.value='';
+  showToast('已发布 ✓ 正在实时同步到所有设备…');
+  // 新条目由实时订阅推回渲染（含自己这条），无需手动插入，避免重复
+}
+postPub.addEventListener('click', publish);
+postInput.addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); publish(); }
 });
-postList.addEventListener('click', e=>{
-  const b = e.target.closest('[data-del]'); if(!b) return;
-  const posts = loadPosts(); posts.splice(+b.dataset.del,1); savePosts(posts); renderPosts();
-});
+loadPosts(); subscribeRealtime();
 
 /* ============ 实时日期 / 时钟 / 农历 ============ */
 const WK = ['日','一','二','三','四','五','六'];
