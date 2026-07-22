@@ -1,698 +1,380 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>池增历 | 数据分析师</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<title>暖光动态墙</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
-  --side-w:288px;
-  --bg:#f5f6f8; --panel:#ffffff; --panel-2:#fbfbfd;
-  --ink:#15171c; --ink-2:#4a4f5a; --ink-3:#8a909c;
-  --line:#e9ebf0; --line-2:#f0f1f5;
-  --accent:#e8730c; --accent-soft:#fff1e6; --accent-ink:#b85600;
-  --blue:#2f6fed; --green:#1f9d63;
-  --shadow:0 10px 30px rgba(20,23,28,.07); --shadow-lg:0 24px 60px rgba(20,23,28,.16);
-  --r:16px; --mono:'JetBrains Mono',ui-monospace,monospace;
-  --disp:'Bricolage Grotesque','Noto Sans SC',system-ui,sans-serif;
-  --body:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
-}
-[data-theme="dark"]{
-  --bg:#0d0e12; --panel:#15171d; --panel-2:#1b1e25;
-  --ink:#eceef2; --ink-2:#aeb4c0; --ink-3:#737a88;
-  --line:#262a33; --line-2:#20242c;
-  --accent:#ff8a2b; --accent-soft:#2a1c0e; --accent-ink:#ffb066;
-  --shadow:0 10px 30px rgba(0,0,0,.4); --shadow-lg:0 24px 60px rgba(0,0,0,.6);
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.7;
-  -webkit-font-smoothing:antialiased;transition:background .4s,color .4s;
-  background-image:radial-gradient(circle at 1px 1px,var(--line) 1px,transparent 0);
-  background-size:26px 26px;background-attachment:fixed}
-a{color:inherit;text-decoration:none}
-img{display:block;max-width:100%}
-::selection{background:var(--accent);color:#fff}
+  :root {
+    --bg: #1a1410;
+    --card: #2a2118;
+    --accent: #d4a056;
+    --text: #f0e6d8;
+    --muted: #a89880;
+    --border: #3d3024;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+  h1 {
+    text-align: center;
+    color: var(--accent);
+    font-size: 1.6rem;
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
 
-/* ===== 布局 ===== */
-.app{display:flex;min-height:100vh}
+  /* ========== 证书栏样式 ========== */
+  .cert-section {
+    margin-bottom: 24px;
+  }
+  .cert-section h2 {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .cert-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .cert-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .cert-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+  .cert-card img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+  }
+  .cert-card .cert-name {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 证书大图预览遮罩 */
+  #cert-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1001;
+    cursor: zoom-out;
+  }
+  #cert-overlay img {
+    max-width: 90vw; max-height: 90vh;
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(212,160,86,0.3);
+  }
 
-/* ===== 侧边栏 ===== */
-.side{width:var(--side-w);flex:0 0 var(--side-w);height:100vh;position:sticky;top:0;
-  background:var(--panel);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;padding:34px 26px 24px;z-index:60;transition:background .4s,border-color .4s}
-.brand{display:flex;align-items:center;gap:14px;margin-bottom:6px}
-.avatar{width:62px;height:62px;border-radius:18px;object-fit:cover;flex:0 0 62px;
-  border:2px solid var(--line);box-shadow:var(--shadow);background:var(--accent-soft)}
-.avatar-fb{width:62px;height:62px;border-radius:18px;flex:0 0 62px;display:none;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,var(--accent),#ff9d4d);color:#fff;font-family:var(--disp);font-weight:800;font-size:26px}
-.brand-txt h1{font-family:var(--disp);font-size:21px;font-weight:800;letter-spacing:.5px;line-height:1.1}
-.brand-txt p{font-size:12.5px;color:var(--ink-3);margin-top:3px}
-.sign{font-size:13px;color:var(--ink-2);margin:14px 2px 22px;font-style:italic;
-  border-left:2px solid var(--accent);padding-left:10px}
+  /* 密码遮罩 */
+  #lock-screen {
+    position: fixed; inset:0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+    flex-direction: column; gap: 16px;
+  }
+  #lock-screen input {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 1.1rem;
+    text-align: center;
+    outline: none;
+    width: 240px;
+  }
+  #lock-screen input:focus { border-color: var(--accent); }
+  #lock-screen button {
+    padding: 10px 32px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent);
+    color: #1a1410;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
 
-.search{position:relative;margin-bottom:22px}
-.search input{width:100%;padding:11px 14px 11px 38px;border:1px solid var(--line);border-radius:12px;
-  background:var(--panel-2);color:var(--ink);font-size:14px;font-family:var(--body);transition:.25s}
-.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.search i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-3);font-size:13px}
+  /* 发布区 */
+  .compose {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .compose textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 1rem;
+    resize: none;
+    outline: none;
+    min-height: 80px;
+    line-height: 1.6;
+  }
+  .compose-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .char-count { font-size: 0.8rem; color: var(--muted); }
+  .btn-send {
+    padding: 8px 24px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #1a1410;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.2s;
+  }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.nav{list-style:none;display:flex;flex-direction:column;gap:4px;flex:1}
-.nav a{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;
-  font-size:17px;font-weight:600;color:var(--ink-2);transition:.22s;position:relative}
-.nav a i{width:22px;text-align:center;font-size:16px;color:var(--ink-3);transition:.22s}
-.nav a:hover{background:var(--panel-2);color:var(--ink);transform:translateX(4px)}
-.nav a:hover i{color:var(--accent)}
-.nav a.active{background:var(--accent);color:#fff;box-shadow:0 8px 18px rgba(232,115,12,.28)}
-.nav a.active i{color:#fff}
-
-.side-foot{border-top:1px solid var(--line);padding-top:18px;margin-top:14px}
-.side-foot a.mail{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);transition:.2s}
-.side-foot a.mail:hover{color:var(--accent)}
-.side-foot .copy{font-size:11px;color:var(--ink-3);margin-top:12px;font-family:var(--mono)}
-
-/* ===== 主区 ===== */
-.main{flex:1;min-width:0}
-.sec{padding:78px clamp(28px,5vw,72px);border-bottom:1px solid var(--line-2);position:relative}
-.sec-tag{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--accent);
-  text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.sec-tag::before{content:'';width:22px;height:2px;background:var(--accent)}
-.sec-h{font-family:var(--disp);font-size:clamp(28px,3.4vw,40px);font-weight:800;letter-spacing:.5px;margin-bottom:8px}
-.sec-sub{color:var(--ink-2);max-width:640px;margin-bottom:42px}
-
-/* 浮动工具条 */
-.tools{position:fixed;top:22px;right:26px;display:flex;gap:10px;z-index:80}
-.tools button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);
-  color:var(--ink-2);font-size:16px;cursor:pointer;box-shadow:var(--shadow);transition:.25s;display:grid;place-items:center}
-.tools button:hover{color:var(--accent);transform:translateY(-3px) rotate(8deg);border-color:var(--accent)}
-#toTop{opacity:0;pointer-events:none;transform:translateY(8px)}
-#toTop.show{opacity:1;pointer-events:auto;transform:none}
-
-/* ===== 开篇 ===== */
-.hi{font-family:var(--disp);font-size:clamp(40px,6vw,72px);font-weight:800;line-height:1.02;letter-spacing:1px}
-.hi .wave{display:inline-block;transform-origin:70% 70%;animation:wave 2.4s ease-in-out infinite}
-@keyframes wave{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(14deg)}20%{transform:rotate(-8deg)}30%{transform:rotate(14deg)}40%{transform:rotate(-4deg)}50%{transform:rotate(10deg)}}
-.hi .accent{color:var(--accent)}
-
-.datebar{display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;margin:24px 0 34px;
-  padding:10px 18px;border:1px solid var(--line);border-radius:40px;background:var(--panel);box-shadow:var(--shadow)}
-.datebar .d{font-size:14px;color:var(--ink-2)}
-.datebar .d b{color:var(--ink);font-weight:700}
-.datebar .sep{width:1px;height:16px;background:var(--line)}
-.datebar .clock{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);letter-spacing:1px}
-
-.intro p{font-size:17px;color:var(--ink-2);max-width:760px;margin-bottom:16px}
-.intro p .em{color:var(--ink);font-weight:700}
-.intro p .lead{font-size:21px}
-.intro .ico{margin-right:6px}
-.intro a.mailinline{color:var(--blue);font-weight:700;border-bottom:2px solid transparent;transition:.2s}
-.intro a.mailinline:hover{border-color:var(--blue)}
-
-.stack{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
-.stack span{font-family:var(--mono);font-size:13px;font-weight:600;padding:7px 15px;border-radius:10px;
-  background:var(--panel);border:1px solid var(--line);color:var(--ink-2);transition:.22s}
-.stack span:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
-
-.socials{display:flex;gap:8px;margin-top:30px}
-.socials a{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--panel);
-  border:1px solid var(--line);color:var(--ink-2);transition:.22s}
-.socials a:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-3px)}
-
-/* ===== 简介/优势 杂志式 ===== */
-.about-wrap{display:grid;grid-template-columns:1.5fr 1fr;gap:46px;align-items:start}
-.about-wrap .lede{font-size:19px;color:var(--ink-2);line-height:1.9}
-.about-wrap .lede b{color:var(--ink)}
-.facts{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow)}
-.facts h4{font-family:var(--disp);font-size:15px;letter-spacing:1px;color:var(--ink-3);text-transform:uppercase;margin-bottom:18px}
-.fact{display:flex;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line)}
-.fact:last-child{border-bottom:none}
-.fact .num{font-family:var(--disp);font-size:30px;font-weight:800;color:var(--accent);line-height:1}
-.fact .lab{font-size:14px;color:var(--ink-2)}
-.fact .lab b{display:block;color:var(--ink);font-size:15px}
-
-.edges{margin-top:48px;display:flex;flex-direction:column;gap:0}
-.edge{display:grid;grid-template-columns:90px 1fr;gap:24px;padding:26px 0;border-top:1px solid var(--line);transition:.25s}
-.edge:hover{padding-left:10px}
-.edge .no{font-family:var(--disp);font-size:46px;font-weight:800;color:var(--line);line-height:1;transition:.25s}
-.edge:hover .no{color:var(--accent)}
-.edge h3{font-size:20px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
-.edge h3 i{color:var(--accent);font-size:17px}
-.edge p{color:var(--ink-2);font-size:15px;max-width:680px}
-
-/* ===== 案例卡片流 ===== */
-.case-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:26px}
-.case{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
-  cursor:pointer;box-shadow:var(--shadow);transition:transform .3s,box-shadow .3s,border-color .3s;display:flex;flex-direction:column}
-.case:hover{transform:translateY(-7px);box-shadow:var(--shadow-lg);border-color:var(--accent)}
-.case-cover{height:172px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:18px;color:#fff}
-.case-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.45))}
-.case-cover .big{position:absolute;top:14px;right:18px;font-family:var(--disp);font-size:64px;font-weight:800;opacity:.22;line-height:1}
-.case-cover .ci{position:absolute;top:18px;left:18px;font-size:24px;opacity:.92}
-.case-cover .ctag{position:relative;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;
-  background:rgba(255,255,255,.2);backdrop-filter:blur(4px);padding:4px 10px;border-radius:20px}
-.case-body{padding:22px;flex:1;display:flex;flex-direction:column}
-.case-body h3{font-size:19px;font-weight:700;line-height:1.35;margin-bottom:10px}
-.case-body p{font-size:14px;color:var(--ink-2);flex:1;margin-bottom:16px}
-.case-foot{display:flex;align-items:center;justify-content:space-between}
-.case-tech{display:flex;gap:6px;flex-wrap:wrap}
-.case-tech span{font-family:var(--mono);font-size:11px;color:var(--ink-3);background:var(--panel-2);padding:3px 8px;border-radius:6px}
-.case-more{font-size:13px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px}
-.case-more i{transition:.2s}
-.case:hover .case-more i{transform:translateX(4px)}
-.case.featured{grid-column:1/-1}
-.case.featured .case-cover{height:200px}
-.no-result{grid-column:1/-1;text-align:center;color:var(--ink-3);padding:50px;font-size:15px}
-
-/* ===== 帖子/动态 ===== */
-.post-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);margin-bottom:30px}
-.post-box .row1{display:flex;gap:14px}
-.post-box .pav{width:42px;height:42px;border-radius:12px;flex:0 0 42px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
-  color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:800}
-.post-box textarea{flex:1;resize:vertical;min-height:74px;border:1px solid var(--line);border-radius:12px;
-  padding:12px 14px;font-family:var(--body);font-size:15px;color:var(--ink);background:var(--panel-2);transition:.2s}
-.post-box textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.post-box .row2{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
-.post-box input.tags{flex:1;min-width:160px;border:1px solid var(--line);border-radius:10px;padding:9px 13px;
-  font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--panel-2)}
-.post-box input.tags:focus{border-color:var(--accent);outline:none}
-.post-box .hint{font-size:12px;color:var(--ink-3)}
-.btn{border:none;cursor:pointer;font-family:var(--body);font-weight:700;border-radius:10px;transition:.22s;font-size:14px}
-.btn-pub{background:var(--accent);color:#fff;padding:10px 22px}
-.btn-pub:hover{filter:brightness(1.07);transform:translateY(-2px);box-shadow:0 8px 18px rgba(232,115,12,.3)}
-
-.posts{display:flex;flex-direction:column;gap:18px}
-.post{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow);
-  position:relative;transition:.25s;animation:pop .35s ease}
-@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.post:hover{border-color:var(--accent)}
-.post .ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.post .ph .pav{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#ff9d4d);
-  color:#fff;display:grid;place-items:center;font-family:var(--disp);font-weight:800;font-size:15px}
-.post .ph .who{font-weight:700;font-size:15px}
-.post .ph .when{font-size:12px;color:var(--ink-3);font-family:var(--mono)}
-.post .ptxt{font-size:15.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
-.post .ptags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
-.post .ptags span{font-size:12px;color:var(--accent-ink);background:var(--accent-soft);padding:3px 10px;border-radius:20px;font-weight:600}
-.post .del{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:8px;border:none;background:transparent;
-  color:var(--ink-3);cursor:pointer;transition:.2s;display:grid;place-items:center}
-.post .del:hover{background:#fdecea;color:#e23b3b}
-[data-theme="dark"] .post .del:hover{background:#3a1c1c}
-
-/* ===== 证书 ===== */
-.cert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px}
-.cert{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:.25s}
-.cert.click{cursor:pointer}
-.cert.click:hover{transform:translateY(-6px);border-color:var(--accent);box-shadow:var(--shadow-lg)}
-.cert .thumb{aspect-ratio:4/3;background:var(--panel-2);position:relative;overflow:hidden;display:grid;place-items:center}
-.cert .thumb img{width:100%;height:100%;object-fit:contain;padding:8px;transition:.4s}
-.cert.click:hover .thumb img{transform:scale(1.05)}
-.cert .thumb .zoom{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,23,28,.5);color:#fff;
-  font-size:14px;font-weight:600;gap:8px;opacity:0;transition:.25s;flex-direction:column}
-.cert.click:hover .thumb .zoom{opacity:1}
-.cert .cn{padding:14px 16px;font-size:14px;font-weight:700;text-align:center}
-.cert .cn small{display:block;color:var(--ink-3);font-weight:500;font-size:12px;margin-top:3px}
-.cert .thumb .ph-ico{font-size:34px;color:var(--line)}
-
-/* ===== 模态 / Lightbox ===== */
-.overlay{position:fixed;inset:0;background:rgba(13,14,18,.72);backdrop-filter:blur(6px);z-index:200;
-  display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;visibility:hidden;transition:.3s}
-.overlay.on{opacity:1;visibility:visible}
-.modal{background:var(--panel);border-radius:20px;max-width:760px;width:100%;max-height:88vh;overflow:auto;
-  box-shadow:var(--shadow-lg);transform:scale(.94) translateY(10px);transition:.32s cubic-bezier(.2,.8,.2,1)}
-.overlay.on .modal{transform:none}
-.modal-cover{height:150px;position:relative;display:flex;align-items:flex-end;padding:22px;color:#fff}
-.modal-cover .big{position:absolute;top:14px;right:22px;font-family:var(--disp);font-size:80px;font-weight:800;opacity:.2}
-.modal-cover h3{position:relative;z-index:2;font-family:var(--disp);font-size:26px;font-weight:800}
-.modal-x{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;border-radius:50%;border:none;
-  background:rgba(255,255,255,.22);color:#fff;font-size:20px;cursor:pointer;transition:.25s;display:grid;place-items:center}
-.modal-x:hover{background:rgba(255,255,255,.4);transform:rotate(90deg)}
-.modal-body{padding:28px 30px 32px}
-.modal-body .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:24px}
-.modal-body h4{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.modal-body h4 i{color:var(--accent)}
-.modal-body ul{list-style:none}
-.modal-body li{position:relative;padding-left:20px;margin-bottom:9px;font-size:14.5px;color:var(--ink-2)}
-.modal-body li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
-.modal-tech{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
-.modal-tech span{font-family:var(--mono);font-size:12px;background:var(--accent-soft);color:var(--accent-ink);padding:5px 12px;border-radius:8px;font-weight:600}
-.modal-actions{display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:22px}
-.modal-actions a{flex:1;min-width:150px;text-align:center;padding:12px;border-radius:11px;font-weight:700;font-size:14px;transition:.22s}
-.modal-actions .a1{background:var(--accent);color:#fff}
-.modal-actions .a1:hover{filter:brightness(1.07);transform:translateY(-2px)}
-.modal-actions .a2{background:var(--panel-2);color:var(--ink);border:1px solid var(--line)}
-.modal-actions .a2:hover{border-color:var(--accent);color:var(--accent)}
-
-.lb-img{max-width:92vw;max-height:86vh;border-radius:12px;box-shadow:var(--shadow-lg);background:#fff;
-  transform:scale(.92);transition:.32s}
-.overlay.on .lb-img{transform:none}
-
-footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);font-size:13px}
-footer a{color:var(--accent);font-weight:600}
-
-/* reveal */
-.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
-.reveal.in{opacity:1;transform:none}
-
-/* ===== 响应式 ===== */
-@media(max-width:980px){
-  .about-wrap{grid-template-columns:1fr;gap:28px}
-  .modal-body .cols{grid-template-columns:1fr;gap:18px}
-}
-@media(max-width:820px){
-  .app{flex-direction:column}
-  .side{width:100%;flex:none;height:auto;position:sticky;top:0;flex-direction:column;padding:18px 18px 14px}
-  .brand{margin-bottom:0}
-  .sign{display:none}
-  .search{margin:14px 0 12px}
-  .nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;flex:none}
-  .nav a{font-size:15px;padding:10px 14px;white-space:nowrap}
-  .nav a span{display:inline}
-  .side-foot{display:none}
-  .sec{padding:54px 20px}
-  .tools{top:14px;right:14px}
-  .edge{grid-template-columns:60px 1fr;gap:14px}
-  .edge .no{font-size:34px}
-}
+  /* 动态列表 */
+  .post-list { display: flex; flex-direction: column; gap: 12px; }
+  .post-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .post-content { font-size: 1rem; line-height: 1.7; word-break: break-word; white-space: pre-wrap; }
+  .post-meta { margin-top: 10px; font-size: 0.78rem; color: var(--muted); display:flex; gap:8px; flex-wrap:wrap;}
+  .tag { background: var(--border); padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; }
+  .empty { text-align:center; color:var(--muted); padding:40px 0; font-size:0.95rem; }
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#c0392b; color:#fff; padding:10px 24px; border-radius:10px;
+    font-size:0.9rem; opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:1000;
+  }
+  .toast.show { opacity:1; }
 </style>
 </head>
 <body>
 
-<div class="tools">
-  <button id="themeBtn" title="切换深色/浅色" aria-label="切换主题"><i class="fas fa-moon"></i></button>
-  <button id="toTop" title="回到顶部" aria-label="回到顶部"><i class="fas fa-arrow-up"></i></button>
+<!-- 密码锁屏 -->
+<div id="lock-screen">
+  <h1 style="margin-bottom:8px;">🔒 请输入访问密码</h1>
+  <input type="password" id="pwd-input" placeholder="输入密码后回车" autofocus>
+  <button onclick="unlock()">进入</button>
 </div>
 
-<div class="app">
-  <!-- 侧边栏 -->
-  <aside class="side">
-    <div class="brand">
-      <img class="avatar" id="avatar" src="me.jpg" alt="池增历" loading="lazy" decoding="async"
-           onerror="this.style.display='none';document.getElementById('avfb').style.display='flex'">
-      <div class="avatar-fb" id="avfb">池</div>
-      <div class="brand-txt">
-        <h1>池增历</h1>
-        <p>数据分析师 · Data Analyst</p>
-      </div>
-    </div>
-    <p class="sign">用数据讲好业务的故事</p>
-
-    <div class="search">
-      <i class="fas fa-search"></i>
-      <input id="caseSearch" type="text" placeholder="搜索案例…" autocomplete="off">
-    </div>
-
-    <ul class="nav" id="nav">
-      <li><a href="#home" class="active"><i class="fas fa-house"></i><span>首页</span></a></li>
-      <li><a href="#about"><i class="fas fa-user-pen"></i><span>个人简介</span></a></li>
-      <li><a href="#cases"><i class="fas fa-diagram-project"></i><span>实战案例</span></a></li>
-      <li><a href="#posts"><i class="fas fa-feather-pointed"></i><span>动态</span></a></li>
-      <li><a href="#certs"><i class="fas fa-award"></i><span>专业证书</span></a></li>
-    </ul>
-
-    <div class="side-foot">
-      <a class="mail" href="mailto:chift0707@gmail.com"><i class="fas fa-envelope"></i> chift0707@gmail.com</a>
-      <div class="copy">© 2026 池增历</div>
-    </div>
-  </aside>
-
-  <!-- 主区 -->
-  <main class="main">
-
-    <!-- 开篇 -->
-    <section class="sec" id="home">
-      <div class="reveal">
-        <h2 class="hi">你好呀<span class="accent">！</span> <span class="wave">👋</span></h2>
-        <div class="datebar">
-          <span class="d" id="dateText">今天…</span>
-          <span class="sep"></span>
-          <span class="clock" id="clock">--:--:--</span>
-        </div>
-        <div class="intro">
-          <p class="lead">我是 <span class="em">池增历</span>，一名深耕快消品与电商领域的数据分析师。</p>
-          <p><span class="ico">📊</span>多年供应链进销存监控、库存健康度诊断与智能补货模型搭建经验，擅长把 messy 的业务数据梳理成清晰的决策依据。</p>
-          <p><span class="ico">🛒</span>丰富的电商运营数据分析实操经验，熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析</span> 驱动精细化运营落地。</p>
-          <p><span class="ico">🧠</span>善于将业务问题转化为可量化的分析框架，输出兼具 <span class="em">方法论可迁移性</span> 与 <span class="em">业务落地价值</span> 的数据产品。</p>
-          <p><span class="ico">✉️</span>如有合作或交流需求，欢迎联系：<a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a></p>
-        </div>
-        <div class="stack">
-          <span>Excel</span><span>SQL</span><span>Python</span><span>Power BI</span><span>Tableau</span><span>Pandas</span><span>RFM</span>
-        </div>
-        <div class="socials">
-          <a href="mailto:chift0707@gmail.com" title="邮箱"><i class="fas fa-envelope"></i></a>
-          <a href="#cases" title="案例"><i class="fas fa-briefcase"></i></a>
-          <a href="#posts" title="动态"><i class="fas fa-feather"></i></a>
-        </div>
-      </div>
-    </section>
-
-    <!-- 个人简介 -->
-    <section class="sec" id="about">
-      <div class="reveal">
-        <div class="sec-tag">About Me</div>
-        <h2 class="sec-h">个人简介 &amp; 优势</h2>
-        <p class="sec-sub">不只是产出报表，更在意分析结论能否真正落地、能否被复用。</p>
-      </div>
-      <div class="about-wrap reveal">
-        <div class="lede">
-          我把数据分析看作一门<b>翻译</b>的手艺——把模糊的业务焦虑，翻译成可计算、可验证、可执行的指标与策略。从快消品的进销存周转，到电商用户的生命周期价值，我习惯先搭框架、再下钻归因、最后给出带优先级的行动建议。
-          <br><br>
-          我相信好的分析应当<b>自我解释</b>：一张看板、一份报告，要让没参与建模的人也能在三分钟内看懂结论与下一步。这也是我每个案例都坚持「方法论 + 可复现源码 + 业务价值」三件套的原因。
-        </div>
-        <div class="facts">
-          <h4>Quick Facts</h4>
-          <div class="fact"><span class="num">5+</span><span class="lab"><b>实战分析案例</b>覆盖用户/库存/复购</span></div>
-          <div class="fact"><span class="num">4</span><span class="lab"><b>项专业认证</b>CDA / 计算机 / 英语 / 普通话</span></div>
-          <div class="fact"><span class="num">5</span><span class="lab"><b>核心工具栈</b>Excel·SQL·Python·BI</span></div>
-          <div class="fact"><span class="num">∞</span><span class="lab"><b>好奇心</b>网球·阅读·朗诵·草缸</span></div>
-        </div>
-      </div>
-      <div class="edges reveal">
-        <div class="edge"><div class="no">01</div><div><h3><i class="fas fa-magnifying-glass-chart"></i>数据洞察</h3><p>从海量交易与行为数据中定位异常与机会，用 RFM、漏斗、同期群等方法论把「感觉」变成「证据」。</p></div></div>
-        <div class="edge"><div class="no">02</div><div><h3><i class="fas fa-code"></i>技术全面</h3><p>Python(Pandas/NumPy) 清洗建模、SQL 处理大规模数据、Power BI / Tableau 搭建自动化看板，全流程可复现。</p></div></div>
-        <div class="edge"><div class="no">03</div><div><h3><i class="fas fa-bullseye"></i>业务落地</h3><p>分析结论永远带「所以呢」——给出带优先级的运营、采购、召回建议，让数据真正影响决策与结果。</p></div></div>
-      </div>
-    </section>
-
-    <!-- 实战案例 -->
-    <section class="sec" id="cases">
-      <div class="reveal">
-        <div class="sec-tag">Portfolio</div>
-        <h2 class="sec-h">实战案例</h2>
-        <p class="sec-sub">点击任意卡片，查看完整分析思路、能力拆解与源文件下载。所有案例均使用模拟数据。</p>
-      </div>
-      <div class="case-grid reveal" id="caseGrid"></div>
-    </section>
-
-    <!-- 动态 / 帖子 -->
-    <section class="sec" id="posts">
-      <div class="reveal">
-        <div class="sec-tag">Updates</div>
-        <h2 class="sec-h">动态 · 随笔</h2>
-        <p class="sec-sub">记录分析灵感、学习进度与生活片段。内容保存在你的浏览器本地，刷新不会丢失。</p>
-      </div>
-      <div class="post-box reveal">
-        <div class="row1">
-          <div class="pav">池</div>
-          <textarea id="postInput" placeholder="写点什么… 比如今天的一个分析发现、一段学习心得。"></textarea>
-        </div>
-        <div class="row2">
-          <input class="tags" id="postTags" type="text" placeholder="标签，用逗号分隔，如：复盘, SQL">
-          <span class="hint">Ctrl + Enter 发布</span>
-          <button class="btn btn-pub" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
-        </div>
-      </div>
-      <div class="posts reveal" id="postList"></div>
-    </section>
-
-    <!-- 证书 -->
-    <section class="sec" id="certs">
-      <div class="reveal">
-        <div class="sec-tag">Certificates</div>
-        <h2 class="sec-h">专业证书</h2>
-        <p class="sec-sub">点击 CDA 证书可查看清晰大图。</p>
-      </div>
-      <div class="cert-grid reveal" id="certGrid"></div>
-    </section>
-
-    <footer>
-      © 2026 池增历 · 数据分析作品集 ｜ 所有报告基于模拟数据构建，仅用于方法论展示与技术交流<br>
-      创作者：游学者、池鹅 ｜ 联系 <a href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>
-    </footer>
-  </main>
+<!-- 证书大图预览 -->
+<div id="cert-overlay" onclick="this.style.display='none'">
+  <img id="cert-overlay-img" src="" alt="证书预览">
 </div>
 
-<!-- 案例详情模态 -->
-<div class="overlay" id="caseModal">
-  <div class="modal">
-    <div class="modal-cover" id="mCover">
-      <span class="big" id="mBig"></span>
-      <button class="modal-x" data-close>&times;</button>
-      <h3 id="mTitle"></h3>
+<div class="container" id="app" style="display:none;">
+  <h1>✨ 暖光动态墙</h1>
+
+  <!-- ====== 证书展示栏 ====== -->
+  <div class="cert-section">
+    <h2>📜 我的证书</h2>
+    <div class="cert-grid" id="cert-grid"></div>
+  </div>
+
+  <div class="compose">
+    <textarea id="content-input" placeholder="写下此刻的想法…（最多1000字）" maxlength="1000"></textarea>
+    <div class="compose-footer">
+      <span class="char-count"><span id="char-num">0</span>/1000</span>
+      <button class="btn-send" id="send-btn" disabled>发布</button>
     </div>
-    <div class="modal-body">
-      <div class="cols">
-        <div><h4><i class="fas fa-cogs"></i>核心能力</h4><ul id="mCap"></ul></div>
-        <div><h4><i class="fas fa-chart-line"></i>业务价值</h4><ul id="mVal"></ul></div>
-      </div>
-      <h4 style="margin-bottom:10px"><i class="fas fa-layer-group"></i>技术栈</h4>
-      <div class="modal-tech" id="mTech"></div>
-      <div class="modal-actions" id="mActions"></div>
-    </div>
+  </div>
+
+  <div class="post-list" id="post-list">
+    <div class="empty">加载中…</div>
   </div>
 </div>
 
-<!-- 证书大图 -->
-<div class="overlay" id="lightbox" data-close>
-  <button class="modal-x" data-close style="position:fixed;top:22px;right:28px">&times;</button>
-  <img class="lb-img" id="lbImg" src="" alt="">
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-/* ============ 数据：案例 ============ */
-const CASES = [
-  { featured:true, color:'linear-gradient(135deg,#e8730c,#ff9d4d)', icon:'fa-layer-group', tag:'USER VALUE',
-    title:'RFM 用户价值分析案例',
-    desc:'基于 Python(Pandas) 构建 RFM 模型，对线上平台用户做三维度打分与分层，输出可复现的交互式分析报告。',
-    tech:['Python','Pandas','Jupyter','RFM'],
-    cap:['基于 Python(Pandas) 清洗交易数据并构建 RFM 模型','R/F/M 三维度打分与用户分层（重要价值/挽留/流失等）','各层级用户数量、消费金额占比可视化','Jupyter Notebook 交互式分析全流程可复现'],
-    val:['精准识别高价值用户群，指导差异化营销资源投放','量化用户流失风险，制定针对性召回策略','提供可复用的 Python 用户分层方法论模板'],
-    actions:[{t:'新标签页预览报告',c:'a1',href:'线上平台用户RFM分析.html',target:true},{t:'下载 .ipynb 源码',c:'a2',href:'线上平台用户RFM分析.ipynb',dl:true}] },
-  { color:'linear-gradient(135deg,#2f6fed,#5b8def)', icon:'fa-chart-pie', tag:'INVENTORY',
-    title:'快消品进销存演示案例',
-    desc:'截止 2020-07-22 的进销存数据可视化看板，监控品牌库存、月销量与临期风险。',
-    tech:['Power BI','DAX','Excel'],
-    cap:['截止 2020年7月22日 进销存数据可视化','各品牌库存数量与产品月销量监控','即将临期/过期商品数分布追踪','各产品进货需求分析与销售额趋势展示'],
-    val:['直观呈现库存金额环比(108%) 与销售额环比(21%)','快速定位库存周转异常品牌（如永圣、中粮）','辅助日常供应链管理与终端陈列决策'],
-    actions:[{t:'下载 PDF',c:'a1',href:'快消品进销存演示案例.pdf',dl:true},{t:'下载 .pbix',c:'a2',href:'快消品进销存演示案例.pbix',dl:true}] },
-  { color:'linear-gradient(135deg,#1f9d63,#3ec28a)', icon:'fa-boxes-stacked', tag:'ANALYSIS',
-    title:'快消品进销存案例分析报告',
-    desc:'整体进销存趋势、品牌单品动销(ABC)、库存健康度与智能补货需求的完整分析报告。',
-    tech:['Power BI','ABC分析','SQL'],
-    cap:['整体进销存趋势与周转分析','品牌与单品动销分析（ABC 分析）','库存健康度与临期风险诊断','智能采购与补货需求分析'],
-    val:['识别滞销与缺货风险，输出精细化采购与清仓建议','优化高价值商品采购模型，降低资金占用','建立库存健康度预警看板'],
-    actions:[{t:'下载 PDF',c:'a1',href:'快消品进销存案例分析报告.pdf',dl:true},{t:'下载 .pbix',c:'a2',href:'快消品进销存演示案例.pbix',dl:true}] },
-  { color:'linear-gradient(135deg,#8b5cf6,#a78bfa)', icon:'fa-rotate', tag:'RETENTION',
-    title:'复购分析案例',
-    desc:'销售趋势、消费占比、cohort 留存率与新增/复购用户订单拆解的复购专题分析。',
-    tech:['Power BI','Cohort','Excel'],
-    cap:['销售金额变化趋势与消费金额占比可视化','首次下单月份 cohorts 留存率统计','不同类别客户消费金额对比','月新增和复购用户订单数及人均订单数追踪'],
-    val:['量化新增(57%) 与复购(43%) 用户的销售贡献度','洞察次月留存高峰期及长期留存衰减规律','支撑精细化运营策略落地与沉睡用户召回'],
-    actions:[{t:'下载 PDF',c:'a1',href:'复购分析案例.pdf',dl:true},{t:'下载 .pbix',c:'a2',href:'复购分析案例.pbix',dl:true}] },
-  { color:'linear-gradient(135deg,#e23b6d,#f06595)', icon:'fa-users', tag:'LIFECYCLE',
-    title:'复购案例分析',
-    desc:'母婴店铺 2014 年 1-7 月销售额趋势、新增/复购拆解与「黄金60天」转化分析。',
-    tech:['Power BI','归因分析','Excel'],
-    cap:['母婴店铺 2014年1-7月 销售额趋势分析','新增与复购用户的消费人数及订单拆解','消费金额与人均消费金额归因分析','复购与留存比例分析（黄金60天转化）'],
-    val:['明确收入增长/下降原因（拉新失速、新客转化率低等）','强化新客「黄金60天」转化 SOP','提升复购用户客单价，优化促销节奏与防流失机制'],
-    actions:[{t:'下载 PDF',c:'a1',href:'复购案例分析.pdf',dl:true},{t:'下载 .pbix',c:'a2',href:'复购分析案例.pbix',dl:true}] }
+// ============================================
+// 👇 请替换为你自己的 Supabase 项目信息
+const SUPABASE_URL = 'https://bqdhqnviozvqljigzys.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZGhxbnZpb3p2cWxqaWd6eXMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0NzgxNTI2NSwiZXhwIjoyMDYzMzkwODY1fQ.xTjGvZkPwJKvXlOlMqJGOkhOmJgCm3OoJjGqsQXZpEw';
+const ACCESS_PASSWORD = '12345678'; // 👈 修改访问密码
+// ============================================
+
+// ====== 证书配置（文件名已确认为 jpg）======
+const certificates = [
+  { name: 'CDA数据分析师',   img: './certs/CDA-LEVEL1.jpg' },
+  { name: '英语六级',        img: './certs/CET6.jpg' },
+  { name: '计算机二级',      img: './certs/office_level2.jpg' },
+  { name: '普通话水平测试',  img: './certs/putonghua.jpg' },
 ];
 
-/* ============ 数据：证书 ============ */
-const CERTS = [
-  { name:'CDA 数据分析师', sub:'LEVEL-1', img:'CDA-LEVEL1.jpg', click:true },
-  { name:'Office 计算机', sub:'二级证书', icon:'fa-desktop' },
-  { name:'英语六级', sub:'CET-6', icon:'fa-language' },
-  { name:'普通话', sub:'二甲证书', icon:'fa-microphone-lines' }
-];
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ============ 渲染案例 ============ */
-const caseGrid = document.getElementById('caseGrid');
-function renderCases(filter=''){
-  const f = filter.trim().toLowerCase();
-  const list = CASES.map((c,i)=>({c,i})).filter(({c})=>{
-    if(!f) return true;
-    return (c.title+c.desc+c.tag+c.tech.join(' ')).toLowerCase().includes(f);
-  });
-  if(!list.length){ caseGrid.innerHTML='<div class="no-result"><i class="fas fa-magnifying-glass"></i> 没有匹配「'+filter+'」的案例</div>'; return; }
-  caseGrid.innerHTML = list.map(({c,i})=>`
-    <article class="case ${c.featured?'featured':''}" data-i="${i}">
-      <div class="case-cover" style="background:${c.color}">
-        <span class="big">${String(i+1).padStart(2,'0')}</span>
-        <i class="ci fas ${c.icon}"></i>
-        <span class="ctag">${c.tag}</span>
-      </div>
-      <div class="case-body">
-        <h3>${c.title}</h3>
-        <p>${c.desc}</p>
-        <div class="case-foot">
-          <div class="case-tech">${c.tech.slice(0,3).map(t=>`<span>${t}</span>`).join('')}</div>
-          <span class="case-more">详情 <i class="fas fa-arrow-right"></i></span>
-        </div>
-      </div>
-    </article>`).join('');
-}
-renderCases();
-caseGrid.addEventListener('click', e=>{
-  const card = e.target.closest('.case'); if(card) openCase(+card.dataset.i);
-});
-document.getElementById('caseSearch').addEventListener('input', e=> renderCases(e.target.value));
-
-/* ============ 案例模态 ============ */
-const caseModal = document.getElementById('caseModal');
-function openCase(i){
-  const c = CASES[i];
-  document.getElementById('mCover').style.background = c.color;
-  document.getElementById('mBig').textContent = String(i+1).padStart(2,'0');
-  document.getElementById('mTitle').textContent = c.title;
-  document.getElementById('mCap').innerHTML = c.cap.map(x=>`<li>${x}</li>`).join('');
-  document.getElementById('mVal').innerHTML = c.val.map(x=>`<li>${x}</li>`).join('');
-  document.getElementById('mTech').innerHTML = c.tech.map(t=>`<span>${t}</span>`).join('');
-  document.getElementById('mActions').innerHTML = c.actions.map(a=>{
-    const attr = a.dl ? 'download' : (a.target ? 'target="_blank" rel="noopener"' : '');
-    const ico = a.dl ? 'fa-download' : 'fa-up-right-from-square';
-    return `<a class="${a.c}" href="${a.href}" ${attr}><i class="fas ${ico}"></i> ${a.t}</a>`;
-  }).join('');
-  caseModal.classList.add('on'); lockScroll(true);
-}
-
-/* ============ 渲染证书 ============ */
-document.getElementById('certGrid').innerHTML = CERTS.map((c,i)=>`
-  <div class="cert ${c.click?'click':''}" ${c.click?`data-cert="${c.img}"`:''}>
-    <div class="thumb">
-      ${c.img
-        ? `<img src="${c.img}" alt="${c.name}" loading="lazy" decoding="async" onerror="this.outerHTML='<i class=\\'ph-ico fas fa-certificate\\'></i>'">
-           <div class="zoom"><i class="fas fa-magnifying-glass-plus"></i>点击查看大图</div>`
-        : `<i class="ph-ico fas ${c.icon}"></i>`}
+// --- 渲染证书栏 ---
+function renderCertificates() {
+  const grid = document.getElementById('cert-grid');
+  grid.innerHTML = certificates.map(c => `
+    <div class="cert-card">
+      <img src="${c.img}" alt="${c.name}" 
+           onclick="previewCert('${c.img}')" 
+           onerror="this.style.opacity='0.3';this.alt='图片加载失败'">
+      <div class="cert-name">${c.name}</div>
     </div>
-    <div class="cn">${c.name}<small>${c.sub}</small></div>
-  </div>`).join('');
-const lightbox = document.getElementById('lightbox');
-document.getElementById('certGrid').addEventListener('click', e=>{
-  const el = e.target.closest('[data-cert]'); if(!el) return;
-  document.getElementById('lbImg').src = el.dataset.cert;
-  lightbox.classList.add('on'); lockScroll(true);
+  `).join('');
+}
+
+// 证书大图预览
+function previewCert(src) {
+  const overlay = document.getElementById('cert-overlay');
+  document.getElementById('cert-overlay-img').src = src;
+  overlay.style.display = 'flex';
+}
+
+// --- 密码验证 ---
+function unlock() {
+  const pwd = document.getElementById('pwd-input').value;
+  if (pwd === ACCESS_PASSWORD) {
+    document.getElementById('lock-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    showToast('密码错误');
+    document.getElementById('pwd-input').value = '';
+    document.getElementById('pwd-input').focus();
+  }
+}
+document.getElementById('pwd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') unlock();
 });
 
-/* ============ 通用关闭 ============ */
-function lockScroll(on){ document.body.style.overflow = on ? 'hidden' : ''; }
-document.querySelectorAll('.overlay').forEach(ov=>{
-  ov.addEventListener('click', e=>{
-    if(e.target===ov || e.target.closest('[data-close]')){
-      ov.classList.remove('on'); lockScroll(false);
-      if(ov===lightbox) setTimeout(()=>document.getElementById('lbImg').src='',300);
-    }
+// --- Toast ---
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// --- 主逻辑 ---
+async function initApp() {
+  renderCertificates();
+  await loadPosts();
+  subscribeRealtime();
+}
+
+// 加载历史动态
+async function loadPosts() {
+  const { data, error } = await sb
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) { showToast('加载失败: ' + error.message); return; }
+  renderPosts(data);
+}
+
+// 渲染列表
+function renderPosts(posts) {
+  const list = document.getElementById('post-list');
+  if (!posts || posts.length === 0) {
+    list.innerHTML = '<div class="empty">还没有动态，来发布第一条吧 ✨</div>';
+    return;
+  }
+  list.innerHTML = posts.map(p => postHTML(p)).join('');
+}
+
+function postHTML(p) {
+  const time = new Date(p.created_at).toLocaleString('zh-CN', {
+    month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'
   });
-});
-document.addEventListener('keydown', e=>{
-  if(e.key==='Escape'){ document.querySelectorAll('.overlay.on').forEach(o=>o.classList.remove('on')); lockScroll(false); }
-});
-
-/* ============ 帖子 / 动态 (localStorage) ============ */
-const PKEY = 'chi_posts_v1';
-const SEED = [
-  { txt:'刚把 RFM 案例的 Notebook 重构了一遍，把分层阈值改成按业务分位数动态计算，比写死的均值稳健多了。方法论可迁移性 +1 ✅', tags:['复盘','Python'], ts:Date.now()-1000*60*42 },
-  { txt:'今天读到一个观点：看板的第一屏只该回答一个问题。深以为然——下次做进销存看板，先把「现在该补货吗」放在最上面。', tags:['思考','可视化'], ts:Date.now()-1000*60*60*26 },
-  { txt:'周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾', tags:['生活'], ts:Date.now()-1000*60*60*72 }
-];
-function loadPosts(){
-  try{ const r = JSON.parse(localStorage.getItem(PKEY)); if(Array.isArray(r)) return r; }catch(e){}
-  localStorage.setItem(PKEY, JSON.stringify(SEED)); return SEED;
-}
-function savePosts(p){ localStorage.setItem(PKEY, JSON.stringify(p)); }
-function relTime(ts){
-  const s = Math.floor((Date.now()-ts)/1000);
-  if(s<60) return '刚刚';
-  if(s<3600) return Math.floor(s/60)+' 分钟前';
-  if(s<86400) return Math.floor(s/3600)+' 小时前';
-  if(s<86400*30) return Math.floor(s/86400)+' 天前';
-  const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function esc(s){ return s.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-const postList = document.getElementById('postList');
-function renderPosts(){
-  const posts = loadPosts();
-  if(!posts.length){ postList.innerHTML='<div class="no-result">还没有动态，写第一条吧 ✍️</div>'; return; }
-  postList.innerHTML = posts.map((p,idx)=>`
-    <div class="post" data-idx="${idx}">
-      <button class="del" title="删除" data-del="${idx}"><i class="fas fa-trash-can"></i></button>
-      <div class="ph">
-        <div class="pav">池</div>
-        <div><div class="who">池增历</div><div class="when">${relTime(p.ts)}</div></div>
+  const tags = (p.tags || []).map(t => `<span class="tag">#${t}</span>`).join('');
+  return `
+    <div class="post-card">
+      <div class="post-content">${escapeHtml(p.content)}</div>
+      <div class="post-meta">
+        <span>🕐 ${time}</span>
+        ${tags}
       </div>
-      <div class="ptxt">${esc(p.txt)}</div>
-      ${p.tags&&p.tags.length?`<div class="ptags">${p.tags.map(t=>`<span>#${esc(t)}</span>`).join('')}</div>`:''}
-    </div>`).join('');
+    </div>`;
 }
-renderPosts();
-function publish(){
-  const inp = document.getElementById('postInput');
-  const txt = inp.value.trim(); if(!txt){ inp.focus(); return; }
-  const tags = document.getElementById('postTags').value.split(/[,，]/).map(t=>t.trim()).filter(Boolean);
-  const posts = loadPosts();
-  posts.unshift({ txt, tags, ts:Date.now() });
-  savePosts(posts);
-  inp.value=''; document.getElementById('postTags').value='';
-  renderPosts();
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
-document.getElementById('postPub').addEventListener('click', publish);
-document.getElementById('postInput').addEventListener('keydown', e=>{
-  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); publish(); }
+
+// 实时订阅
+function subscribeRealtime() {
+  sb.channel('posts-realtime')
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'posts' },
+      (payload) => {
+        const list = document.getElementById('post-list');
+        const empty = list.querySelector('.empty');
+        if (empty) empty.remove();
+        list.insertAdjacentHTML('afterbegin', postHTML(payload.new));
+      }
+    )
+    .subscribe();
+}
+
+// --- 发布 ---
+const input = document.getElementById('content-input');
+const sendBtn = document.getElementById('send-btn');
+const charNum = document.getElementById('char-num');
+
+input.addEventListener('input', () => {
+  const len = input.value.trim().length;
+  charNum.textContent = input.value.length;
+  sendBtn.disabled = len === 0 || len > 1000;
 });
-postList.addEventListener('click', e=>{
-  const b = e.target.closest('[data-del]'); if(!b) return;
-  const posts = loadPosts(); posts.splice(+b.dataset.del,1); savePosts(posts); renderPosts();
+
+sendBtn.addEventListener('click', async () => {
+  const content = input.value.trim();
+  if (!content) return;
+  sendBtn.disabled = true;
+  sendBtn.textContent = '发布中…';
+
+  const { error } = await sb.from('posts').insert({ content, tags: [] });
+
+  sendBtn.textContent = '发布';
+  if (error) {
+    showToast('发布失败: ' + error.message);
+    sendBtn.disabled = false;
+  } else {
+    input.value = '';
+    charNum.textContent = '0';
+    sendBtn.disabled = true;
+  }
 });
-
-/* ============ 实时日期 / 时钟 / 农历 ============ */
-const WK = ['日','一','二','三','四','五','六'];
-function getLunar(d){
-  try{
-    const parts = new Intl.DateTimeFormat('zh-CN-u-ca-chinese',{month:'numeric',day:'numeric'}).formatToParts(d);
-    const m = parts.find(p=>p.type==='month'), day = parts.find(p=>p.type==='day');
-    if(m && day) return '农历'+m.value+'月'+day.value;
-  }catch(e){}
-  return '';
-}
-function greet(h){ return h<5?'夜深了':h<11?'早上好':h<13?'中午好':h<18?'下午好':'晚上好'; }
-function tick(){
-  const d = new Date();
-  const lunar = getLunar(d);
-  document.getElementById('dateText').innerHTML =
-    `今天是 <b>${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日</b>，周${WK[d.getDay()]}${lunar?'，'+lunar:''} · ${greet(d.getHours())}`;
-  const p = n=>String(n).padStart(2,'0');
-  document.getElementById('clock').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-tick(); setInterval(tick,1000);
-
-/* ============ 主题切换 ============ */
-const root = document.documentElement;
-const themeBtn = document.getElementById('themeBtn');
-function setTheme(t){
-  root.setAttribute('data-theme', t);
-  localStorage.setItem('chi_theme', t);
-  themeBtn.innerHTML = t==='dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-}
-setTheme(localStorage.getItem('chi_theme') || (matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
-themeBtn.addEventListener('click', ()=> setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark'));
-
-/* ============ 导航平滑跳转 + 滚动高亮 ============ */
-const navLinks = [...document.querySelectorAll('#nav a')];
-const secs = navLinks.map(a=>document.querySelector(a.getAttribute('href')));
-navLinks.forEach(a=> a.addEventListener('click', e=>{
-  e.preventDefault();
-  const t = document.querySelector(a.getAttribute('href'));
-  if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
-}));
-const toTop = document.getElementById('toTop');
-function onScroll(){
-  const y = window.scrollY + window.innerHeight*0.32;
-  let cur = 0;
-  secs.forEach((s,i)=>{ if(s && s.offsetTop<=y) cur=i; });
-  navLinks.forEach((a,i)=> a.classList.toggle('active', i===cur));
-  toTop.classList.toggle('show', window.scrollY>500);
-}
-window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
-toTop.addEventListener('click', ()=> window.scrollTo({top:0,behavior:'smooth'}));
-
-/* ============ 滚动 reveal ============ */
-const io = new IntersectionObserver(es=>{
-  es.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
-},{threshold:.12});
-document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
 </script>
 </body>
 </html>
