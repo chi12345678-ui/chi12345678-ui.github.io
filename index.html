@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>欢迎来到我的数据分析作品集 | Data Analytics Portfolio</title>
+    <title>池增历 | 数据分析师个人主页</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
@@ -18,26 +18,62 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            line-height: 1.6;
-            color: var(--dark);
-            background-color: #fafafa;
-            padding: 20px;
+            line-height: 1.6; color: var(--dark); background-color: #fafafa; padding-bottom: 20px;
         }
         .container { max-width: 1600px; margin: 0 auto; width: 95%; }
-        header { text-align: center; margin-bottom: 40px; padding: 20px; }
-        h1 {
-            font-size: 2.2rem; color: var(--dark); margin-bottom: 12px; position: relative;
-        }
-        h1::after {
-            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
-            width: 80px; height: 4px; background: var(--secondary); border-radius: 2px;
-        }
-        .intro {
-            font-size: 1.1rem; color: #555; max-width: 900px; margin: 0 auto;
-            background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-        }
 
-        /* ========== 原始左右布局卡片 ========== */
+        /* ========== 1. 个人主页 Hero 区 ========== */
+        .hero-banner {
+            width: 100%; height: 320px; object-fit: cover; display: block;
+            border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+        }
+        .profile-section {
+            max-width: 1600px; width: 95%; margin: -60px auto 40px; position: relative; z-index: 10;
+            display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap;
+        }
+        .avatar-wrapper {
+            flex-shrink: 0; width: 140px; height: 140px; border-radius: 50%; overflow: hidden;
+            border: 5px solid white; box-shadow: 0 4px 20px rgba(0,0,0,0.1); background: white;
+        }
+        .avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-info {
+            flex: 1; min-width: 300px; background: white; border-radius: 12px; padding: 32px 36px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 70px;
+        }
+        .profile-info h1 { font-size: 2rem; margin-bottom: 8px; color: var(--dark); }
+        .profile-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; font-size: 0.95rem; color: #666; }
+        .profile-meta span { display: flex; align-items: center; gap: 6px; }
+        .profile-meta i { color: var(--secondary); width: 16px; text-align: center; }
+        .hobby-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .hobby-tag {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 16px;
+            background: var(--light); border: 1px solid var(--gray); border-radius: 20px;
+            font-size: 0.88rem; color: var(--dark); transition: all 0.2s;
+        }
+        .hobby-tag:hover { border-color: var(--secondary); color: var(--secondary); background: #eaf2f8; }
+        .cert-card {
+            flex: 0 0 220px; background: white; border-radius: 12px; padding: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 70px; text-align: center;
+        }
+        .cert-card img {
+            width: 100%; border-radius: 8px; border: 1px solid var(--gray); margin-bottom: 10px;
+        }
+        .cert-card p { font-size: 0.82rem; color: #666; font-weight: 600; }
+
+        /* ========== 2. 作品集标题 ========== */
+        .portfolio-header {
+            text-align: center; margin: 50px 0 32px; padding: 0 20px;
+        }
+        .portfolio-header h2 {
+            font-size: 1.8rem; color: var(--dark); position: relative; display: inline-block;
+        }
+        .portfolio-header h2::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 4px; background: var(--secondary); border-radius: 2px;
+        }
+        .portfolio-header p { margin-top: 16px; color: #666; font-size: 1rem; }
+
+        /* ========== 3. 原始左右布局卡片（完全保留） ========== */
         .case-card {
             display: flex; flex-wrap: wrap; gap: 0; background: white; border-radius: 10px;
             overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 32px;
@@ -75,11 +111,9 @@
         .btn-outline { background: white; color: var(--secondary); border-color: var(--gray); }
         .btn-outline:hover { background: var(--light); }
         .pdf-preview { flex: 1; min-width: 0; position: relative; background: #fff; }
-        .pdf-preview iframe {
-            width: 100%; height: 100%; min-height: 900px; border: none; display: block;
-        }
+        .pdf-preview iframe { width: 100%; height: 100%; min-height: 900px; border: none; display: block; }
 
-        /* ========== RFM 主推案例 ========== */
+        /* RFM 主推案例 */
         .case-card.featured {
             flex-direction: column; min-height: auto; border: 2px solid var(--secondary);
             box-shadow: 0 6px 30px rgba(52,152,219,0.15); position: relative;
@@ -110,7 +144,7 @@
         .featured-preview-bar a { color: var(--secondary); font-weight: 600; text-decoration: underline; cursor: pointer; }
         .featured-preview-bar a:hover { color: var(--accent); }
 
-        /* ========== 右下角创作者 ========== */
+        /* 右下角创作者 */
         .creator-badge {
             position: fixed; right: 24px; bottom: 24px; background: white; color: var(--dark);
             padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.12);
@@ -119,8 +153,14 @@
         }
         .creator-badge i { color: var(--secondary); }
 
-        /* ========== 响应式 ========== */
+        /* 响应式 */
         @media (max-width: 900px) {
+            .hero-banner { height: 200px; border-radius: 0; }
+            .profile-section { flex-direction: column; align-items: center; margin-top: -40px; gap: 16px; }
+            .avatar-wrapper { width: 100px; height: 100px; }
+            .profile-info, .cert-card { margin-top: 0; width: 100%; flex: none; }
+            .profile-info { padding: 24px; }
+            .cert-card { padding: 12px; }
             .container { width: 100%; padding: 0 10px; }
             .case-card { flex-direction: column; min-height: auto; }
             .case-info { flex: none; width: 100%; border-right: none; border-bottom: 1px solid var(--gray); }
@@ -140,13 +180,47 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>欢迎来到我的数据分析作品集</h1>
-            <p class="intro">基于 Python 与 Power BI 构建的实战分析报告，支持在线预览与源文件下载。所有案例均使用模拟数据，聚焦方法论可迁移性。</p>
-        </header>
 
-        <!-- ✅ RFM主案例 -->
+    <!-- ✅ Banner 背景图 -->
+    <!-- ⚠️ 请将 banner.jpg 替换为你上传的banner图片文件名 -->
+    <img class="hero-banner" src="banner.jpg" alt="Banner">
+
+    <!-- ✅ 个人信息区 -->
+    <div class="profile-section">
+        <div class="avatar-wrapper">
+            <!-- ⚠️ 请将 me.jpg 替换为你上传的个人照片文件名 -->
+            <img src="me.jpg" alt="池增历">
+        </div>
+        <div class="profile-info">
+            <h1>池增历</h1>
+            <div class="profile-meta">
+                <span><i class="fas fa-user"></i> 男</span>
+                <span><i class="fas fa-envelope"></i> chift0707@gmail.com</span>
+                <span><i class="fas fa-briefcase"></i> 数据分析师</span>
+            </div>
+            <p style="color:#555; margin-bottom:12px;">基于 Python 与 Power BI 构建实战分析报告，聚焦方法论可迁移性与业务落地价值。</p>
+            <div class="hobby-tags">
+                <span class="hobby-tag"><i class="fas fa-table-tennis-paddle-ball"></i> 网球</span>
+                <span class="hobby-tag"><i class="fas fa-book-open"></i> 阅读</span>
+                <span class="hobby-tag"><i class="fas fa-microphone-lines"></i> 朗诵</span>
+                <span class="hobby-tag"><i class="fas fa-fish"></i> 草缸</span>
+            </div>
+        </div>
+        <div class="cert-card">
+            <!-- ⚠️ 请将 cda-cert.jpg 替换为你上传的证书图片文件名 -->
+            <img src="cda-cert.jpg" alt="CDA数据分析师证书">
+            <p>CDA 数据分析师认证</p>
+        </div>
+    </div>
+
+    <!-- ✅ 作品集区域 -->
+    <div class="container">
+        <div class="portfolio-header">
+            <h2>作品集</h2>
+            <p>所有案例均使用模拟数据，支持在线预览与源文件下载</p>
+        </div>
+
+        <!-- RFM主案例 -->
         <div class="case-card featured">
             <div class="case-info">
                 <h3><i class="fas fa-layer-group"></i> RFM用户价值分析案例</h3>
@@ -170,7 +244,6 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <!-- ⚠️ 请确认文件名完全匹配，否则404 -->
                     <a href="线上平台用户RFM分析.html" class="btn btn-primary" target="_blank"><i class="fas fa-external-link-alt"></i> 新标签页预览报告</a>
                     <a href="线上平台用户RFM分析.ipynb" class="btn btn-outline" download><i class="fas fa-file-code"></i> 下载 .ipynb 源码</a>
                 </div>
@@ -178,7 +251,7 @@
             <div class="featured-preview-bar">
                 <i class="fas fa-info-circle"></i>
                 <span>该报告为 Jupyter Notebook 导出的交互式 HTML，含动态图表与代码。</span>
-                <a href="RFM用户价值分析案例.html" target="_blank">👉 点击此处在新标签页中完整预览</a>
+                <a href="线上平台用户RFM分析.html" target="_blank">👉 点击此处在新标签页中完整预览</a>
             </div>
         </div>
 
