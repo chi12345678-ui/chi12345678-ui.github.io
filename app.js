@@ -50,6 +50,8 @@ async function route() {
 /* 所有 # 开头内部链接统一走 go（含导航/导览，解决同 hash 不刷新） */
 document.addEventListener('click', e => {
     const sync = e.target.closest('.sync-btn'); if (sync) { e.preventDefault(); e.stopPropagation(); resyncOne(sync.dataset.sync); return; }
+    const ed = e.target.closest('[data-edit]'); if (ed) { e.preventDefault(); e.stopPropagation(); editLearning(ed.dataset.edit); return; }
+    const dl = e.target.closest('[data-del]'); if (dl) { e.preventDefault(); e.stopPropagation(); deleteLearning(dl.dataset.del, dl.dataset.local === '1'); return; }
     const pc = e.target.closest('.postcard'); if (pc) { e.preventDefault(); go('read/' + encodeURIComponent(pc.dataset.id)); return; }
     const limg = e.target.closest('.limg'); if (limg) { openLB(limg.dataset.img || limg.src); return; }
     const a = e.target.closest('a[href^="#"]'); if (a) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }
@@ -96,13 +98,13 @@ async function loadLearning() {
     })();
 }
 function invalidateLearning() { _lp = null; }
-function cardHTML(p, i) {
-    const ts = p.created_at ? new Date(p.created_at).getTime() : Date.now();
-    const imgs = p.images || []; const cover = imgs[0] ? `background-image:url('${imgs[0]}')` : `background:${GRADS[i % GRADS.length]}`;
-    const tags = (p.tags || []).slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('');
-    const ex = (p.content || '').replace(/https?:\/\/\S+/g, '').slice(0, 90);
-    const flag = p._local ? `<span class="draft-flag">📴 本机</span><button class="sync-btn" data-sync="${esc(p.id)}" title="同步到云端"><i class="fas fa-rotate"></i></button>` : '';
-    return `<article class="postcard" data-id="${esc(p.id)}">${flag}<div class="pc-cover" style="${cover}"><span class="pc-emoji">${p.emoji || '📝'}</span><span class="pc-date">${fmtDate(p.created_at || new Date().toISOString())}</span></div><div class="pc-body"><h3>${esc(p.title || '无标题')}</h3><p class="pc-ex">${esc(ex)}</p><div class="pc-tags">${tags}</div></div></article>`;
+function cardHTML(p,i){
+  const imgs=p.images||[];const cover=imgs[0]?`background-image:url('${imgs[0]}')`:`background:${GRADS[i%GRADS.length]}`;
+  const tags=(p.tags||[]).slice(0,4).map(t=>`<span>${esc(t)}</span>`).join('');
+  const ex=(p.content||'').replace(/<[^>]+>/g,'').replace(/https?:\/\/\S+/g,'').replace(/\n+/g,' ').trim().slice(0,120);
+  const pinned=isPinned(p)?`<span class="pin-flag">📌 置顶</span>`:'';const localFlag=p._local?`<span class="draft-flag">📴 本机</span>`:'';
+  const mgmt=`<div class="pc-mgmt"><button class="pc-m" data-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-del="${esc(p.id)}" data-local="${p._local?1:0}" title="删除"><i class="fas fa-trash"></i></button>${p._local?`<button class="pc-m sync-btn" data-sync="${esc(p.id)}" title="同步云端"><i class="fas fa-rotate"></i></button>`:''}</div>`;
+  return `<article class="postcard postcard--row" data-id="${esc(p.id)}"><div class="pc-thumb" style="${cover}"><span class="pc-emoji">${p.emoji||'📝'}</span></div><div class="pc-main"><div class="pc-top"><span class="pc-date">${fmtDate(p.created_at||new Date().toISOString())}</span>${pinned}${localFlag}</div><h3 class="pc-title">${esc(p.title||'无标题')}</h3><p class="pc-ex">${esc(ex)}</p><div class="pc-tags">${tags}</div></div>${mgmt}</article>`;
 }
 function renderLearningList() { const g = document.getElementById('learningGrid'); if (!learningList.length) { g.innerHTML = '<div class="no-result">还没有学习记录，写第一篇吧 ✍️</div>'; return; } g.innerHTML = learningList.map(cardHTML).join(''); }
 function renderHomeLatest() { const list = learningList.slice(0, 5); const h = document.getElementById('homeLatestH'), g = document.getElementById('homeLatest'); if (!list.length) { h.style.display = 'none'; g.innerHTML = ''; return; } h.style.display = 'flex'; g.innerHTML = list.map(cardHTML).join(''); }
@@ -121,17 +123,24 @@ function renderRead(p, preview) {
         nav = `<div class="article-nav">${card(older, 'left', '')}${card(newer, 'right', 'next')}</div>`;
     }
     const localBar = p._local ? `<div class="preview-bar"><i class="fas fa-hard-drive"></i> 这篇还在本机，联网后会自动同步。<button class="btn btn-ghost" id="syncNow" style="padding:7px 14px"><i class="fas fa-rotate"></i> 立即同步</button></div>` : '';
-    const bar = preview ? `<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>` : `<div class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</div>`;
+        const bar = preview ? `<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>` : `<div class="read-bar"><span class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</span><span class="rb-spacer"></span><button class="btn btn-ghost rb-btn" id="editCur"><i class="fas fa-pen"></i> 编辑</button><button class="btn btn-ghost rb-btn rb-del" id="delCur"><i class="fas fa-trash"></i> 删除</button></div>`;
     document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML&&window.__isHTML(p.content))?p.content:linkify(p.content||'')}</div>${gallery}${refs}${nav}</article>`;
     document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
     const bl = document.getElementById('backList'); if (bl) bl.onclick = () => go('learning');
     const be = document.getElementById('backEdit'); if (be) be.onclick = () => go('learning');
     const sn = document.getElementById('syncNow'); if (sn) sn.onclick = () => resyncOne(p.id);
+    const ec = document.getElementById('editCur'); if (ec) ec.onclick = () => editLearning(p.id);
+    const dc = document.getElementById('delCur'); if (dc) dc.onclick = () => deleteLearning(p.id, !!p._local);
     document.getElementById('readInner').querySelectorAll('.an[data-id]').forEach(a => a.onclick = () => go('read/' + a.dataset.id));
 }
 
 /* ===== 学习成长：编辑器 ===== */
 let lrImages = [], lrLinks = [];
+let editingId = null, editingLocal = false;
+function setEditorMode(on){const pub=document.getElementById('lrPub');pub.innerHTML=on?'<i class="fas fa-floppy-disk"></i> 保存修改':'<i class="fas fa-paper-plane"></i> 发布';let cb=document.getElementById('lrCancel');if(on&&!cb){pub.insertAdjacentHTML('afterend','<button class="btn btn-ghost" id="lrCancel" style="margin-left:8px"><i class="fas fa-xmark"></i> 取消编辑</button>');document.getElementById('lrCancel').onclick=clearEditor;}else if(!on&&cb)cb.remove();}
+function clearEditor(){editingId=null;editingLocal=false;document.getElementById('lrTitle').value='';document.getElementById('lrContent').value='';document.getElementById('lrTags').value='';lrImages=[];lrLinks=[];renderThumbs();renderLinkList();setEditorMode(false);}
+function editLearning(id){const p=learningList.find(a=>String(a.id)===String(id));if(!p)return;editingId=String(id);editingLocal=!!p._local;document.getElementById('lrTitle').value=p.title||'';document.getElementById('lrContent').value=p.content||'';document.getElementById('lrTags').value=(p.tags||[]).join(', ');lrImages=(p.images||[]).slice();renderThumbs();lrLinks=(p.links||[]).map(l=>({text:l.text,url:l.url}));renderLinkList();setEditorMode(true);showView('learning');setNav('learning');setTimeout(()=>document.getElementById('lrTitle').scrollIntoView({behavior:'smooth',block:'center'}),80);showToast('已进入编辑模式 · 改完点「保存修改」');}
+async function deleteLearning(id,isLocal){if(!confirm('确定删除这篇文章？此操作不可撤销。'))return;if(isLocal){setLR(getLR().filter(a=>String(a.id)!==String(id)));}else{let ok=false;try{const r=await withTimeout(sb.from('learning').delete().eq('id',id),15000);ok=!r.error;}catch(e){}if(!ok){showToast('删除失败 · 切到在线/检查网络');return;}}invalidateLearning();await loadLearning();renderLearningList();renderHomeLatest();if((location.hash.replace(/^#/,'')).startsWith('read/'))go('learning');showToast('已删除 ✓');}
 function renderThumbs() { document.getElementById('lrThumbs').innerHTML = lrImages.map((s, i) => `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmimg="${i}">&times;</button></div>`).join(''); }
 function renderLinkList() { document.getElementById('lrLinkList').innerHTML = lrLinks.map((l, i) => `<div class="lr-linkitem"><i class="lk fas fa-link"></i><span class="lt">${esc(l.text || l.url)}<small>${esc(l.url)}</small></span><button data-rmlink="${i}"><i class="fas fa-times"></i></button></div>`).join(''); }
 document.getElementById('lrFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; lrImages.push(await compress(f)); } renderThumbs(); e.target.value = ''; });
@@ -142,7 +151,23 @@ function gatherPost() { return { title: document.getElementById('lrTitle').value
 document.getElementById('lrPreview').addEventListener('click', () => { const p = gatherPost(); if (!p.title && !p.content) { showToast('先写点标题或正文再预览'); return; } renderRead({ ...p, created_at: new Date().toISOString(), emoji: '👀' }, true); showView('read'); setNav('learning'); });
 document.getElementById('lrPub').addEventListener('click', publishLearning);
 document.getElementById('lrContent').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); publishLearning(); } });
-async function publishLearning() {
+async function publishLearning() {  // ===== 编辑拦截：编辑模式走"更新"，绝不走下面的 insert =====
+  if (typeof editingId !== 'undefined' && editingId) {
+    const p = gatherPost();
+    if (!p.title) { document.getElementById('lrTitle').focus(); showToast('请填写标题'); return; }
+    const btn = document.getElementById('lrPub'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中…';
+    let ok = false;
+    if (typeof editingLocal !== 'undefined' && editingLocal) {
+      const d = getLR(); const idx = d.findIndex(a => String(a.id) === String(editingId));
+      if (idx >= 0) { d[idx] = Object.assign({}, d[idx], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }); setLR(d); ok = true; }
+    } else {
+      try { const r = await withTimeout(sb.from('learning').update({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, emoji: '📝' }).eq('id', editingId), 25000); ok = !r.error; } catch (e) {}
+    }
+    btn.disabled = false;
+    if (ok) { if (typeof clearEditor === 'function') clearEditor(); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已保存修改 ✓'); return; }
+    btn.innerHTML = '<i class="fas fa-floppy-disk"></i> 保存修改'; showToast('保存失败 · 原内容未丢失'); return;
+  }
+  // ===== 拦截结束：下面是你原来的新增逻辑，保持不动 =====
     const p = gatherPost(); if (!p.title) { document.getElementById('lrTitle').focus(); showToast('请填写标题'); return; }
     const btn = document.getElementById('lrPub'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发布中…';
     let ok = false;
@@ -217,7 +242,7 @@ window.addEventListener('scroll', () => toTop.classList.toggle('show', window.sc
 toTop.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 /* ===== 启动 ===== */
-renderCases(); renderCerts(); route(); subscribeRT();
+window.addEventListener('hashchange', route); renderCases(); renderCerts(); route(); subscribeRT();
 /* ===== 块1：极速/离线开关 + 网络限时（纯追加·零冲突） ===== */
 (function(){
   var HOSTS=['supabase.co','supabase.in'];
