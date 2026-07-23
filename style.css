@@ -281,33 +281,3 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 .post-box .rte{min-height:120px;font-size:17px}
 .post-box .rte-bar{border-radius:0}
 @media(max-width:820px){.life-mgmt{opacity:1;transform:none}}
-/* === 界面紧凑化优化 === */
-
-/* 1. 调整编辑器高度和内边距 */
-.rte-ed {
-    min-height: 80px !important; /* 原来可能太高了，改成 80px 更紧凑 */
-    padding: 10px 15px !important; /* 减少内部留白 */
-    font-size: 15px; /* 默认字号稍微调小一点点，显精致 */
-    line-height: 1.6; /* 行高适中 */
-}
-
-/* 2. 优化发布后的内容显示区域 (解决空旷问题) */
-/* 假设发布后的内容容器类名包含 post-content 或类似名称，根据实际情况调整 */
-.post-content, .lr-content { 
-    max-width: 680px !important; /* 限制最大宽度，防止在大屏上拉得太长 */
-    margin: 0 auto !important;   /* 居中显示 */
-    padding: 0 10px !important;
-}
-
-/* 3. 让图片在紧凑模式下更好看 */
-.post-content img, .lr-content img {
-    max-width: 100%;
-    border-radius: 8px; /* 给图片加个圆角 */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* 加点阴影增加层次感 */
-}
-
-/* 4. 调整新加的按钮样式，让它看起来不突兀 */
-.btn-resize {
-    font-weight: bold;
-    color: #555;
-}
