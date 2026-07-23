@@ -29,7 +29,7 @@ function sortPosts(arr) { return arr.slice().sort((a, b) => { const pa = isPinne
 window.__isHTML = function (s) { return /<[a-z][\s\S]*>/i.test(s || ''); };
 function toRTEHTML(raw) { raw = raw == null ? '' : String(raw); if (window.__isHTML(raw)) return raw; return raw.split('\n').map(l => { const e = esc(l); return '<p>' + (e || '<br>') + '</p>'; }).join(''); }
 
-/* ===== [v6] 乐观发布池：自己发的立刻可见、刷新不丢，不依赖云端 select 能否回读 ===== */
+/* ===== 乐观发布池：自己发的立刻可见、刷新不丢 ===== */
 const POSTED_LIFE_KEY = 'chi_posts_posted_v1', POSTED_LR_KEY = 'chi_lr_posted_v1';
 const getPostedLife = () => { try { const r = JSON.parse(localStorage.getItem(POSTED_LIFE_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
 const setPostedLife = a => localStorage.setItem(POSTED_LIFE_KEY, JSON.stringify(a));
@@ -38,7 +38,7 @@ const setPostedLR = a => localStorage.setItem(POSTED_LR_KEY, JSON.stringify(a));
 function dedupePostedArr(arr, key) { return arr.filter(p => { if (!p._posted) return true; const pt = new Date(p.created_at).getTime(); return !arr.some(o => !o._posted && !o._local && (o[key] || '') === (p[key] || '') && Math.abs(new Date(o.created_at).getTime() - pt) < 120000); }); }
 function confirmPostedArr(pool, data, key, setFn) { if (!pool.length) return; const remain = pool.filter(p => { const pt = new Date(p.created_at).getTime(); return !data.some(o => (o[key] || '') === (p[key] || '') && Math.abs(new Date(o.created_at).getTime() - pt) < 120000); }); if (remain.length !== pool.length) setFn(remain); }
 
-/* ===== 路由（乐观渲染：先秒切视图 + 本地/示例/乐观池填充，网络放后台刷新） ===== */
+/* ===== 路由 ===== */
 const views = [...document.querySelectorAll('.view')];
 const navLinks = [...document.querySelectorAll('#nav a')];
 function revealIn(v) { const els = v.querySelectorAll('.reveal'); els.forEach(e => e.classList.remove('in')); requestAnimationFrame(() => requestAnimationFrame(() => { let i = 0; els.forEach(e => { e.style.transitionDelay = (Math.min(i++, 7) * 0.04) + 's'; e.classList.add('in'); }); })); }
@@ -54,7 +54,8 @@ function primeLearningSync() {
 }
 function primeLifeSync() {
   if (lifeList.length) return;
-  lifeList = sortPosts([...SEED_LIFE.map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+  const hide = getLifeHide();
+  lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
 }
 
 async function route() {
@@ -70,7 +71,7 @@ async function route() {
   if (view === 'learning') { primeLearningSync(); renderLearningList(); }
   if (view === 'life') { primeLifeSync(); renderPosts(lifeList, false); }
   if (view === 'home') { primeLearningSync(); primeLifeSync(); renderHomeLatest(); renderHomeLife(); }
-  const valid = ['home', 'about', 'projects', 'learning', 'life'].includes(view) ? view : 'home';
+  const valid = ['home', 'about', 'projects', 'learning', 'life', 'resume'].includes(view) ? view : 'home';
   showView(valid); setNav(valid);
   if (view === 'learning') { loadLearning().then(() => { if (curHash() === 'learning') renderLearningList(); }); }
   if (view === 'life') { loadPosts().then(() => { if (curHash() === 'life') renderPosts(lifeList, !cloudOK); }); }
@@ -201,7 +202,10 @@ async function deleteLearning(id, isLocal) {
   const ppLR = getPostedLR(); if (ppLR.some(a => String(a.id) === sid)) setPostedLR(ppLR.filter(a => String(a.id) !== sid));
   if (isLocal) { setLR(getLR().filter(a => String(a.id) !== sid)); }
   else if (isSeed) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); }
-  else if (sb) { let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } } if (!ok) { showToast('删除失败 · 若重试仍失败，是数据库没开「删除权限」'); return; } }
+  else if (sb) {
+    let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
+    if (!ok) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); if (curHash().startsWith('read/')) go('learning'); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); return; }
+  } else { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); }
   invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest();
   if (curHash().startsWith('read/')) go('learning');
   showToast('已删除 ✓');
@@ -256,6 +260,9 @@ const postList = document.getElementById('postList'), postInput = document.getEl
 const PUB_HTML = postPub.innerHTML, SAVE_HTML = '<i class="fas fa-floppy-disk"></i> 保存修改', seenIds = new Set(), LKEY = 'chi_posts_local_v1'; let cloudOK = true, lifeImages = [], lifeList = [];
 let lifeEditId = null, lifeEditLocal = false;
 const SEED_LIFE = [{ id: 'sl1', content: '今天把进销存看板的"该补货吗"挪到了第一屏。看板的第一屏只该回答一个问题。', tags: ['复盘'], images: [], created_at: '2026-07-20T21:30:00Z' }, { id: 'sl2', content: '周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾', tags: ['生活'], images: [], created_at: '2026-07-13T18:00:00Z' }];
+const LIFE_HIDE_KEY = 'chi_life_hide';
+const getLifeHide = () => { try { const r = JSON.parse(localStorage.getItem(LIFE_HIDE_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
+const setLifeHide = a => localStorage.setItem(LIFE_HIDE_KEY, JSON.stringify(a));
 function loadLocal() { try { const r = JSON.parse(localStorage.getItem(LKEY)); if (Array.isArray(r)) return r; } catch (e) { } return []; }
 function saveLocal(p) { localStorage.setItem(LKEY, JSON.stringify(p)); }
 function setLiveBadge(on) { const el = document.getElementById('postModeBadge'); if (on) { el.className = 'post-mode live'; el.innerHTML = '<i class="fas fa-tower-broadcast"></i> 实时同步'; } else { el.className = 'post-mode'; el.innerHTML = '<i class="fas fa-hard-drive"></i> 本机暂存'; } }
@@ -268,9 +275,10 @@ function postHTML(p) {
   const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
   const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join('');
   const imgs = p.images || []; const imgHtml = imgs.map(s => `<img class="limg" src="${s}" data-img="${s}" alt="">`).join('');
+  const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : '';
   const flag = p._local ? `<span class="draft-flag">📴 本机</span>` : '';
   const mgmt = p._seed ? '' : `<div class="life-mgmt"><button class="pc-m" data-life-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-life-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button></div>`;
-  return `<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div>${flag}${mgmt}</div><div class="${ptxtCls}">${txtHtml}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`;
+  return `<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div>${pinned}${flag}${mgmt}</div><div class="${ptxtCls}">${txtHtml}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`;
 }
 function mergeByTime(a, b) { return sortPosts([...a, ...b]); }
 function renderPosts(posts, off) { if (!posts || !posts.length) { postList.innerHTML = off ? '<div class="no-result">离线暂存模式，先写一条存本机吧 ✍️</div>' : '<div class="no-result">还没有随笔，写第一条吧 ✍️</div>'; return; } postList.innerHTML = posts.map(postHTML).join(''); }
@@ -284,15 +292,16 @@ function renderHomeLife() {
 async function loadPosts() {
   let data = null, err = null;
   if (sb) { try { const res = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); data = res.data; err = res.error; } catch (e) { err = e; } }
+  const hide = getLifeHide();
   if (err || data === null) {
     cloudOK = false; setLiveBadge(false); setSubText(false);
-    lifeList = sortPosts([...SEED_LIFE.map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+    lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
     renderPosts(lifeList, true); return;
   }
   cloudOK = true; setLiveBadge(true); setSubText(true);
   const local = loadLocal(); if (local.length) { const remain = []; for (const x of local) { let ok = false; try { const r = await withTimeout(sb.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 12000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } saveLocal(remain); if (remain.length !== local.length) { try { const r2 = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) data = r2.data; } catch (e) { } } }
   seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
-  const seedLife = (!data || !data.length) ? SEED_LIFE.map(s => ({ ...s, _seed: true })) : [];
+  const seedLife = (!data || !data.length) ? SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })) : [];
   lifeList = mergeByTime(data || [], seedLife.concat(loadLocal().map(x => ({ ...x, _local: true }))));
   const postedLife = getPostedLife().map(x => ({ ...x, _posted: true }));
   lifeList = sortPosts([...lifeList, ...postedLife]);
@@ -307,9 +316,15 @@ function editLife(id) { const p = lifeList.find(a => String(a.id) === String(id)
 async function deleteLife(id, isLocal) {
   if (!confirm('确定删除这条随笔？此操作不可撤销。')) return;
   const sid = String(id);
+  const target = lifeList.find(p => String(p.id) === sid);
+  const isSeed = !!(target && target._seed);
   const pp = getPostedLife(); if (pp.some(a => String(a.id) === sid)) setPostedLife(pp.filter(a => String(a.id) !== sid));
   if (isLocal) { saveLocal(loadLocal().filter(a => String(a.id) !== sid)); }
-  else if (sb) { let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } } if (!ok) { showToast('删除失败 · 若重试仍失败，是数据库没开 posts 的「删除权限」'); return; } }
+  else if (isSeed) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
+  else if (sb) {
+    let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
+    if (!ok) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); if (lifeEditId === sid) clearLifeEditor(); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); loadPosts(); return; }
+  } else { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
   if (lifeEditId === sid) clearLifeEditor();
   showToast('已删除 ✓'); loadPosts();
 }
@@ -340,7 +355,8 @@ async function publishLife() {
   }
   const l = loadLocal(); l.unshift({ id: uid('LF'), content, tags, images: imgs, ts: Date.now(), created_at: new Date().toISOString(), _local: true }); saveLocal(l);
   cloudOK = false; setLiveBadge(false); setSubText(false);
-  lifeList = sortPosts([...SEED_LIFE.map(s => ({ ...s, _seed: true })), ...l.map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+  const hide = getLifeHide();
+  lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...l.map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
   renderPosts(lifeList, true);
   showToast('已保存到本机 ✓ 联网后自动补传', 6000);
 }
@@ -371,7 +387,7 @@ const toTop = document.getElementById('toTop');
 window.addEventListener('scroll', () => toTop.classList.toggle('show', window.scrollY > 500), { passive: true });
 toTop.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
-/* ===== 富文本排版编辑器（工具栏去重 · 字号±真正可用） ===== */
+/* ===== 富文本排版编辑器 ===== */
 function makeRTE(ta, opts) {
   opts = opts || {};
   if (!ta) return null;
@@ -446,7 +462,7 @@ function makeRTE(ta, opts) {
   };
 }
 
-/* ===== 启动（先打底，再路由，零等待） ===== */
+/* ===== 启动 ===== */
 window.addEventListener('hashchange', route);
 renderCases(); renderCerts();
 primeLearningSync(); primeLifeSync();
@@ -455,7 +471,7 @@ subscribeRT();
 window.__rte = makeRTE(document.getElementById('lrContent'), { ph: '正文… 支持加粗 / 列表 / 引用 / 字号±等排版', onCtrlEnter: publishLearning });
 window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点什么… 今天的一个小发现、一段心情。', onCtrlEnter: publishLife });
 
-/* ===== 极速离线开关（精简 · 零冲突） ===== */
+/* ===== 极速离线开关 ===== */
 (function () {
   var HOSTS = ['supabase.co', 'supabase.in'];
   var isSB = function (u) { return u && HOSTS.some(function (h) { return u.indexOf(h) >= 0; }); };
