@@ -347,3 +347,15 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 .rte{min-height:150px}
 .post-box .rte{min-height:88px}
 @media(max-width:680px){.sec,.editor,.post-box{max-width:100%}}
+/* ===== v7 布局兜底：强制左右两栏 + 撤全页居中（修"都飘中间"） ===== */
+.app{display:grid !important;grid-template-columns:300px minmax(0,1fr) !important;align-items:start !important}
+.side{display:flex !important;flex-direction:column !important;position:sticky !important;top:0 !important;height:100vh !important;overflow-y:auto !important;width:auto !important;max-width:none !important;margin:0 !important;transform:none !important}
+.main{margin:0 !important;padding:0 !important;width:auto !important;min-width:0 !important}
+.sec{max-width:980px !important;margin:0 auto !important;padding:34px clamp(18px,4vw,52px) 60px !important}
+/* 简历页/关于页的卡片在窄版心里更舒展 */
+.resume-card,.lede,.edges,.skill-list{max-width:100%}
+@media(max-width:980px){
+  .app{grid-template-columns:1fr !important}
+  .side{position:static !important;height:auto !important}
+  .sec{max-width:100% !important}
+}
