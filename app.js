@@ -488,3 +488,56 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   setTimeout(function () { watchHome(); paint(); }, 1200);
 })();
+/* ===== 字号修复补丁 v4（追加在最末尾 · 兼容 v3） ===== */
+(function () {
+  if (window.__CHI_FS_FIX) return; window.__CHI_FS_FIX = 1;
+  function ancFS(node, ed) {
+    while (node && node !== ed) {
+      if (node.nodeType === 1 && node.style && node.style.fontSize) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function unwrapFS(el) {
+    var p = el.parentNode; while (el.firstChild) p.insertBefore(el.firstChild, el); p.removeChild(el);
+  }
+  document.addEventListener('mousedown', function (e) {
+    var btn = e.target.closest && e.target.closest('.rte-mi[data-sub]'); if (!btn) return;
+    var sub = btn.getAttribute('data-sub') || ''; if (sub.indexOf('fs:') !== 0) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var sz = sub.split(':')[1];
+    var cont = (function () {
+      var s = getSelection(); if (s && s.rangeCount) {
+        var n = s.getRangeAt(0).commonAncestorContainer;
+        while (n && !(n.nodeType === 1 && n.classList && n.classList.contains('rte'))) n = n.parentNode;
+        if (n) return n;
+      }
+      return document.querySelector('.rte');
+    })();
+    if (cont) cont.focus();
+    var sel = getSelection(); if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+    var rng = sel.getRangeAt(0);
+    // 1) 清除选区内所有带 fontSize 的 span
+    var walker = document.createTreeWalker(rng.commonAncestorContainer, NodeFilter.SHOW_ELEMENT, null);
+    var nodes = [], cur = walker.currentNode;
+    while (cur) { if (rng.intersectsNode(cur) && cur.style && cur.style.fontSize) nodes.push(cur); cur = walker.nextNode(); }
+    nodes.forEach(unwrapFS);
+    // 2) 重新包裹整个选区
+    try {
+      var span = document.createElement('span'); span.style.fontSize = sz;
+      rng.surroundContents(span);
+    } catch (err) {
+      // 跨节点选区兜底：提取→包→插回
+      var frag = rng.extractContents();
+      var span2 = document.createElement('span'); span2.style.fontSize = sz;
+      span2.appendChild(frag); rng.insertNode(span2);
+    }
+    // 3) 同步隐藏 textarea
+    var ta = cont.parentNode && cont.parentNode.querySelector('textarea');
+    if (ta) {
+      var desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+      if (desc && desc.set) desc.set.call(ta, cont.innerHTML);
+    }
+  }, true);
+  console.log('[chi] fontsize fix v4 loaded');
+})();
