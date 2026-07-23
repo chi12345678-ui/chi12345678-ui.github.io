@@ -178,7 +178,7 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:#15171c;color:#fff;padding:14px 22px;border-radius:14px;font-size:14.5px;line-height:1.55;max-width:min(92vw,540px);text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.3s;z-index:600}.toast b{color:#ffb866}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(max-width:980px){.about-wrap{grid-template-columns:1fr;gap:28px}.article-nav{grid-template-columns:1fr}}
 @media(max-width:820px){.app{flex-direction:column}.side{width:100%;flex:none;height:auto;position:sticky;top:0;padding:18px 18px 14px}.brand{flex-direction:row;align-items:center;gap:14px;margin-bottom:0}.avatar,.avatar-fb{width:50px;height:62px;flex:0 0 62px;border-radius:14px;font-size:26px}.brand-txt{margin-top:0}.brand-txt h1{font-size:20px}.sign{display:none}.nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;flex:none;margin-top:14px}.nav a{font-size:17px;padding:11px 13px;white-space:nowrap}.side-foot{display:none}.sec{padding:50px 20px}.tools{top:14px;right:14px}.intro p{font-size:21px}.intro p .lead{font-size:26px}.about-wrap .lede{font-size:22px}.edge{grid-template-columns:64px 1fr;gap:14px}.edge .no{font-size:40px}.edge h3{font-size:21px}.edge p{font-size:17px}.block-h{font-size:23px;margin:42px 0 18px}.tour a{grid-template-columns:54px 1fr auto;gap:14px}.tour .tno{font-size:36px}.tour .tmain b{font-size:20px}.article-body{font-size:18px}.post .ptxt{font-size:17.5px}}
-/* ===== 块3：开关 + 富文本（保留） ===== */
+/* ===== 块3：极速开关 + 富文本编辑器 ===== */
 #offlineBtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);cursor:pointer;display:grid;place-items:center;font-size:15px;transition:.2s;box-shadow:var(--shadow)}
 #offlineBtn:hover{transform:translateY(-2px);color:var(--accent);border-color:var(--accent)}
 #offlineBtn.off{background:var(--accent);color:#fff;border-color:var(--accent);animation:offpulse 1.6s ease-in-out infinite}
@@ -207,8 +207,10 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 .article-body{line-height:1.9}
 .article-body blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--accent);background:var(--panel-2);border-radius:0 10px 10px 0}
 .article-body img{max-width:100%;border-radius:12px}
-/* ===== 块4：博客阅读流（把三列方块墙收成单列居中阅读栏·条目化·活反馈） ===== */
-#learningGrid,#homeLatest{display:block;grid-template-columns:none;max-width:820px;margin:0 auto;gap:0}
+/* ===== 块4：博客阅读流（首页拓宽放大 + 学习页阅读栏 · 左对齐贴标题 · 活反馈） ===== */
+#learningGrid,#homeLatest{display:block;grid-template-columns:none;gap:0;margin:0}
+#homeLatest{max-width:1240px}
+#learningGrid{max-width:1000px}
 #learningGrid .postcard,#homeLatest .postcard{width:100%}
 .postcard.postcard--row{position:relative;display:flex;flex-direction:row;align-items:center;gap:24px;padding:24px 12px 24px 22px;margin:0;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none;overflow:visible;cursor:pointer;transition:background .3s ease}
 .postcard.postcard--row:last-child{border-bottom:0}
@@ -216,10 +218,10 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 .postcard.postcard--row::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--accent);transform:scaleY(0);transform-origin:center;transition:transform .32s cubic-bezier(.2,.7,.2,1);opacity:.92}
 .postcard.postcard--row:hover::before{transform:scaleY(1)}
 .postcard.postcard--row:hover{transform:none}
-.postcard--row .pc-thumb{position:relative;flex:0 0 184px;width:184px;height:128px;border-radius:14px;background-size:cover;background-position:center;overflow:hidden;display:flex;align-items:flex-end;padding:0;box-shadow:0 6px 18px rgba(20,23,28,.10);transition:transform .4s cubic-bezier(.2,.7,.2,1),box-shadow .4s ease}
+.postcard--row .pc-thumb{position:relative;flex:0 0 200px;width:200px;height:140px;border-radius:14px;background-size:cover;background-position:center;overflow:hidden;display:flex;align-items:flex-end;padding:0;box-shadow:0 6px 18px rgba(20,23,28,.10);transition:transform .4s cubic-bezier(.2,.7,.2,1),box-shadow .4s ease}
 .postcard--row:hover .pc-thumb{transform:scale(1.045);box-shadow:0 14px 32px rgba(20,23,28,.18)}
 .postcard--row .pc-emoji{position:absolute;left:10px;bottom:8px;font-size:20px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));margin:0}
-.postcard--row .pc-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px;padding:0}
+.postcard--row .pc-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px;padding:0 92px 0 0}
 .postcard--row .pc-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .postcard--row .pc-date{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--ink-3);background:transparent;padding:0;border-radius:0}
 .postcard--row .pin-flag,.postcard--row .draft-flag{position:static;top:auto;left:auto;right:auto;font-size:11px;letter-spacing:.03em;padding:2px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;line-height:1.5}
@@ -228,11 +230,21 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 [data-theme="dark"] .postcard--row .draft-flag{background:rgba(255,255,255,.16);color:var(--ink)}
 .postcard--row .pc-title{font-family:var(--disp);font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-.01em;margin:0;color:var(--ink);transition:color .22s ease}
 .postcard--row:hover .pc-title{color:var(--accent)}
-.postcard--row .pc-ex{font-size:15px;line-height:1.72;color:var(--ink-2);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.postcard--row .pc-ex{font-size:15.5px;line-height:1.72;color:var(--ink-2);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .postcard--row .pc-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
 .postcard--row .pc-tags span{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 11%,transparent);color:var(--accent-ink);border:0}
 [data-theme="dark"] .postcard--row .pc-tags span{color:var(--accent)}
-.pc-mgmt{position:absolute;top:50%;right:12px;transform:translateY(-50%) translateX(8px);display:flex;gap:6px;opacity:0;transition:opacity .22s ease,transform .22s ease;z-index:5}
+/* 首页：门面级大卡片 */
+#homeLatest .postcard--row{gap:30px;padding:30px 16px 30px 26px}
+#homeLatest .pc-thumb{flex:0 0 262px;width:262px;height:178px;border-radius:16px}
+#homeLatest .pc-emoji{font-size:24px;left:12px;bottom:10px}
+#homeLatest .pc-title{font-size:27px;line-height:1.26}
+#homeLatest .pc-ex{font-size:16.5px;line-height:1.78;-webkit-line-clamp:3}
+#homeLatest .pc-date{font-size:12.5px}
+#homeLatest .pc-tags span{font-size:12.5px;padding:4px 12px}
+#homeLatest .pc-main{gap:10px}
+/* 管理按钮：垂直居中右侧，hover 滑入 */
+.pc-mgmt{position:absolute;top:50%;right:14px;transform:translateY(-50%) translateX(8px);display:flex;gap:6px;opacity:0;transition:opacity .22s ease,transform .22s ease;z-index:5}
 .postcard--row:hover .pc-mgmt,.postcard--row:focus-within .pc-mgmt{opacity:1;transform:translateY(-50%) translateX(0)}
 .pc-m{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);cursor:pointer;display:grid;place-items:center;font-size:13px;transition:.18s;box-shadow:var(--shadow)}
 .pc-m:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
@@ -241,9 +253,31 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
 .read-bar .back-link{margin:0}.rb-spacer{flex:1}.rb-btn{padding:7px 14px;font-size:13.5px}.rb-del{color:#e0533d}.rb-del:hover{background:#e0533d;color:#fff;border-color:#e0533d}
 @media(max-width:680px){
   #learningGrid,#homeLatest{max-width:100%}
-  .postcard.postcard--row{flex-direction:column;align-items:stretch;gap:14px;padding:20px 6px 20px 16px}
+  .postcard.postcard--row,#homeLatest .postcard--row{flex-direction:column;align-items:stretch;gap:14px;padding:20px 6px 20px 16px}
   .postcard.postcard--row::before{top:14px;bottom:14px}
-  .postcard--row .pc-thumb{flex:none;width:100%;height:190px}
-  .postcard--row .pc-title{font-size:20px}
-  .pc-mgmt{opacity:1;transform:translateY(-50%) translateX(0);top:14px;right:10px}
+  .postcard--row .pc-thumb,#homeLatest .pc-thumb{flex:none;width:100%;height:190px}
+  .postcard--row .pc-title,#homeLatest .pc-title{font-size:20px}
+  .postcard--row .pc-main{padding-right:84px}
+  .pc-mgmt{opacity:1;transform:none;top:14px;right:10px}
 }
+/* ===== 块5：生活随笔 · 行内本机标 + 编辑删除 + 富文本排版 + 发布框适配 ===== */
+.post .ph{align-items:center}
+.post .ph .pinfo{flex:1;min-width:0}
+.post .ph .draft-flag{position:static;top:auto;right:auto;left:auto;margin:0 0 0 auto;background:rgba(20,23,28,.72);color:#fff;backdrop-filter:none}
+[data-theme="dark"] .post .ph .draft-flag{background:rgba(255,255,255,.16);color:var(--ink)}
+.life-mgmt{display:flex;gap:6px;margin-left:10px;opacity:0;transform:translateX(6px);transition:opacity .2s ease,transform .2s ease}
+.post:hover .life-mgmt,.post:focus-within .life-mgmt{opacity:1;transform:none}
+.ptxt-html{white-space:normal}
+.ptxt-html p{margin:0 0 .6em}.ptxt-html p:last-child{margin-bottom:0}
+.ptxt-html ul,.ptxt-html ol{margin:.4em 0 .6em;padding-left:1.4em}
+.ptxt-html li{margin:.15em 0}
+.ptxt-html blockquote{margin:.6em 0;padding:8px 14px;border-left:3px solid var(--accent);background:var(--panel-2);border-radius:0 10px 10px 0;color:var(--ink-2)}
+.ptxt-html a{color:var(--blue);font-weight:600;text-decoration:underline}
+.ptxt-html img{max-width:100%;border-radius:12px;margin:.4em 0}
+.ptxt-html hr{border:none;border-top:1px dashed var(--line);margin:1em 0}
+.ptxt-html strong,.ptxt-html b{font-weight:700;color:var(--ink)}
+.post-box .row1{align-items:flex-start}
+.post-box .row1 .rte-wrap{flex:1;min-width:0}
+.post-box .rte{min-height:120px;font-size:17px}
+.post-box .rte-bar{border-radius:0}
+@media(max-width:820px){.life-mgmt{opacity:1;transform:none}}
