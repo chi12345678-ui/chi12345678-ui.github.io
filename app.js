@@ -390,3 +390,101 @@ function makeRTE(ta, opts) {
 }
 window.__rte = makeRTE(document.getElementById('lrContent'), { ph: '正文… 支持加粗 / 列表 / 引用 / 插入图片等排版', onCtrlEnter: publishLearning });
 window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点什么… 今天的一个小发现、一段心情。', onCtrlEnter: publishLife });
+/* ===== 生活补丁 v3（追加在 app.js 最末尾 · 不删原代码 · 加载成功会闪橙字） ===== */
+(function () {
+  if (window.__CHI_PATCH_V3) return; window.__CHI_PATCH_V3 = 1;
+  var URL = 'https://bqdhqnviozvqljigzys.supabase.co';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZGhxbnZpb3p2cWxqaWd6eXMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc0NzgxNTI2NSwiZXhwIjoyMDYzMzkwODY1fQ.xTjGvZkPwJKvXlOlMqJGOkhOmJgCm3OoJjGqsQXZpEw';
+  var sb2 = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(URL, KEY) : null;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function relTime(ts) { var s = Math.floor((Date.now() - ts) / 1000); if (s < 60) return '刚刚'; if (s < 3600) return Math.floor(s / 60) + ' 分钟前'; if (s < 86400) return Math.floor(s / 3600) + ' 小时前'; if (s < 86400 * 30) return Math.floor(s / 86400) + ' 天前'; var d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  var LR = 'chi_lr_drafts', LF = 'chi_posts_local_v1';
+  function getLR() { try { var r = JSON.parse(localStorage.getItem(LR)); return Array.isArray(r) ? r : []; } catch (e) { return []; } }
+  function getLF() { try { var r = JSON.parse(localStorage.getItem(LF)); return Array.isArray(r) ? r : []; } catch (e) { return []; } }
+  function setLF(a) { localStorage.setItem(LF, JSON.stringify(a)); }
+  function setLR(a) { localStorage.setItem(LR, JSON.stringify(a)); }
+  function pend() { return getLR().length + getLF().length; }
+  function toast(h) { var t = document.createElement('div'); t.innerHTML = h; t.style.cssText = 'position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#15171c;color:#fff;padding:14px 22px;border-radius:14px;font:14px/1.55 system-ui;max-width:92vw;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4);z-index:9999'; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 5600); }
+  function beacon() { var d = document.createElement('div'); d.textContent = '✅ 生活补丁已加载'; d.style.cssText = 'position:fixed;left:50%;bottom:8px;transform:translateX(-50%);background:#e8730c;color:#fff;font:600 12px/1 system-ui;padding:6px 12px;border-radius:20px;z-index:9999;box-shadow:0 6px 18px rgba(0,0,0,.25)'; document.body.appendChild(d); setTimeout(function () { d.style.transition = 'opacity .6s'; d.style.opacity = '0'; setTimeout(function () { d.remove(); }, 700); }, 4200); console.log('[chi] patch v3 loaded'); }
+
+  /* —— 加粗/斜体/下划线：选中即生效（自维护选区 + 抢先执行 + 屏蔽旧逻辑） —— */
+  var lastRange = null, TAG = { bold: 'strong', italic: 'em', underline: 'u' };
+  function saveSel() { var s = getSelection(); if (s && s.rangeCount) { var r = s.getRangeAt(0), n = r.commonAncestorContainer; while (n && n.nodeType !== 1) n = n.parentNode; if (n && n.classList && n.classList.contains('rte')) lastRange = r.cloneRange(); } }
+  function anc(node, tag, ed) { while (node && node !== ed) { if (node.nodeType === 1 && node.tagName === tag) return node; node = node.parentNode; } return null; }
+  function qstate(c) { try { return document.queryCommandState(c); } catch (e) { return false; } }
+  function contOf() { if (lastRange) { var n = lastRange.commonAncestorContainer; while (n && !(n.nodeType === 1 && n.classList && n.classList.contains('rte'))) n = n.parentNode; if (n) return n; } return document.querySelector('.rte'); }
+  function toggle(cmd, tag) {
+    var cont = contOf(); if (cont) cont.focus();
+    if (lastRange) { var s = getSelection(); s.removeAllRanges(); s.addRange(lastRange); }
+    var on = qstate(cmd);
+    if (on) { try { document.execCommand(cmd, false, null); } catch (e) { } }
+    else {
+      var ok = false; try { ok = document.execCommand(cmd, false, null); } catch (e) { }
+      if (!ok || !qstate(cmd)) {
+        try {
+          var sel = getSelection(), rng = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+          if (rng && !rng.collapsed) {
+            var inT = anc(rng.commonAncestorContainer, tag, cont);
+            if (inT) { var par = inT.parentNode; while (inT.firstChild) par.insertBefore(inT.firstChild, inT); par.removeChild(inT); }
+            else { var el = document.createElement(tag); try { rng.surroundContents(el); } catch (e2) { el.appendChild(rng.extractContents()); rng.insertNode(el); } }
+          }
+        } catch (e3) { }
+      }
+    }
+    saveSel();
+  }
+  document.addEventListener('mouseup', saveSel, true);
+  document.addEventListener('keyup', saveSel, true);
+  document.addEventListener('mousedown', function (e) {
+    var btn = e.target.closest && e.target.closest('.rte-b[data-cmd]'); if (!btn) return;
+    var cmd = btn.getAttribute('data-cmd'); if (!TAG[cmd]) return;   // 只管这三个，其余旧按钮不动
+    e.preventDefault();   // 关键：不让按钮抢焦点，你框选的字才不会丢
+    toggle(cmd, TAG[cmd]);
+  }, true);
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('.rte-b[data-cmd]'); if (!btn) return;
+    var cmd = btn.getAttribute('data-cmd'); if (!TAG[cmd]) return;
+    e.stopImmediatePropagation(); e.preventDefault();   // 屏蔽旧版对这三个按钮的处理
+  }, true);
+
+  /* —— 首页：最新≤4 + 生活随笔≤3 —— */
+  function trimHome() { var g = document.getElementById('homeLatest'); if (!g) return; while (g.children.length > 4) g.removeChild(g.lastChild); }
+  function homeLife() {
+    var g = document.getElementById('homeLatest'); if (!g) return;
+    var wrap = document.getElementById('homeLifeWrap');
+    var list = getLF().slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); }).slice(0, 3);
+    if (!list.length) { if (wrap) wrap.style.display = 'none'; return; }
+    if (!wrap) { wrap = document.createElement('div'); wrap.id = 'homeLifeWrap'; wrap.innerHTML = '<h3 class="block-h" style="margin-top:54px"><i class="fas fa-feather-pointed" style="color:var(--accent)"></i> 生活随笔 <span class="k" style="font-family:monospace;font-size:12px;color:var(--ink-3)">LIFE</span></h3><div id="homeLife" class="posts"></div>'; g.parentNode.insertBefore(wrap, g.nextSibling); }
+    wrap.style.display = '';
+    wrap.querySelector('#homeLife').innerHTML = list.map(function (p) {
+      var raw = p.content || '', isH = /<[a-z][\s\S]*>/i.test(raw), body = isH ? raw : esc(raw);
+      var ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
+      var tags = (p.tags || []).map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('');
+      return '<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">' + relTime(ts) + '</div></div></div><div class="ptxt' + (isH ? ' ptxt-html' : '') + '">' + body + '</div>' + (tags ? '<div class="ptags">' + tags + '</div>' : '') + '</div>';
+    }).join('');
+  }
+  function watchHome() { var g = document.getElementById('homeLatest'); if (g && !g.__mo) { new MutationObserver(function () { trimHome(); homeLife(); }).observe(g, { childList: true }); g.__mo = 1; } trimHome(); homeLife(); }
+  window.addEventListener('hashchange', function () { setTimeout(watchHome, 300); });
+
+  /* —— 同步角标 + 一键上传（带真实失败原因） —— */
+  function badge() { var t = document.querySelector('.tools'); if (!t) return; var b = document.getElementById('syncBadge2'); if (!b) { b = document.createElement('button'); b.id = 'syncBadge2'; b.className = 'tool-btn'; b.style.cssText = 'width:42px;height:42px;border-radius:50%;border:1px solid var(--line,#e9ebf0);background:var(--panel,#fff);color:var(--ink-2,#4a4f5a);cursor:pointer;display:grid;place-items:center;font-size:14px;box-shadow:0 10px 30px rgba(20,23,28,.07)'; t.insertBefore(b, t.firstChild); b.onclick = flush; } paint(b); }
+  function paint(b) { b = b || document.getElementById('syncBadge2'); if (!b) return; var n = pend(); if (n > 0) { b.style.background = 'var(--accent,#e8730c)'; b.style.color = '#fff'; b.style.borderColor = 'var(--accent,#e8730c)'; b.innerHTML = '<i class="fas fa-rotate"></i> ' + n; b.title = '有 ' + n + ' 篇在本机，点击上传云端'; } else { b.style.background = ''; b.style.color = ''; b.style.borderColor = ''; b.innerHTML = '<i class="fas fa-cloud"></i>'; b.title = '全部已同步'; } }
+  async function flush() {
+    if (!sb2) { toast('同步组件未就绪'); return; }
+    if (window.OFFLINE) { toast('当前是⚡极速离线，点右上角云切回在线再同步'); return; }
+    toast('正在上传本机内容…');
+    var lf = getLF(), lr = getLR(), lfR = [], lrR = [], lastErr = '';
+    for (var i = 0; i < lf.length; i++) { var x = lf[i], ok = false; try { var r = await sb2.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }); ok = !r.error; if (!ok) lastErr = (r.error && r.error.message) || ''; } catch (e) { lastErr = e.message || ''; } if (!ok) lfR.push(x); }
+    for (var j = 0; j < lr.length; j++) { var y = lr[j], ok2 = false; try { var r2 = await sb2.from('learning').insert({ title: y.title, content: y.content, images: y.images, links: y.links, tags: y.tags, emoji: y.emoji || '📝' }); ok2 = !r2.error; if (!ok2) lastErr = (r2.error && r2.error.message) || ''; } catch (e) { lastErr = e.message || ''; } if (!ok2) lrR.push(y); }
+    setLF(lfR); setLR(lrR); paint();
+    var done = (lf.length - lfR.length) + (lr.length - lrR.length), left = lfR.length + lrR.length;
+    if (left === 0) toast('全部已同步云端 ✓');
+    else toast('传上 ' + done + ' 篇，仍有 ' + left + ' 篇失败：' + (lastErr || '网络') + '（截图发我，多半是数据库权限，见下）');
+  }
+  window.addEventListener('online', function () { if (!window.OFFLINE) flush(); });
+  setInterval(function () { if (!window.OFFLINE && pend() > 0) flush(); }, 60000);
+
+  function start() { beacon(); badge(); watchHome(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  setTimeout(function () { watchHome(); paint(); }, 1200);
+})();
