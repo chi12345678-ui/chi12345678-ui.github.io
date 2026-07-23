@@ -75,7 +75,7 @@ const GRADS = ['linear-gradient(135deg,#e8730c,#ff9d4d)', 'linear-gradient(135de
 const SEED_LEARNING = [
     { id: 'seed-1', title: '我用 RFM 把 10 万用户分成 8 类，召回效率翻了一倍', content: '刚入职时运营问我"哪些用户该发券"，我下意识拉消费 Top。后来才懂：高消费不等于该召回——昨天刚买的人发券纯属浪费。\n\nRFM 三维度=三句人话：R 多久没来、F 来得勤不勤、M 花得多不多。\n\n最大坑：阈值用均值，被大户带偏；改分位数后分层稳多了。\n\n方法论的价值在于可迁移——换家公司，字段对上，框架照样跑。', images: [], links: [{ text: 'RFM 模型维基百科', url: 'https://en.wikipedia.org/wiki/RFM_(market_research)' }], tags: ['RFM', 'Python', '用户分层'], emoji: '🎯', created_at: '2026-07-18T09:00:00Z' },
     { id: 'seed-2', title: 'SQL 窗口函数：从看不懂到离不开的 30 天', content: '第一次见 OVER (PARTITION BY ... ORDER BY ...) 是懵的。直到理解成"在每组里按时间排好队，再回头看"，瞬间通了。\n\n三个常用场景：取每组最新一条用 ROW_NUMBER；环比用 LAG；累计用 SUM() OVER (ORDER BY ...)。\n\n练习法：别只看书，出 20 道业务真题，写不出就看答案，但一定自己敲一遍。', images: [], links: [{ text: 'PostgreSQL 窗口函数教程', url: 'https://www.postgresqltutorial.com/postgresql-window-function/' }], tags: ['SQL', '窗口函数', '复盘'], emoji: '🪟', created_at: '2026-07-10T09:00:00Z' },
-    { id: 'seed-3', title: '转行数据分析这一年，我踩过的 5 个认知坑', content: '一年前我还在为 VLOOKUP 焦虑。今天聊的不是函数，是差点让我放弃的认知坑。\n\n1 把"会工具"当"会分析"。2 一上来就建模。3 不敢问业务。4 报告写给自己看。5 只输入不输出。\n\n这个博客就是逼自己输出的产物——写出来，才算真的会。这条路不卷速度，卷持续。', images: [], links: [], tags: ['转行', '成长', '随笔'], emoji: '🌱', created_at: '2026-06-28T09:00:00Z' }
+    { id: 'seed-3', title: '数据分析里我踩过的 5 个认知坑', content: '一年前我还在为 VLOOKUP 焦虑。今天聊的不是函数，是差点让我放弃的认知坑。\n\n1 把"会工具"当"会分析"。2 一上来就建模。3 不敢问业务。4 报告写给自己看。5 只输入不输出。\n\n这个博客就是逼自己输出的产物——写出来，才算真的会。这条路不卷速度，卷持续。', images: [], links: [], tags: ['转行', '成长', '随笔'], emoji: '🌱', created_at: '2026-06-28T09:00:00Z' }
 ];
 let learningList = [], _lp = null;
 const LR_KEY = 'chi_lr_drafts';
@@ -122,7 +122,7 @@ function renderRead(p, preview) {
     }
     const localBar = p._local ? `<div class="preview-bar"><i class="fas fa-hard-drive"></i> 这篇还在本机，联网后会自动同步。<button class="btn btn-ghost" id="syncNow" style="padding:7px 14px"><i class="fas fa-rotate"></i> 立即同步</button></div>` : '';
     const bar = preview ? `<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>` : `<div class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</div>`;
-    document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${linkify(p.content || '')}</div>${gallery}${refs}${nav}</article>`;
+    document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML&&window.__isHTML(p.content))?p.content:linkify(p.content||'')}</div>${gallery}${refs}${nav}</article>`;
     document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
     const bl = document.getElementById('backList'); if (bl) bl.onclick = () => go('learning');
     const be = document.getElementById('backEdit'); if (be) be.onclick = () => go('learning');
@@ -218,3 +218,72 @@ toTop.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
 /* ===== 启动 ===== */
 renderCases(); renderCerts(); route(); subscribeRT();
+/* ===== 块1：极速/离线开关 + 网络限时（纯追加·零冲突） ===== */
+(function(){
+  var HOSTS=['supabase.co','supabase.in'];
+  var isSB=function(u){return u&&HOSTS.some(function(h){return u.indexOf(h)>=0;});};
+  var _f=window.fetch.bind(window);
+  window.OFFLINE = localStorage.getItem('chi_offline')==='1';
+  window.fetch=function(input,init){
+    var url=typeof input==='string'?input:((input&&input.url)||'');
+    if(!isSB(url)) return _f(input,init);
+    if(window.OFFLINE){
+      var m=((init&&init.method)||'GET').toUpperCase();
+      if(m==='GET'||m==='HEAD') return Promise.resolve(new Response('[]',{status:200,headers:{'content-type':'application/json','content-range':'0-0/0'}}));
+      return Promise.resolve(new Response(JSON.stringify({code:'offline',message:'offline mode'}),{status:503,headers:{'content-type':'application/json'}}));
+    }
+    var ctrl=new AbortController(); var t=setTimeout(function(){ctrl.abort();},2500);
+    var merged; try{merged=Object.assign({},init,{signal:ctrl.signal});}catch(e){merged=init;}
+    var p=_f(input,merged); p.then(function(){clearTimeout(t);},function(){clearTimeout(t);}); return p;
+  };
+  function paint(){var b=document.getElementById('offlineBtn');if(!b)return;b.classList.toggle('off',window.OFFLINE);b.innerHTML=window.OFFLINE?'<i class="fas fa-bolt"></i>':'<i class="fas fa-cloud"></i>';b.title=window.OFFLINE?'极速离线：点啥都秒响应，存本机；要同步云端再点一下切回':'在线模式：自动同步云端（慢时自动落本机）';}
+  function toastOFF(){var t=document.createElement('div');t.className='off-toast';t.innerHTML=window.OFFLINE?'⚡ 已切到<b>极速离线</b> · 存本机，联网后自动同步':'☁️ 已切回<b>在线</b> · 正在连接云端…';document.body.appendChild(t);requestAnimationFrame(function(){t.classList.add('show');});setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},400);},2600);}
+  function mkBtn(){var tools=document.querySelector('.tools');if(!tools||document.getElementById('offlineBtn'))return;var b=document.createElement('button');b.id='offlineBtn';b.className='tool-btn';tools.insertBefore(b,tools.firstChild);paint();b.onclick=function(){window.OFFLINE=!window.OFFLINE;localStorage.setItem('chi_offline',window.OFFLINE?'1':'0');paint();toastOFF();};}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mkBtn);else mkBtn();
+  if(window.OFFLINE)setTimeout(toastOFF,900);
+})();
+/* ===== 块2：富文本排版编辑器（纯追加·零冲突） ===== */
+(function(){
+  var ta=document.getElementById('lrContent'); if(!ta) return;
+  var proto=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value');
+  var descSet=function(v){proto.set.call(ta,v);};
+  var savedRange=null;
+  var wrap=document.createElement('div'); wrap.className='rte-wrap';
+  var bar=document.createElement('div'); bar.className='rte-bar';
+  function b(ic,title,cmd){return '<button type="button" class="rte-b" title="'+title+'" data-cmd="'+cmd+'"><i class="fas '+ic+'"></i></button>';}
+  function sep(){return '<span class="rte-sep"></span>';}
+  function g(label,items){return '<span class="rte-grp"><button type="button" class="rte-b rte-gb">'+label+' <i class="fas fa-caret-down"></i></button><span class="rte-menu">'+items.map(function(it){var t=it.split('|');return '<button type="button" class="rte-mi" data-sub="'+t[1]+'">'+t[0]+'</button>';}).join('')+'</span></span>';}
+  bar.innerHTML=[
+    g('字号',['小|fs:15px','标准|fs:17px','大|fs:21px','特大|fs:27px']),sep(),
+    b('fa-bold','加粗','bold'),b('fa-italic','斜体','italic'),b('fa-underline','下划线','underline'),sep(),
+    g('行距',['紧凑|lh:1.5','舒适|lh:1.85','宽松|lh:2.2']),g('段距',['紧|pg:6px','中|pg:14px','松|pg:24px']),sep(),
+    b('fa-align-left','左对齐','justifyLeft'),b('fa-align-center','居中','justifyCenter'),b('fa-align-right','右对齐','justifyRight'),sep(),
+    b('fa-quote-left','引用','quote'),b('fa-list-ul','无序列表','insertUnorderedList'),b('fa-list-ol','有序列表','insertOrderedList'),
+    b('fa-link','链接','link'),b('fa-image','图片','img'),b('fa-minus','分割线','insertHorizontalRule'),
+    b('fa-eraser','清除格式','removeFormat'),b('fa-rotate-left','撤销','undo')
+  ].join('');
+  var ed=document.createElement('div'); ed.className='rte'; ed.contentEditable='true';
+  ed.style.setProperty('--rte-lh','1.85'); ed.style.setProperty('--rte-pg','14px');
+  ta.parentNode.insertBefore(wrap,ta); wrap.appendChild(bar); wrap.appendChild(ed); wrap.appendChild(ta); ta.style.display='none';
+  window.__rte=ed; window.__isHTML=function(s){return /<[a-z][\s\S]*>/i.test(s||'');};
+  function syncEmpty(){ed.classList.toggle('is-empty',!ed.textContent.trim()&&!ed.querySelector('img,li,blockquote,hr'));}
+  function saveRange(){var s=getSelection();if(s&&s.rangeCount&&ed.contains(s.anchorNode))savedRange=s.getRangeAt(0).cloneRange();}
+  function restoreRange(){if(savedRange){var s=getSelection();s.removeAllRanges();s.addRange(savedRange);}}
+  function selText(){var s=getSelection();return(s&&s.toString())?s.toString():'文字';}
+  function applyVar(k,val){if(k==='lh')ed.style.setProperty('--rte-lh',val);else if(k==='pg')ed.style.setProperty('--rte-pg',val);else if(k==='fs'){try{document.execCommand('insertHTML',false,'<span style="font-size:'+val+'">'+selText()+'</span>');}catch(e){}}after();}
+  function run(c){try{document.execCommand('styleWithCSS',false,'true');}catch(e){}
+    if(c==='quote')document.execCommand('formatBlock',false,'blockquote');
+    else if(c==='link'){var u=prompt('链接地址 https://…');if(u)document.execCommand('createLink',false,u);}
+    else if(c==='img'){var ui=prompt('图片地址 https://…');if(ui)document.execCommand('insertImage',false,ui);}
+    else if(c==='removeFormat'){document.execCommand('removeFormat');document.execCommand('formatBlock',false,'p');}
+    else document.execCommand(c,false,null);
+    after();}
+  function after(){descSet(ed.innerHTML);syncEmpty();saveRange();}
+  ed.addEventListener('input',function(){descSet(ed.innerHTML);syncEmpty();saveRange();});
+  ed.addEventListener('mouseup',saveRange); ed.addEventListener('keyup',saveRange);
+  bar.addEventListener('mousedown',function(e){e.preventDefault();});
+  bar.addEventListener('click',function(e){var btn=e.target.closest('[data-sub],[data-cmd]');if(!btn)return;ed.focus();restoreRange();if(btn.dataset.sub){var p=btn.dataset.sub.split(':');applyVar(p[0],p[1]);}else run(btn.dataset.cmd);});
+  Object.defineProperty(ta,'value',{configurable:true,set:function(v){descSet(v);if(ed.innerHTML!==(v||'')){ed.innerHTML=v||'';syncEmpty();}},get:function(){return proto.get.call(ta);}});
+  var pub=document.getElementById('lrPub'); if(pub)pub.addEventListener('click',function(){setTimeout(function(){var t=document.getElementById('lrTitle');if(t&&!t.value.trim()){ed.innerHTML='';descSet('');syncEmpty();}},700);});
+  syncEmpty();
+})();
