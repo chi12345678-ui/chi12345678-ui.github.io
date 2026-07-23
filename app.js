@@ -25,6 +25,8 @@ function lockScroll(on) { document.body.style.overflow = on ? 'hidden' : ''; }
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const isPinned = a => (a.tags || []).includes('置顶');
 function sortPosts(arr) { return arr.slice().sort((a, b) => { const pa = isPinned(a) ? 1 : 0, pb = isPinned(b) ? 1 : 0; if (pa !== pb) return pb - pa; return new Date(b.created_at) - new Date(a.created_at); }); }
+window.__isHTML = function (s) { return /<[a-z][\s\S]*>/i.test(s || ''); };
+function toRTEHTML(raw) { raw = raw == null ? '' : String(raw); if (window.__isHTML(raw)) return raw; return raw.split('\n').map(l => { const e = esc(l); return '<p>' + (e || '<br>') + '</p>'; }).join(''); }
 
 /* ===== 路由（go 根治"同网址不刷新"） ===== */
 const views = [...document.querySelectorAll('.view')];
@@ -52,6 +54,8 @@ document.addEventListener('click', e => {
     const sync = e.target.closest('.sync-btn'); if (sync) { e.preventDefault(); e.stopPropagation(); resyncOne(sync.dataset.sync); return; }
     const ed = e.target.closest('[data-edit]'); if (ed) { e.preventDefault(); e.stopPropagation(); editLearning(ed.dataset.edit); return; }
     const dl = e.target.closest('[data-del]'); if (dl) { e.preventDefault(); e.stopPropagation(); deleteLearning(dl.dataset.del, dl.dataset.local === '1'); return; }
+    const le = e.target.closest('[data-life-edit]'); if (le) { e.preventDefault(); e.stopPropagation(); editLife(le.dataset.lifeEdit); return; }
+    const ld = e.target.closest('[data-life-del]'); if (ld) { e.preventDefault(); e.stopPropagation(); deleteLife(ld.dataset.lifeDel, ld.dataset.local === '1'); return; }
     const pc = e.target.closest('.postcard'); if (pc) { e.preventDefault(); go('read/' + encodeURIComponent(pc.dataset.id)); return; }
     const limg = e.target.closest('.limg'); if (limg) { openLB(limg.dataset.img || limg.src); return; }
     const a = e.target.closest('a[href^="#"]'); if (a) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }
@@ -159,7 +163,7 @@ async function deleteLearning(id, isLocal) {
     } else {
         let ok = false;
         for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').delete().eq('id', sid), 15000); ok = !r.error; } catch (e) { } }
-        if (!ok) { showToast('删除失败 · 若重试仍失败，是数据库没开「删除权限」，见第2份里那条 SQL'); return; }
+        if (!ok) { showToast('删除失败 · 若重试仍失败，是数据库没开「删除权限」，见 SQL'); return; }
     }
     invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest();
     if ((location.hash.replace(/^#/, '')).startsWith('read/')) go('learning');
@@ -174,7 +178,6 @@ document.getElementById('lrLinkList').addEventListener('click', e => { const b =
 function gatherPost() { return { title: document.getElementById('lrTitle').value.trim(), content: document.getElementById('lrContent').value.trim(), images: lrImages.slice(), links: lrLinks.slice(), tags: document.getElementById('lrTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean) }; }
 document.getElementById('lrPreview').addEventListener('click', () => { const p = gatherPost(); if (!p.title && !p.content) { showToast('先写点标题或正文再预览'); return; } renderRead({ ...p, created_at: new Date().toISOString(), emoji: '👀' }, true); showView('read'); setNav('learning'); });
 document.getElementById('lrPub').addEventListener('click', publishLearning);
-document.getElementById('lrContent').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); publishLearning(); } });
 async function publishLearning() {  // ===== 编辑拦截：编辑模式走"更新"，绝不走下面的 insert =====
   if (typeof editingId !== 'undefined' && editingId) {
     const p = gatherPost();
@@ -192,7 +195,7 @@ async function publishLearning() {  // ===== 编辑拦截：编辑模式走"更�
     }
     btn.disabled = false;
     if (ok) { if (typeof clearEditor === 'function') clearEditor(); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已保存修改 ✓'); return; }
-    btn.innerHTML = '<i class="fas fa-floppy-disk"></i> 保存修改'; showToast('保存失败 · 原内容未丢失 · 若重试仍失败见第2份 SQL'); return;
+    btn.innerHTML = '<i class="fas fa-floppy-disk"></i> 保存修改'; showToast('保存失败 · 原内容未丢失 · 若重试仍失败见 SQL'); return;
   }
   // ===== 拦截结束：下面是你原来的新增逻辑，保持不动 =====
     const p = gatherPost(); if (!p.title) { document.getElementById('lrTitle').focus(); showToast('请填写标题'); return; }
@@ -208,40 +211,79 @@ async function publishLearning() {  // ===== 编辑拦截：编辑模式走"更�
     showToast('已保存到本机 ✓ 联网后自动同步，内容不会丢', 6000);
 }
 
-/* ===== 生活随笔：实时同步 + 本机兜底 + 自动补传 ===== */
+/* ===== 生活随笔：实时同步 + 本机兜底 + 自动补传 + 编辑/删除/富文本 ===== */
 const postList = document.getElementById('postList'), postInput = document.getElementById('postInput'), postTags = document.getElementById('postTags'), postPub = document.getElementById('postPub');
-const PUB_HTML = postPub.innerHTML, seenIds = new Set(), LKEY = 'chi_posts_local_v1'; let cloudOK = true, lifeImages = [];
+const PUB_HTML = postPub.innerHTML, SAVE_HTML = '<i class="fas fa-floppy-disk"></i> 保存修改', seenIds = new Set(), LKEY = 'chi_posts_local_v1'; let cloudOK = true, lifeImages = [], lifeList = [];
+let lifeEditId = null, lifeEditLocal = false;
 const SEED_LIFE = [{ id: 'sl1', content: '今天把进销存看板的"该补货吗"挪到了第一屏。看板的第一屏只该回答一个问题。', tags: ['复盘'], images: [], created_at: '2026-07-20T21:30:00Z' }, { id: 'sl2', content: '周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾', tags: ['生活'], images: [], created_at: '2026-07-13T18:00:00Z' }];
 function loadLocal() { try { const r = JSON.parse(localStorage.getItem(LKEY)); if (Array.isArray(r)) return r; } catch (e) { } return []; }
 function saveLocal(p) { localStorage.setItem(LKEY, JSON.stringify(p)); }
 function setLiveBadge(on) { const el = document.getElementById('postModeBadge'); if (on) { el.className = 'post-mode live'; el.innerHTML = '<i class="fas fa-tower-broadcast"></i> 实时同步'; } else { el.className = 'post-mode'; el.innerHTML = '<i class="fas fa-hard-drive"></i> 本机暂存'; } }
 function setSubText(on) { document.getElementById('postSubText').innerHTML = on ? '分析之外的日常碎片。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到。' : '分析之外的日常碎片。<b>云端暂时连不上</b>，已自动切到<b>本机暂存</b>（仅本机可见；恢复后自动补传并实时同步）。'; }
-function postHTML(p) { const txt = esc(p.content ?? p.txt ?? ''); const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now()); const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join(''); const imgs = p.images || []; const imgHtml = imgs.map(s => `<img class="limg" src="${s}" data-img="${s}" alt="">`).join(''); const flag = p._local ? `<span class="draft-flag">📴 本机</span>` : ''; return `<div class="post">${flag}<div class="ph"><div class="pav">历</div><div><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div></div><div class="ptxt">${txt}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`; }
+function postHTML(p) {
+    const raw = p.content ?? p.txt ?? '';
+    const isH = window.__isHTML && window.__isHTML(raw);
+    const txtHtml = isH ? raw : esc(raw);
+    const ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
+    const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
+    const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join('');
+    const imgs = p.images || []; const imgHtml = imgs.map(s => `<img class="limg" src="${s}" data-img="${s}" alt="">`).join('');
+    const flag = p._local ? `<span class="draft-flag">📴 本机</span>` : '';
+    const mgmt = `<div class="life-mgmt"><button class="pc-m" data-life-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-life-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button></div>`;
+    return `<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div>${flag}${mgmt}</div><div class="${ptxtCls}">${txtHtml}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`;
+}
 function mergeByTime(a, b) { return sortPosts([...a, ...b]); }
 function renderPosts(posts, off) { if (!posts || !posts.length) { postList.innerHTML = off ? '<div class="no-result">离线暂存模式，先写一条存本机吧 ✍️</div>' : '<div class="no-result">还没有随笔，写第一条吧 ✍️</div>'; return; } postList.innerHTML = posts.map(postHTML).join(''); }
 async function loadPosts() {
     let data = null, err = null; try { const res = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 8000); data = res.data; err = res.error; } catch (e) { err = e; }
-    if (err || data === null) { cloudOK = false; setLiveBadge(false); setSubText(false); renderPosts(sortPosts(loadLocal().map(x => ({ ...x, _local: true }))), true); return; }
+    if (err || data === null) { cloudOK = false; setLiveBadge(false); setSubText(false); lifeList = sortPosts(loadLocal().map(x => ({ ...x, _local: true }))); renderPosts(lifeList, true); return; }
     cloudOK = true; setLiveBadge(true); setSubText(true);
     // 补传本机草稿
     const local = loadLocal(); if (local.length) { const remain = []; for (const x of local) { let ok = false; try { const r = await withTimeout(sb.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 15000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } saveLocal(remain); if (remain.length !== local.length) { try { const r2 = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 8000); if (!r2.error && r2.data) data = r2.data; } catch (e) { } } }
     seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
-    renderPosts(mergeByTime(data || [], loadLocal().map(x => ({ ...x, _local: true }))), false);
+    lifeList = mergeByTime(data || [], loadLocal().map(x => ({ ...x, _local: true })));
+    renderPosts(lifeList, false);
 }
 function subscribeRT() { try { sb.channel('posts-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, pl => { if (!cloudOK) return; const p = pl.new; if (!p || seenIds.has(p.id)) return; seenIds.add(p.id); const e = postList.querySelector('.no-result'); if (e) e.remove(); postList.insertAdjacentHTML('afterbegin', postHTML(p)); }).subscribe(); } catch (e) { } }
+function setLifeEditorMode(on) { postPub.innerHTML = on ? SAVE_HTML : PUB_HTML; let cb = document.getElementById('lifeCancel'); if (on && !cb) { postPub.insertAdjacentHTML('afterend', '<button class="btn btn-ghost" id="lifeCancel" style="margin-left:8px"><i class="fas fa-xmark"></i> 取消编辑</button>'); document.getElementById('lifeCancel').onclick = clearLifeEditor; } else if (!on && cb) cb.remove(); }
+function clearLifeEditor() { lifeEditId = null; lifeEditLocal = false; postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs(); setLifeEditorMode(false); }
+function editLife(id) { const p = lifeList.find(a => String(a.id) === String(id)); if (!p) return; lifeEditId = String(id); lifeEditLocal = !!p._local; postInput.value = toRTEHTML(p.content || ''); postTags.value = (p.tags || []).join(', '); lifeImages = (p.images || []).slice(); renderLifeThumbs(); setLifeEditorMode(true); setTimeout(() => { if (window.__rteLife) window.__rteLife.ed.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80); showToast('已进入编辑模式 · 改完点「保存修改」'); }
+async function deleteLife(id, isLocal) {
+    if (!confirm('确定删除这条随笔？此操作不可撤销。')) return;
+    const sid = String(id);
+    if (isLocal) { saveLocal(loadLocal().filter(a => String(a.id) !== sid)); }
+    else { let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').delete().eq('id', sid), 15000); ok = !r.error; } catch (e) { } } if (!ok) { showToast('删除失败 · 若重试仍失败，是数据库没开 posts 的「删除权限」，见 SQL'); return; } }
+    if (lifeEditId === sid) clearLifeEditor();
+    showToast('已删除 ✓'); loadPosts();
+}
 async function publishLife() {
-    const content = postInput.value.trim(); if (!content && !lifeImages.length) { postInput.focus(); return; } const tags = postTags.value.split(/[,，]/).map(t => t.trim()).filter(Boolean); const imgs = lifeImages.slice(); postPub.disabled = true; postPub.textContent = '发布中…';
+    // ===== 编辑拦截：编辑模式走"更新" =====
+    if (lifeEditId) {
+        const content = (window.__rteLife && window.__rteLife.isEmpty()) ? '' : postInput.value.trim();
+        const tags = postTags.value.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+        const imgs = lifeImages.slice();
+        postPub.disabled = true; postPub.textContent = '保存中…';
+        const sid = String(lifeEditId); let ok = false;
+        if (lifeEditLocal) { const l = loadLocal(); const idx = l.findIndex(a => String(a.id) === sid); if (idx >= 0) { l[idx] = Object.assign({}, l[idx], { content, tags, images: imgs }); saveLocal(l); ok = true; } }
+        else { for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').update({ content, tags, images: imgs }).eq('id', sid), 25000); ok = !r.error; } catch (e) { } } }
+        postPub.disabled = false;
+        if (ok) { clearLifeEditor(); showToast('已保存修改 ✓'); loadPosts(); return; }
+        postPub.innerHTML = SAVE_HTML; showToast('保存失败 · 原内容未丢失 · 若重试仍失败见 SQL'); return;
+    }
+    // ===== 新增逻辑 =====
+    const content = (window.__rteLife && window.__rteLife.isEmpty()) ? '' : postInput.value.trim();
+    if (!content && !lifeImages.length) { if (window.__rteLife) window.__rteLife.focus(); else postInput.focus(); return; }
+    const tags = postTags.value.split(/[,，]/).map(t => t.trim()).filter(Boolean); const imgs = lifeImages.slice(); postPub.disabled = true; postPub.textContent = '发布中…';
     let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('posts').insert({ content, tags, images: imgs }), 25000); ok = !res.error; } catch (e) { } }
     postPub.innerHTML = PUB_HTML; postPub.disabled = false;
     if (ok) { postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs(); showToast('已发布 ✓ 实时同步中…'); loadPosts(); return; }
     // 失败存本机
     const l = loadLocal(); l.unshift({ id: uid('LF'), content, tags, images: imgs, ts: Date.now(), created_at: new Date().toISOString(), _local: true }); saveLocal(l);
     postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs();
-    cloudOK = false; setLiveBadge(false); setSubText(false); renderPosts(sortPosts(l.map(x => ({ ...x, _local: true }))), true);
+    cloudOK = false; setLiveBadge(false); setSubText(false); lifeList = sortPosts(l.map(x => ({ ...x, _local: true }))); renderPosts(lifeList, true);
     showToast('已保存到本机 ✓ 联网后自动补传', 6000);
 }
 postPub.addEventListener('click', publishLife);
-postInput.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); publishLife(); } });
 function renderLifeThumbs() { document.getElementById('lifeThumbs').innerHTML = lifeImages.map((s, i) => `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmlife="${i}">&times;</button></div>`).join(''); }
 document.getElementById('lifeFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; lifeImages.push(await compress(f)); } renderLifeThumbs(); e.target.value = ''; });
 document.getElementById('lifeThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rmlife]'); if (b) { lifeImages.splice(+b.dataset.rmlife, 1); renderLifeThumbs(); } });
@@ -294,48 +336,57 @@ window.addEventListener('hashchange', route); renderCases(); renderCerts(); rout
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mkBtn);else mkBtn();
   if(window.OFFLINE)setTimeout(toastOFF,900);
 })();
-/* ===== 块2：富文本排版编辑器（纯追加·零冲突） ===== */
-(function(){
-  var ta=document.getElementById('lrContent'); if(!ta) return;
-  var proto=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value');
-  var descSet=function(v){proto.set.call(ta,v);};
-  var savedRange=null;
-  var wrap=document.createElement('div'); wrap.className='rte-wrap';
-  var bar=document.createElement('div'); bar.className='rte-bar';
-  function b(ic,title,cmd){return '<button type="button" class="rte-b" title="'+title+'" data-cmd="'+cmd+'"><i class="fas '+ic+'"></i></button>';}
-  function sep(){return '<span class="rte-sep"></span>';}
-  function g(label,items){return '<span class="rte-grp"><button type="button" class="rte-b rte-gb">'+label+' <i class="fas fa-caret-down"></i></button><span class="rte-menu">'+items.map(function(it){var t=it.split('|');return '<button type="button" class="rte-mi" data-sub="'+t[1]+'">'+t[0]+'</button>';}).join('')+'</span></span>';}
-  bar.innerHTML=[
-    g('字号',['小|fs:15px','标准|fs:17px','大|fs:21px','特大|fs:27px']),sep(),
-    b('fa-bold','加粗','bold'),b('fa-italic','斜体','italic'),b('fa-underline','下划线','underline'),sep(),
-    g('行距',['紧凑|lh:1.5','舒适|lh:1.85','宽松|lh:2.2']),g('段距',['紧|pg:6px','中|pg:14px','松|pg:24px']),sep(),
-    b('fa-align-left','左对齐','justifyLeft'),b('fa-align-center','居中','justifyCenter'),b('fa-align-right','右对齐','justifyRight'),sep(),
-    b('fa-quote-left','引用','quote'),b('fa-list-ul','无序列表','insertUnorderedList'),b('fa-list-ol','有序列表','insertOrderedList'),
-    b('fa-link','链接','link'),b('fa-image','图片','img'),b('fa-minus','分割线','insertHorizontalRule'),
-    b('fa-eraser','清除格式','removeFormat'),b('fa-rotate-left','撤销','undo')
+/* ===== 块2：富文本排版编辑器（工厂·学习成长 + 生活随笔 共用一套） ===== */
+function makeRTE(ta, opts) {
+  opts = opts || {};
+  if (!ta) return null;
+  var proto = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+  var descSet = function (v) { proto.set.call(ta, v); };
+  var savedRange = null;
+  var wrap = document.createElement('div'); wrap.className = 'rte-wrap';
+  var bar = document.createElement('div'); bar.className = 'rte-bar';
+  function b(ic, title, cmd) { return '<button type="button" class="rte-b" title="' + title + '" data-cmd="' + cmd + '"><i class="fas ' + ic + '"></i></button>'; }
+  function sep() { return '<span class="rte-sep"></span>'; }
+  function g(label, items) { return '<span class="rte-grp"><button type="button" class="rte-b rte-gb">' + label + ' <i class="fas fa-caret-down"></i></button><span class="rte-menu">' + items.map(function (it) { var t = it.split('|'); return '<button type="button" class="rte-mi" data-sub="' + t[1] + '">' + t[0] + '</button>'; }).join('') + '</span></span>'; }
+  bar.innerHTML = [
+    g('字号', ['小|fs:15px', '标准|fs:17px', '大|fs:21px', '特大|fs:27px']), sep(),
+    b('fa-bold', '加粗', 'bold'), b('fa-italic', '斜体', 'italic'), b('fa-underline', '下划线', 'underline'), sep(),
+    g('行距', ['紧凑|lh:1.5', '舒适|lh:1.85', '宽松|lh:2.2']), g('段距', ['紧|pg:6px', '中|pg:14px', '松|pg:24px']), sep(),
+    b('fa-align-left', '左对齐', 'justifyLeft'), b('fa-align-center', '居中', 'justifyCenter'), b('fa-align-right', '右对齐', 'justifyRight'), sep(),
+    b('fa-quote-left', '引用', 'quote'), b('fa-list-ul', '无序列表', 'insertUnorderedList'), b('fa-list-ol', '有序列表', 'insertOrderedList'),
+    b('fa-link', '链接', 'link'), b('fa-image', '图片', 'img'), b('fa-minus', '分割线', 'insertHorizontalRule'),
+    b('fa-eraser', '清除格式', 'removeFormat'), b('fa-rotate-left', '撤销', 'undo')
   ].join('');
-  var ed=document.createElement('div'); ed.className='rte'; ed.contentEditable='true';
-  ed.style.setProperty('--rte-lh','1.85'); ed.style.setProperty('--rte-pg','14px');
-  ta.parentNode.insertBefore(wrap,ta); wrap.appendChild(bar); wrap.appendChild(ed); wrap.appendChild(ta); ta.style.display='none';
-  window.__rte=ed; window.__isHTML=function(s){return /<[a-z][\s\S]*>/i.test(s||'');};
-  function syncEmpty(){ed.classList.toggle('is-empty',!ed.textContent.trim()&&!ed.querySelector('img,li,blockquote,hr'));}
-  function saveRange(){var s=getSelection();if(s&&s.rangeCount&&ed.contains(s.anchorNode))savedRange=s.getRangeAt(0).cloneRange();}
-  function restoreRange(){if(savedRange){var s=getSelection();s.removeAllRanges();s.addRange(savedRange);}}
-  function selText(){var s=getSelection();return(s&&s.toString())?s.toString():'文字';}
-  function applyVar(k,val){if(k==='lh')ed.style.setProperty('--rte-lh',val);else if(k==='pg')ed.style.setProperty('--rte-pg',val);else if(k==='fs'){try{document.execCommand('insertHTML',false,'<span style="font-size:'+val+'">'+selText()+'</span>');}catch(e){}}after();}
-  function run(c){try{document.execCommand('styleWithCSS',false,'true');}catch(e){}
-    if(c==='quote')document.execCommand('formatBlock',false,'blockquote');
-    else if(c==='link'){var u=prompt('链接地址 https://…');if(u)document.execCommand('createLink',false,u);}
-    else if(c==='img'){var ui=prompt('图片地址 https://…');if(ui)document.execCommand('insertImage',false,ui);}
-    else if(c==='removeFormat'){document.execCommand('removeFormat');document.execCommand('formatBlock',false,'p');}
-    else document.execCommand(c,false,null);
-    after();}
-  function after(){descSet(ed.innerHTML);syncEmpty();saveRange();}
-  ed.addEventListener('input',function(){descSet(ed.innerHTML);syncEmpty();saveRange();});
-  ed.addEventListener('mouseup',saveRange); ed.addEventListener('keyup',saveRange);
-  bar.addEventListener('mousedown',function(e){e.preventDefault();});
-  bar.addEventListener('click',function(e){var btn=e.target.closest('[data-sub],[data-cmd]');if(!btn)return;ed.focus();restoreRange();if(btn.dataset.sub){var p=btn.dataset.sub.split(':');applyVar(p[0],p[1]);}else run(btn.dataset.cmd);});
-  Object.defineProperty(ta,'value',{configurable:true,set:function(v){descSet(v);if(ed.innerHTML!==(v||'')){ed.innerHTML=v||'';syncEmpty();}},get:function(){return proto.get.call(ta);}});
-  var pub=document.getElementById('lrPub'); if(pub)pub.addEventListener('click',function(){setTimeout(function(){var t=document.getElementById('lrTitle');if(t&&!t.value.trim()){ed.innerHTML='';descSet('');syncEmpty();}},700);});
+  var ed = document.createElement('div'); ed.className = 'rte'; ed.contentEditable = 'true';
+  ed.setAttribute('data-ph', opts.ph || '');
+  ed.style.setProperty('--rte-lh', '1.85'); ed.style.setProperty('--rte-pg', '14px');
+  ta.parentNode.insertBefore(wrap, ta); wrap.appendChild(bar); wrap.appendChild(ed); wrap.appendChild(ta); ta.style.display = 'none';
+  function syncEmpty() { ed.classList.toggle('is-empty', !ed.textContent.trim() && !ed.querySelector('img,li,blockquote,hr')); }
+  function saveRange() { var s = getSelection(); if (s && s.rangeCount && ed.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange(); }
+  function restoreRange() { if (savedRange) { var s = getSelection(); s.removeAllRanges(); s.addRange(savedRange); } }
+  function selText() { var s = getSelection(); return (s && s.toString()) ? s.toString() : '文字'; }
+  function applyVar(k, val) { if (k === 'lh') ed.style.setProperty('--rte-lh', val); else if (k === 'pg') ed.style.setProperty('--rte-pg', val); else if (k === 'fs') { try { document.execCommand('insertHTML', false, '<span style="font-size:' + val + '">' + selText() + '</span>'); } catch (e) { } } after(); }
+  function run(c) { try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) { }
+    if (c === 'quote') document.execCommand('formatBlock', false, 'blockquote');
+    else if (c === 'link') { var u = prompt('链接地址 https://…'); if (u) document.execCommand('createLink', false, u); }
+    else if (c === 'img') { var ui = prompt('图片地址 https://…'); if (ui) document.execCommand('insertImage', false, ui); }
+    else if (c === 'removeFormat') { document.execCommand('removeFormat'); document.execCommand('formatBlock', false, 'p'); }
+    else document.execCommand(c, false, null);
+    after(); }
+  function after() { descSet(ed.innerHTML); syncEmpty(); saveRange(); }
+  ed.addEventListener('input', function () { descSet(ed.innerHTML); syncEmpty(); saveRange(); });
+  ed.addEventListener('mouseup', saveRange); ed.addEventListener('keyup', saveRange);
+  ed.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (typeof opts.onCtrlEnter === 'function') opts.onCtrlEnter(); } });
+  bar.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  bar.addEventListener('click', function (e) { var btn = e.target.closest('[data-sub],[data-cmd]'); if (!btn) return; ed.focus(); restoreRange(); if (btn.dataset.sub) { var p = btn.dataset.sub.split(':'); applyVar(p[0], p[1]); } else run(btn.dataset.cmd); });
+  Object.defineProperty(ta, 'value', { configurable: true, set: function (v) { descSet(v); if (ed.innerHTML !== (v || '')) { ed.innerHTML = v || ''; syncEmpty(); } }, get: function () { return proto.get.call(ta); } });
   syncEmpty();
-})();
+  return {
+    ed: ed,
+    isEmpty: function () { return !ed.textContent.trim() && !ed.querySelector('img,li,blockquote,hr,a,table'); },
+    clear: function () { descSet(''); ed.innerHTML = ''; syncEmpty(); },
+    focus: function () { ed.focus(); }
+  };
+}
+window.__rte = makeRTE(document.getElementById('lrContent'), { ph: '正文… 支持加粗 / 列表 / 引用 / 插入图片等排版', onCtrlEnter: publishLearning });
+window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点什么… 今天的一个小发现、一段心情。', onCtrlEnter: publishLife });
