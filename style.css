@@ -326,3 +326,24 @@ footer{padding:40px clamp(28px,5vw,72px);text-align:center;color:var(--ink-3);fo
   .home-more{justify-content:stretch}
   .home-more a{flex:1;justify-content:center}
 }
+/* ===== v6 样式补丁：聚拢版心 · 修写作页溢出 · 紧凑精致 ===== */
+.sec{max-width:1120px;margin-left:auto;margin-right:auto}
+.editor,.post-box{max-width:840px;margin-left:auto;margin-right:auto}
+/* 修随笔发布行横向溢出（截图右侧被挤出去的元凶） */
+.post-box .row2{flex-wrap:wrap;gap:10px;align-items:center}
+.post-box .row2 .tags{flex:1 1 200px;min-width:0}
+.post-box .row2 .hint{order:5;flex-basis:100%;margin:2px 0 0}
+.post-box .row2 .btn-pub2{margin-left:auto}
+/* 学习成长编辑器底部行也收一收 */
+.editor .erow2{flex-wrap:wrap;gap:10px}
+.editor .erow2 .hint{flex-basis:100%;order:5}
+/* 卡片精致化：细描边 + 柔阴影 + 悬停浮起 */
+.post{border:1px solid var(--line);border-radius:18px;box-shadow:0 6px 18px rgba(20,23,28,.05);transition:transform .25s ease,box-shadow .25s ease}
+.post:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(20,23,28,.10)}
+.post .ptxt{font-size:16.5px;line-height:1.72}
+.postcard--row{transition:transform .25s ease,box-shadow .25s ease}
+.postcard--row:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(20,23,28,.12)}
+/* 写作输入更紧凑 */
+.rte{min-height:150px}
+.post-box .rte{min-height:88px}
+@media(max-width:680px){.sec,.editor,.post-box{max-width:100%}}
