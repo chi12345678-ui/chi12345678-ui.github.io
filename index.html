@@ -4,141 +4,141 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>阿历的成长博客 | 数据分析</title>
-<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap"></noscript>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="tools">
-  <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
-  <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
+<button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
+<button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
 </div>
 <div class="app">
-  <aside class="side">
-    <div class="brand">
-      <img class="avatar" src="me.jpg" alt="阿历" loading="lazy" onerror="this.style.display='none';document.getElementById('avfb').style.display='flex'">
-      <div class="avatar-fb" id="avfb">历</div>
-      <div class="brand-txt"><h1>阿历的个人主页</h1><p>数据分析 · 成长博客</p></div>
-    </div>
-    <p class="sign">用数据讲好业务的故事 | <br> 用数据记录生活</p>
-    <ul class="nav" id="nav">
-      <li><a href="#home" data-nav="home"><span class="nico">🏠</span><span>首页</span></a></li>
-      <li><a href="#about" data-nav="about"><span class="nico">👤</span><span>关于我</span></a></li>
-      <li><a href="#projects" data-nav="projects"><span class="nico">💼</span><span>项目案例</span></a></li>
-      <li><a href="#learning" data-nav="learning"><span class="nico">📚</span><span>学习成长</span></a></li>
-      <li><a href="#life" data-nav="life"><span class="nico">🌱</span><span>生活随笔</span></a></li>
-    </ul>
-    <div class="side-foot">
-      <div class="contact-row">
-        <button class="cbtn" data-contact="wechat" title="微信"><i class="fab fa-weixin"></i></button>
-        <button class="cbtn" data-contact="qq" title="QQ"><i class="fab fa-qq"></i></button>
-        <button class="cbtn" data-contact="phone" title="电话"><i class="fas fa-phone"></i></button>
-        <button class="cbtn" data-contact="email" title="邮箱"><i class="fas fa-envelope"></i></button>
-      </div>
-      <div class="copy">© 2026 游学者、池鹅</div>
-    </div>
-  </aside>
-  <main class="main">
-    <section class="view active" data-view="home"><div class="sec"><div class="reveal">
-      <h2 class="hi">你好呀<span class="accent">！</span> <span class="wave">👋</span></h2>
-      <div class="datebar"><span class="d" id="dateText">今天…</span><span class="sep"></span><span class="clock" id="clock">--:--:--</span></div>
-      <div class="intro">
-        <p class="lead">我是 <span class="em">阿历</span>，一名深耕快消品与电商领域的数据分析从业者，成功利用数据分析将一家电商母婴店铺从0变成月销100W+母婴店铺。</p>
-        <p><span class="ico">📊</span>多年市场运营操作经验，具有库存健康度诊断与智能补货模型搭建经验，擅长把模糊的业务需求梳理成清晰的数据模型。</p>
-        <p><span class="ico">🛒</span>熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析、A/B测试</span> 驱动精细化运营落地。</p>
-        <p><span class="ico">🌱</span>这里是我的<b>成长博客</b>——记录学习、项目、工作与生活，内容会持续更新，欢迎常来。</p>
-      </div>
-      <p class="contact-note">📮 合作或交流，欢迎邮件 <a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>，或点左侧图标加微信 / QQ / 拨打电话。</p>
-      <h3 class="guide-h reveal" id="homeLatestH" style="display:none"><i class="fas fa-pen-nib"></i>最新 / 置顶文章</h3>
-      <div class="blog-grid reveal" id="homeLatest"></div>
-      <h3 class="guide-h reveal"><i class="fas fa-compass"></i>逛逛这几个板块</h3>
-      <div class="tour reveal">
-        <a href="#projects"><span class="tno">01</span><span class="tmain"><b><span class="emo">💼</span>项目案例</b><span>RFM 用户分层、进销存监控、复购归因——可在线预览的完整作品</span></span><i class="tgo fas fa-arrow-right"></i></a>
-        <a href="#learning"><span class="tno">02</span><span class="tmain"><b><span class="emo">📚</span>学习成长</b><span>像博客一样记录每一次学习：图文 + 链接 + 心得，持续更新</span></span><i class="tgo fas fa-arrow-right"></i></a>
-        <a href="#life"><span class="tno">03</span><span class="tmain"><b><span class="emo">🌱</span>生活随笔</b><span>分析之外的日常碎片与碎碎念，想到就写、绝不丢失</span></span><i class="tgo fas fa-arrow-right"></i></a>
-        <a href="#about"><span class="tno">04</span><span class="tmain"><b><span class="emo">👤</span>关于我</b><span>简介优势 · 技能 · 荣誉论文 · 简历 · 证书</span></span><i class="tgo fas fa-arrow-right"></i></a>
-      </div>
-    </div></div></section>
-
-    <section class="view" data-view="about"><div class="sec">
-      <div class="reveal"><div class="sec-tag">About Me</div><h2 class="sec-h">关于我</h2><p class="sec-sub">不只是产出报表，更在意分析结论能否真正落地、能否被复用。</p></div>
-      <div class="about-wrap reveal">
-        <div class="lede">我把数据分析看作一门<b>翻译</b>的手艺——把模糊的业务焦虑，翻译成可计算、可验证、可执行的指标与策略。从快消品的进销存周转，到电商用户的生命周期价值，我习惯先搭框架、再下钻归因、最后给出带优先级的行动建议。<br><br>我相信好的分析应当<b>自我解释</b>：一张看板、一份报告，要让没参与建模的人也能在三分钟内看懂结论与下一步。这也是我每个案例都坚持「方法论 + 可复现源码 + 业务价值」三件套的原因。</div>
-        <div class="facts"><h4>Quick Facts</h4>
-          <div class="fact"><span class="num">3</span><span class="lab"><b>大分析方向</b>用户价值 / 进销存 / 复购留存</span></div>
-          <div class="fact"><span class="num">4</span><span class="lab"><b>项专业认证</b>CDA / 计算机 / 英语 / 普通话</span></div>
-          <div class="fact"><span class="num">5</span><span class="lab"><b>核心工具栈</b>Excel·SQL·Python·BI</span></div>
-          <div class="fact"><span class="num">1</span><span class="lab"><b>篇期刊论文</b>《科技创业月刊》DEA 模型</span></div>
-        </div>
-      </div>
-      <div class="edges reveal">
-        <div class="edge"><div class="no">01</div><div><h3><i class="fas fa-magnifying-glass-chart"></i>数据洞察</h3><p>从海量交易与行为数据中定位异常与机会，用 RFM、漏斗、同期群等方法论把「感觉」变成「证据」。</p></div></div>
-        <div class="edge"><div class="no">02</div><div><h3><i class="fas fa-code"></i>技术全面</h3><p>Python(Pandas/NumPy) 清洗建模、SQL 处理大规模数据、Power BI / Tableau 搭建自动化看板，全流程可复现。</p></div></div>
-        <div class="edge"><div class="no">03</div><div><h3><i class="fas fa-bullseye"></i>业务落地</h3><p>分析结论永远带「所以呢」——给出带优先级的运营、采购、召回建议，让数据真正影响决策与结果。</p></div></div>
-      </div>
-      <h3 class="block-h reveal"><i class="fas fa-toolbox"></i>技能专长<span class="k">SKILLS</span></h3>
-      <div class="skill-list reveal">
-        <div class="skill"><div class="si"><i class="fas fa-file-excel"></i></div><div><h4>Excel</h4><p>熟练使用 VLOOKUP、数据透视表、常用函数进行数据整理及分析。</p></div></div>
-        <div class="skill"><div class="si"><i class="fas fa-database"></i></div><div><h4>SQL</h4><p>掌握单表查询、多表关联（JOIN）、分组聚合、CASE WHEN、子查询等，能够完成常见数据分析需求。</p></div></div>
-        <div class="skill"><div class="si"><i class="fab fa-python"></i></div><div><h4>Python</h4><p>掌握 Pandas 进行数据清洗、数据处理及统计分析。</p></div></div>
-        <div class="skill"><div class="si"><i class="fas fa-chart-column"></i></div><div><h4>数据可视化</h4><p>能够使用 Power BI、Tableau 制作数据分析报表及可视化。</p></div></div>
-        <div class="skill"><div class="si"><i class="fas fa-brain"></i></div><div><h4>数据分析方法</h4><p>了解 K-Means 聚类、线性回归、逻辑回归等常用分析方法。</p></div></div>
-      </div>
-      <h3 class="block-h reveal"><i class="fas fa-trophy"></i>荣誉 / 成果<span class="k">HONORS</span></h3>
-      <div class="honor reveal"><a href="https://kns.cnki.net/kcms2/article/abstract?v=sFGZ-GfRoEUQfF9Go9N0p9gss-V29J2moLpuG8E2wwRPKud-4ATPJtjP_Z_8bwPIs3Hqcl7zTu5UXphl4omoXa70FfYItmbwqUcfJxpWYTyRYYxfmLgLLjsXWgiO1ixclCdYk_BzAqRLS9kDyFMvcoQpW3M8HD5ugI3ubxXXCh7kCCneMYIPjQ==&uniplatform=NZKPT&language=CHS" target="_blank" rel="noopener"><div class="hi-ico"><i class="fas fa-scroll"></i></div><div class="ht"><b>《科技创业月刊》期刊论文</b><span>基于 DEA 数据模型的相关分析文章 · 点击跳转知网原文</span></div><i class="go fas fa-arrow-up-right-from-square"></i></a></div>
-      <h3 class="block-h reveal"><i class="fas fa-file-arrow-down"></i>个人简历<span class="k">RESUME</span></h3>
-      <div class="resume-card reveal"><div class="ri"><i class="fas fa-file-pdf"></i></div><div class="rt"><b>池增历-市场数据运营3年-市场营销专业-本科.pdf</b><span>市场数据运营 · 3 年经验 · 市场营销本科 ｜ 可在线预览或下载</span></div><div class="resume-actions"><a class="ra-btn ra-primary" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" target="_blank" rel="noopener"><i class="fas fa-eye"></i> 在线预览</a><a class="ra-btn ra-ghost" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" download><i class="fas fa-download"></i> 下载 PDF</a></div></div>
-      <h3 class="block-h reveal"><i class="fas fa-award"></i>专业证书<span class="k">CERTIFICATES</span></h3>
-      <div class="cert-grid reveal" id="certGrid"></div>
-    </div></section>
-
-    <section class="view" data-view="projects"><div class="sec">
-      <div class="reveal"><div class="sec-tag">Portfolio</div><h2 class="sec-h">项目案例</h2><p class="sec-sub">点击卡片上的按钮在线预览「演示案例」与「分析报告」，或下载源文件。</p></div>
-      <div class="case-grid reveal" id="caseGrid"></div>
-    </div></section>
-
-    <section class="view" data-view="learning"><div class="sec">
-      <div class="reveal"><div class="sec-tag">Learning</div><h2 class="sec-h">学习成长</h2><p class="sec-sub">像博客一样记录每一次学习——文字、图片、参考链接。<b>断网也能写、绝不丢</b>，联网后自动同步到云端。</p></div>
-      <div class="editor reveal" id="lrEditor">
-        <div class="etitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</div>
-        <input class="ti" id="lrTitle" type="text" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
-        <textarea class="co" id="lrContent" placeholder="正文… 支持多行；正文里粘贴的网址会自动变成可点链接。"></textarea>
-        <div class="lr-block"><div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div><div class="lr-thumbs" id="lrThumbs"></div><label class="file-btn"><i class="fas fa-plus"></i> 选择图片<input type="file" id="lrFile" accept="image/*" multiple hidden></label></div>
-        <div class="lr-block"><div class="lbl"><i class="fas fa-link"></i> 参考链接（可选，可加多条）</div>
-          <div class="lr-linkrow"><input class="li" id="lrLinkText" type="text" placeholder="链接名称，如：Pandas 官方文档"><input class="li" id="lrLinkUrl" type="text" placeholder="https://..."><button class="btn btn-ghost" id="lrAddLink"><i class="fas fa-plus"></i> 添加</button></div>
-          <div class="lr-links" id="lrLinkList"></div>
-        </div>
-        <div class="lr-block" style="margin-bottom:0"><div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔；加「置顶」可上首页）</div><input class="tags-in" id="lrTags" type="text" placeholder="如：DAX, 复购, 笔记"></div>
-        <div class="erow2"><button class="btn btn-pub" id="lrPub"><i class="fas fa-paper-plane"></i> 发布</button><button class="btn btn-ghost" id="lrPreview"><i class="fas fa-eye"></i> 预览</button><span class="hint">Ctrl + Enter 发布 ｜ 预览无需联网 ｜ 断网自动存本机</span></div>
-      </div>
-      <div class="blog-grid reveal" id="learningGrid"><div class="no-result">正在加载学习记录…</div></div>
-    </div></section>
-
-    <section class="view" data-view="read"><div class="sec"><div id="readInner"></div></div></section>
-
-    <section class="view" data-view="life"><div class="sec">
-      <div class="reveal"><div class="sec-tag">Life</div><h2 class="sec-h">生活随笔<span class="post-mode live" id="postModeBadge"><i class="fas fa-tower-broadcast"></i> 实时同步</span></h2><p class="sec-sub" id="postSubText">分析之外的日常碎片。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到。</p></div>
-      <div class="post-box reveal">
-        <div class="row1"><div class="pav">历</div><textarea id="postInput" placeholder="写点什么… 今天的一个小发现、一段心情。"></textarea></div>
-        <div class="life-thumbs" id="lifeThumbs"></div>
-        <div class="row2">
-          <label class="file-btn" style="margin:0"><i class="fas fa-image"></i> 图片<input type="file" id="lifeFile" accept="image/*" multiple hidden></label>
-          <input class="tags" id="postTags" type="text" placeholder="标签，逗号分隔，如：日常, 网球">
-          <span class="hint">Ctrl + Enter 发布</span>
-          <button class="btn btn-pub2" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
-        </div>
-      </div>
-      <div class="posts reveal" id="postList"><div class="no-result">正在连接云端…</div></div>
-    </div></section>
-
-    <footer>© 2026 池增历 · 数据分析成长博客 ｜ 项目报告基于模拟数据构建，仅用于方法论展示与技术交流<br>创作者：游学者、池鹅 ｜ 联系 <a href="mailto:chift0707@gmail.com">chift0707@gmail.com</a></footer>
-  </main>
+<aside class="side">
+<div class="brand">
+<img class="avatar" src="me.jpg" alt="阿历" loading="lazy" onerror="this.style.display='none';document.getElementById('avfb').style.display='flex'">
+<div class="avatar-fb" id="avfb">历</div>
+<div class="brand-txt"><h1>阿历的个人主页</h1><p>数据分析 · 成长博客</p></div>
+</div>
+<p class="sign">用数据讲好业务的故事 | <br> 用数据记录生活</p>
+<ul class="nav" id="nav">
+<li><a href="#home" data-nav="home"><span class="nico">🏠</span><span>首页</span></a></li>
+<li><a href="#about" data-nav="about"><span class="nico">👤</span><span>关于我</span></a></li>
+<li><a href="#projects" data-nav="projects"><span class="nico">💼</span><span>项目案例</span></a></li>
+<li><a href="#learning" data-nav="learning"><span class="nico">📚</span><span>学习成长</span></a></li>
+<li><a href="#life" data-nav="life"><span class="nico">🌱</span><span>生活随笔</span></a></li>
+</ul>
+<div class="side-foot">
+<div class="contact-row">
+<button class="cbtn" data-contact="wechat" title="微信"><i class="fab fa-weixin"></i></button>
+<button class="cbtn" data-contact="qq" title="QQ"><i class="fab fa-qq"></i></button>
+<button class="cbtn" data-contact="phone" title="电话"><i class="fas fa-phone"></i></button>
+<button class="cbtn" data-contact="email" title="邮箱"><i class="fas fa-envelope"></i></button>
+</div>
+<div class="copy">© 2026 游学者、池鹅</div>
+</div>
+</aside>
+<main class="main">
+<section class="view active" data-view="home"><div class="sec"><div class="reveal">
+<h2 class="hi">你好呀<span class="accent">！</span> <span class="wave">👋</span></h2>
+<div class="datebar"><span class="d" id="dateText">今天…</span><span class="sep"></span><span class="clock" id="clock">--:--:--</span></div>
+<div class="intro">
+<p class="lead">我是 <span class="em">阿历</span>，一名深耕快消品与电商领域的数据分析从业者，成功利用数据分析将一家电商母婴店铺从0变成月销100W+母婴店铺。</p>
+<p><span class="ico">📊</span>多年市场运营操作经验，具有库存健康度诊断与智能补货模型搭建经验，擅长把模糊的业务需求梳理成清晰的数据模型。</p>
+<p><span class="ico">🛒</span>熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析、A/B测试</span> 驱动精细化运营落地。</p>
+<p><span class="ico">🌱</span>这里是我的<b>成长博客</b>——记录学习、项目、工作与生活，内容会持续更新，欢迎常来。</p>
+</div>
+<p class="contact-note">📮 合作或交流，欢迎邮件 <a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>，或点左侧图标加微信 / QQ / 拨打电话。</p>
+<h3 class="guide-h reveal" id="homeLatestH" style="display:none"><i class="fas fa-book-open"></i> 学习成长 · 最新</h3>
+<div class="blog-grid reveal" id="homeLatest"></div>
+<div class="home-more reveal" id="homeLatestMore" style="display:none"><a href="#learning">查看更多学习成长 <i class="fas fa-arrow-right"></i></a></div>
+<h3 class="guide-h reveal" id="homeLifeH" style="display:none"><i class="fas fa-feather-pointed"></i> 生活随笔 · 最近</h3>
+<div class="posts home-life reveal" id="homeLife"></div>
+<div class="home-more reveal" id="homeLifeMore" style="display:none"><a href="#life">查看更多随笔 <i class="fas fa-arrow-right"></i></a></div>
+<h3 class="guide-h reveal"><i class="fas fa-compass"></i> 逛逛这几个板块</h3>
+<div class="tour reveal">
+<a href="#projects"><span class="tno">01</span><span class="tmain"><b><span class="emo">💼</span>项目案例</b><span>RFM 用户分层、进销存监控、复购归因——可在线预览的完整作品</span></span><i class="tgo fas fa-arrow-right"></i></a>
+<a href="#learning"><span class="tno">02</span><span class="tmain"><b><span class="emo">📚</span>学习成长</b><span>像博客一样记录每一次学习：图文 + 链接 + 心得，持续更新</span></span><i class="tgo fas fa-arrow-right"></i></a>
+<a href="#life"><span class="tno">03</span><span class="tmain"><b><span class="emo">🌱</span>生活随笔</b><span>分析之外的日常碎片与碎碎念，想到就写、绝不丢失</span></span><i class="tgo fas fa-arrow-right"></i></a>
+<a href="#about"><span class="tno">04</span><span class="tmain"><b><span class="emo">👤</span>关于我</b><span>简介优势 · 技能 · 荣誉论文 · 简历 · 证书</span></span><i class="tgo fas fa-arrow-right"></i></a>
+</div>
+</div></div></section>
+<section class="view" data-view="about"><div class="sec">
+<div class="reveal"><div class="sec-tag">About Me</div><h2 class="sec-h">关于我</h2><p class="sec-sub">不只是产出报表，更在意分析结论能否真正落地、能否被复用。</p></div>
+<div class="about-wrap reveal">
+<div class="lede">我把数据分析看作一门<b>翻译</b>的手艺——把模糊的业务焦虑，翻译成可计算、可验证、可执行的指标与策略。从快消品的进销存周转，到电商用户的生命周期价值，我习惯先搭框架、再下钻归因、最后给出带优先级的行动建议。<br><br>我相信好的分析应当<b>自我解释</b>：一张看板、一份报告，要让没参与建模的人也能在三分钟内看懂结论与下一步。这也是我每个案例都坚持「方法论 + 可复现源码 + 业务价值」三件套的原因。</div>
+<div class="facts"><h4>Quick Facts</h4>
+<div class="fact"><span class="num">3</span><span class="lab"><b>大分析方向</b>用户价值 / 进销存 / 复购留存</span></div>
+<div class="fact"><span class="num">4</span><span class="lab"><b>项专业认证</b>CDA / 计算机 / 英语 / 普通话</span></div>
+<div class="fact"><span class="num">5</span><span class="lab"><b>核心工具栈</b>Excel·SQL·Python·BI</span></div>
+<div class="fact"><span class="num">1</span><span class="lab"><b>篇期刊论文</b>《科技创业月刊》DEA 模型</span></div>
+</div>
+</div>
+<div class="edges reveal">
+<div class="edge"><div class="no">01</div><div><h3><i class="fas fa-magnifying-glass-chart"></i>数据洞察</h3><p>从海量交易与行为数据中定位异常与机会，用 RFM、漏斗、同期群等方法论把「感觉」变成「证据」。</p></div></div>
+<div class="edge"><div class="no">02</div><div><h3><i class="fas fa-code"></i>技术全面</h3><p>Python(Pandas/NumPy) 清洗建模、SQL 处理大规模数据、Power BI / Tableau 搭建自动化看板，全流程可复现。</p></div></div>
+<div class="edge"><div class="no">03</div><div><h3><i class="fas fa-bullseye"></i>业务落地</h3><p>分析结论永远带「所以呢」——给出带优先级的运营、采购、召回建议，让数据真正影响决策与结果。</p></div></div>
+</div>
+<h3 class="block-h reveal"><i class="fas fa-toolbox"></i> 技能专长<span class="k">SKILLS</span></h3>
+<div class="skill-list reveal">
+<div class="skill"><div class="si"><i class="fas fa-file-excel"></i></div><div><h4>Excel</h4><p>熟练使用 VLOOKUP、数据透视表、常用函数进行数据整理及分析。</p></div></div>
+<div class="skill"><div class="si"><i class="fas fa-database"></i></div><div><h4>SQL</h4><p>掌握单表查询、多表关联（JOIN）、分组聚合、CASE WHEN、子查询等，能够完成常见数据分析需求。</p></div></div>
+<div class="skill"><div class="si"><i class="fab fa-python"></i></div><div><h4>Python</h4><p>掌握 Pandas 进行数据清洗、数据处理及统计分析。</p></div></div>
+<div class="skill"><div class="si"><i class="fas fa-chart-column"></i></div><div><h4>数据可视化</h4><p>能够使用 Power BI、Tableau 制作数据分析报表及可视化。</p></div></div>
+<div class="skill"><div class="si"><i class="fas fa-brain"></i></div><div><h4>数据分析方法</h4><p>了解 K-Means 聚类、线性回归、逻辑回归等常用分析方法。</p></div></div>
+</div>
+<h3 class="block-h reveal"><i class="fas fa-trophy"></i> 荣誉 / 成果<span class="k">HONORS</span></h3>
+<div class="honor reveal"><a href="https://kns.cnki.net/kcms2/article/abstract?v=sFGZ-GfRoEUQfF9Go9N0p9gss-V29J2moLpuG8E2wwRPKud-4ATPJtjP_Z_8bwPIs3Hqcl7zTu5UXphl4omoXa70FfYItmbwqUcfJxpWYTyRYYxfmLgLLjsXWgiO1ixclCdYk_BzAqRLS9kDyFMvcoQpW3M8HD5ugI3ubxXXCh7kCCneMYIPjQ==&uniplatform=NZKPT&language=CHS" target="_blank" rel="noopener"><div class="hi-ico"><i class="fas fa-scroll"></i></div><div class="ht"><b>《科技创业月刊》期刊论文</b><span>基于 DEA 数据模型的相关分析文章 · 点击跳转知网原文</span></div><i class="go fas fa-arrow-up-right-from-square"></i></a></div>
+<h3 class="block-h reveal"><i class="fas fa-file-arrow-down"></i> 个人简历<span class="k">RESUME</span></h3>
+<div class="resume-card reveal"><div class="ri"><i class="fas fa-file-pdf"></i></div><div class="rt"><b>池增历-市场数据运营3年-市场营销专业-本科.pdf</b><span>市场数据运营 · 3 年经验 · 市场营销本科 ｜ 可在线预览或下载</span></div><div class="resume-actions"><a class="ra-btn ra-primary" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" target="_blank" rel="noopener"><i class="fas fa-eye"></i> 在线预览</a><a class="ra-btn ra-ghost" href="./池增历-市场数据运营3年-市场营销专业-本科.pdf" download><i class="fas fa-download"></i> 下载 PDF</a></div></div>
+<h3 class="block-h reveal"><i class="fas fa-award"></i> 专业证书<span class="k">CERTIFICATES</span></h3>
+<div class="cert-grid reveal" id="certGrid"></div>
+</div></section>
+<section class="view" data-view="projects"><div class="sec">
+<div class="reveal"><div class="sec-tag">Portfolio</div><h2 class="sec-h">项目案例</h2><p class="sec-sub">横向浏览每个案例：左侧封面可点开「演示案例」，右侧在线预览报告或下载源文件。</p></div>
+<div class="case-grid reveal" id="caseGrid"></div>
+</div></section>
+<section class="view" data-view="learning"><div class="sec">
+<div class="reveal"><div class="sec-tag">Learning</div><h2 class="sec-h">学习成长</h2><p class="sec-sub">像博客一样记录每一次学习——文字、图片、参考链接。<b>断网也能写、绝不丢</b>，联网后自动同步到云端。</p></div>
+<div class="editor reveal" id="lrEditor">
+<div class="etitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</div>
+<input class="ti" id="lrTitle" type="text" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
+<textarea class="co" id="lrContent" placeholder="正文… 支持加粗 / 列表 / 引用 / 字号±等排版。"></textarea>
+<div class="lr-block"><div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div><div class="lr-thumbs" id="lrThumbs"></div><label class="file-btn"><i class="fas fa-plus"></i> 选择图片<input type="file" id="lrFile" accept="image/*" multiple hidden></label></div>
+<div class="lr-block"><div class="lbl"><i class="fas fa-link"></i> 参考链接（可选，可加多条）</div>
+<div class="lr-linkrow"><input class="li" id="lrLinkText" type="text" placeholder="链接名称，如：Pandas 官方文档"><input class="li" id="lrLinkUrl" type="text" placeholder="https://..."><button class="btn btn-ghost" id="lrAddLink"><i class="fas fa-plus"></i> 添加</button></div>
+<div class="lr-links" id="lrLinkList"></div>
+</div>
+<div class="lr-block" style="margin-bottom:0"><div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔；加「置顶」可上首页）</div><input class="tags-in" id="lrTags" type="text" placeholder="如：DAX, 复购, 笔记"></div>
+<div class="erow2"><button class="btn btn-pub" id="lrPub"><i class="fas fa-paper-plane"></i> 发布</button><button class="btn btn-ghost" id="lrPreview"><i class="fas fa-eye"></i> 预览</button><span class="hint">Ctrl + Enter 发布 ｜ 预览无需联网 ｜ 断网自动存本机</span></div>
+</div>
+<div class="blog-grid reveal" id="learningGrid"><div class="no-result">正在加载学习记录…</div></div>
+</div></section>
+<section class="view" data-view="read"><div class="sec"><div id="readInner"></div></div></section>
+<section class="view" data-view="life"><div class="sec">
+<div class="reveal"><div class="sec-tag">Life</div><h2 class="sec-h">生活随笔<span class="post-mode live" id="postModeBadge"><i class="fas fa-tower-broadcast"></i> 实时同步</span></h2><p class="sec-sub" id="postSubText">分析之外的日常碎片。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到。</p></div>
+<div class="post-box reveal">
+<div class="row1"><div class="pav">历</div><textarea id="postInput" placeholder="写点什么… 今天的一个小发现、一段心情。"></textarea></div>
+<div class="life-thumbs" id="lifeThumbs"></div>
+<div class="row2">
+<label class="file-btn" style="margin:0"><i class="fas fa-image"></i> 图片<input type="file" id="lifeFile" accept="image/*" multiple hidden></label>
+<input class="tags" id="postTags" type="text" placeholder="标签，逗号分隔，如：日常, 网球">
+<span class="hint">Ctrl + Enter 发布</span>
+<button class="btn btn-pub2" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
+</div>
+</div>
+<div class="posts reveal" id="postList"><div class="no-result">正在连接云端…</div></div>
+</div></section>
+<footer>© 2026 池增历 · 数据分析成长博客 ｜ 项目报告基于模拟数据构建，仅用于方法论展示与技术交流<br>创作者：游学者、池鹅 ｜ 联系 <a href="mailto:chift0707@gmail.com">chift0707@gmail.com</a></footer>
+</main>
 </div>
 <div class="overlay" id="lightbox" data-close><button class="modal-x" data-close style="position:fixed;top:22px;right:28px;width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,.22);color:#fff;font-size:20px;cursor:pointer">&times;</button><img class="lb-img" id="lbImg" src="" alt=""></div>
 <div class="toast" id="toast"></div>
-<script src="app.js"></script>
+<script defer src="app.js"></script>
 </body>
 </html>
-
