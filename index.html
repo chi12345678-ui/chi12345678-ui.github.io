@@ -439,8 +439,31 @@ footer{padding:36px clamp(24px,5vw,64px);text-align:center;color:var(--ink-3);fo
    要开启云同步：把下面两个占位符换成你的 Supabase 凭证。
    不填也能正常使用(纯本地模式)。
    ========================================================= */
-const SUPABASE_URL = "YOUR_SUPABASE_URL";          // 形如 https://xxxxx.supabase.co
-const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";      // anon public key
+<!-- 1. 先加载 Supabase 库 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- 2. 再放你的配置和初始化代码 -->
+<script>
+    // ==========================================
+    // ⚙️ 你的配置区域 (填在这里)
+    // ==========================================
+    
+    // URL (仓库大门)
+    const SUPABASE_URL = 'https://bqdhqnviozvqljjigzys.supabase.co'; 
+    
+    // Key (钥匙)
+    const SUPABASE_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd'; 
+
+    // ==========================================
+    // 🛠️ 系统初始化 (不要动)
+    // ==========================================
+    
+    // 这一行最重要！它用上面的 URL 和 Key 建立了连接
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    console.log("✅ Supabase 连接已启动！");
+    console.log("当前项目:", SUPABASE_URL);
+</script>
 const TABLE_LEARN = "learning";   // 笔记表
 const TABLE_LIFE  = "posts";      // 随笔表
 
