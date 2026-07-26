@@ -11,19 +11,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-<!-- 图标库（app.js 的工具栏/案例/证书/参考链接全靠它，缺了就是空方块） -->
+<!-- 图标库（app.js 的工具栏/案例/证书/离线按钮全靠它） -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <!-- 你满意的那套样式：原样引用，不要内联、不要改 -->
 <link rel="stylesheet" href="style.css">
+
+<!-- ===== 云端库：必须同步、必须在 app.js 之前、三源兜底（这是"连不上"的根治） ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>if(!window.supabase){document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
+<script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
 </head>
 <body>
+
+<!-- ⚠️ 关键结构：.app 只有两个直接孩子 = .side 和 .main，侧栏绝不能放进任何 section 里 -->
 <div class="app">
 
-  <!-- ============ 侧边栏 ============ -->
+  <!-- ============ 侧边栏（.app 的第一个孩子） ============ -->
   <aside class="side">
     <div class="brand">
-      <!-- 有 me.jpg 就显示照片；没有就自动退回橙色“历”字块（双保险，不报错） -->
       <img class="avatar" src="me.jpg" alt="阿历"
            onerror="this.style.display='none';var f=this.nextElementSibling;if(f)f.style.display='flex';">
       <div class="avatar-fb">历</div>
@@ -31,7 +37,6 @@
     </div>
     <p class="sign">把每一次学习，种成一座花园。</p>
 
-    <!-- 导航：app.js 认 data-nav 做高亮、认 href="#xxx" 做跳转，两个都要有 -->
     <ul class="nav" id="nav">
       <li><a data-nav="home"     href="#home"     class="active"><span class="nico">🏠</span>首页</a></li>
       <li><a data-nav="learning" href="#learning"><span class="nico">📚</span>学习成长</a></li>
@@ -41,20 +46,19 @@
     </ul>
 
     <div class="side-foot">
-      <!-- 联系方式：app.js 认 data-contact，点击自动复制并弹提示 -->
       <div class="contact-row">
-        <button class="cbtn" data-contact="email" title="邮箱">✉️</button>
+        <button class="cbtn" data-contact="email"  title="邮箱">✉️</button>
         <button class="cbtn" data-contact="wechat" title="微信">💬</button>
-        <button class="cbtn" data-contact="qq" title="QQ">🐧</button>
-        <button class="cbtn" data-contact="phone" title="电话">📞</button>
+        <button class="cbtn" data-contact="qq"     title="QQ">🐧</button>
+        <button class="cbtn" data-contact="phone"  title="电话">📞</button>
       </div>
       <div class="copy">© 2026 阿历 · 数字花园</div>
     </div>
   </aside>
 
-  <!-- ============ 主区 ============ -->
+  <!-- ============ 主区（.app 的第二个孩子，所有视图都在它里面） ============ -->
   <main class="main">
-    <!-- 工具栏：离线按钮由 app.js 自动创建，这里别放，否则它不绑点击 -->
+    <!-- 工具栏：只放主题/回顶；离线按钮由 app.js 自动插，这里别放，否则点不动 -->
     <div class="tools">
       <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
       <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
@@ -72,7 +76,6 @@
         <p class="contact-note">📮 合作或交流，欢迎邮件 <a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>（点左侧图标可一键复制微信 / QQ / 电话）</p>
       </div>
 
-      <!-- 导览：给首页一点“活”的指引，点击直达各栏目 -->
       <div class="guide-h reveal"><i class="fas fa-compass"></i> 逛一逛这座花园</div>
       <div class="tour reveal">
         <a href="#learning"><span class="tno">01</span><span class="tmain"><b><span class="emo">📚</span> 学习成长</b><span>像写博客一样记录每次学习，文字 / 配图 / 参考链接，断网也不丢。</span></span><span class="tgo"><i class="fas fa-arrow-right"></i></span></a>
@@ -80,7 +83,6 @@
         <a href="#projects"><span class="tno">03</span><span class="tmain"><b><span class="emo">💼</span> 项目案例</b><span>用数据把业务问题，变成可落地的增长动作，附源文件下载。</span></span><span class="tgo"><i class="fas fa-arrow-right"></i></span></a>
       </div>
 
-      <!-- 首页最新（标题/“查看全部”由 app.js 在有内容时自动显示） -->
       <h3 class="block-h reveal" id="homeLatestH" style="display:none"><i class="fas fa-book-open"></i> 学习成长 · 最新 <span class="k">LEARNING</span></h3>
       <div class="home-more reveal" id="homeLatestMore" style="display:none"><a href="#learning">查看全部 <i class="fas fa-arrow-right"></i></a></div>
       <div id="homeLatest"></div>
@@ -99,7 +101,7 @@
       <div class="editor reveal">
         <div class="etitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</div>
         <input class="ti" id="lrTitle" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
-        <!-- 正文：只放一个 textarea，工具栏由 app.js 自动生成（别自己写工具栏，否则会重复） -->
+        <!-- 正文必须是 textarea：app.js 会把它升级成富文本，别换成 div -->
         <textarea id="lrContent" placeholder="正文…"></textarea>
 
         <div class="lr-block">
@@ -133,7 +135,7 @@
       <div id="learningGrid"></div>
     </div></section>
 
-    <!-- ===== 笔记详情（整篇由 app.js 渲染进 readInner） ===== -->
+    <!-- ===== 笔记详情（整篇由 app.js 渲染） ===== -->
     <section class="view" data-view="read"><div class="sec">
       <div id="readInner"></div>
     </div></section>
@@ -142,14 +144,13 @@
     <section class="view" data-view="life"><div class="sec">
       <div class="sec-tag reveal">LIFE</div>
       <h2 class="sec-h reveal">生活随笔</h2>
-      <!-- postSubText 的文案由 app.js 按“在线/离线”自动改写 -->
       <p class="sec-sub reveal" id="postSubText">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。</p>
 
       <div class="post-box reveal">
         <div class="etitle"><i class="fas fa-comment-dots"></i> 发一条随笔 <span id="postModeBadge" class="post-mode"><i class="fas fa-hard-drive"></i> 本机暂存</span></div>
         <div class="row1">
           <div class="pav">历</div>
-          <!-- 正文：只放 textarea，工具栏由 app.js 自动生成 -->
+          <!-- 正文必须是 textarea -->
           <textarea id="postInput" placeholder="这一刻的想法…"></textarea>
         </div>
         <div class="lr-block">
@@ -167,7 +168,7 @@
       <div class="posts" id="postList"></div>
     </div></section>
 
-    <!-- ===== 项目案例（卡片由 app.js 渲染，含报告/源文件下载） ===== -->
+    <!-- ===== 项目案例 ===== -->
     <section class="view" data-view="projects"><div class="sec">
       <div class="sec-tag reveal">PROJECTS</div>
       <h2 class="sec-h reveal">项目案例</h2>
@@ -175,7 +176,7 @@
       <div class="case-grid" id="caseGrid"></div>
     </div></section>
 
-    <!-- ===== 关于我（含证书墙 + 简历卡） ===== -->
+    <!-- ===== 关于我 ===== -->
     <section class="view" data-view="about"><div class="sec">
       <div class="sec-tag reveal">ABOUT</div>
       <h2 class="sec-h reveal">关于我</h2>
@@ -196,7 +197,6 @@
         <div class="edge"><span class="no">03</span><div><h3><i class="fas fa-seedling"></i> 长期主义的记录者</h3><p>这座数字花园就是我的方法论沉淀——只要网站不停，生长就不终止。</p></div></div>
       </div>
 
-      <!-- 简历卡：下载链接指向仓库里的简历文件，文件名/扩展名若不同，改一下 href 即可 -->
       <div class="block-h reveal" style="margin-top:48px"><i class="fas fa-file-arrow-down"></i> 简历</div>
       <div class="resume-card reveal">
         <div class="ri"><i class="fas fa-file-lines"></i></div>
@@ -207,7 +207,6 @@
         </div>
       </div>
 
-      <!-- 证书墙：图片来自 certs/ 文件夹，缺图会自动隐藏单张，不会崩 -->
       <div class="block-h reveal"><i class="fas fa-certificate"></i> 证书墙</div>
       <div class="cert-grid reveal" id="certGrid"></div>
     </div></section>
@@ -216,19 +215,15 @@
   </main>
 </div>
 
-<!-- 看图大图：class 必须是 overlay，id 必须是 lightbox（app.js 认 id，style.css 认 class） -->
+<!-- 看图大图：class=overlay（样式认），id=lightbox（逻辑认），两者都要 -->
 <div class="overlay" id="lightbox">
   <span data-close style="position:absolute;top:18px;right:26px;color:#fff;font-size:34px;line-height:1;cursor:pointer;z-index:2">&times;</span>
   <img class="lb-img" id="lbImg" alt="">
 </div>
 
-<!-- 提示条 -->
 <div class="toast" id="toast"></div>
 
-<!-- ===== 脚本：顺序很重要，别改 ===== -->
-<!-- 1) 云端能力（必须在 app.js 之前，且不加 defer） -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- 2) 你满意的那套逻辑：原样引用，不要改、不要内联 -->
+<!-- 你满意的那套逻辑：原样引用，必须排在云端库之后、且不带 defer -->
 <script src="app.js"></script>
 </body>
 </html>
