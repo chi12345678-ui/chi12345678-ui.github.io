@@ -13,7 +13,6 @@
 
 <link rel="stylesheet" href="style.css">
 
-<!-- 云端库：同步加载 + 排在 app.js 前 + 三源兜底 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>if(!window.supabase){document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
 <script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
@@ -21,7 +20,7 @@
 <style>
 /* ===== 优化层：只调外观/结构/新增组件，绝不改 style.css / app.js；整段删掉即恢复原样 ===== */
 
-/* 0) reveal 显示兜底：保证首屏“你好呀/时间/正文”一定出现，保留淡入 */
+/* 0) reveal 显示兜底 */
 .reveal{ transition:opacity .6s ease, transform .6s ease !important; }
 .reveal.rv-on{ opacity:1 !important; transform:none !important; }
 
@@ -33,26 +32,17 @@
 }
 .view[data-view="home"] > .sec{ max-width:min(1380px,100%) !important; }
 
-/* 2) 左栏品牌名 = 左栏最大字 */
+/* 2) 左栏品牌名 = 最大字 */
 .brand{ cursor:pointer !important; border-radius:18px !important; transition:background .2s !important; }
 .brand:hover{ background:rgba(255,138,61,.07) !important; }
-.brand-txt h1{
-  font-size:1.55rem !important; font-weight:800 !important; line-height:1.2 !important;
-  letter-spacing:.3px !important; margin:0 !important; white-space:nowrap !important; color:var(--ink,#1f2430) !important;
-}
+.brand-txt h1{ font-size:1.55rem !important; font-weight:800 !important; line-height:1.2 !important; letter-spacing:.3px !important; margin:0 !important; white-space:nowrap !important; color:var(--ink,#1f2430) !important; }
 .brand.home-active .brand-txt h1{ color:var(--brand,#ff7a1a) !important; }
 .brand.home-active{ background:rgba(255,138,61,.10) !important; }
 .sign{ line-height:1.75 !important; }
 
-/* 3) 联系图标：品牌色方块 + 内联白色手画标（不依赖外部图，绝不空白） */
+/* 3) 联系图标：品牌色方块 + 内联白色标 */
 .contact-row{ display:flex !important; gap:12px !important; flex-wrap:wrap !important; }
-.cbtn{
-  width:46px !important; height:46px !important; border-radius:14px !important;
-  display:grid !important; place-items:center !important; color:#fff !important; overflow:hidden !important;
-  border:none !important; cursor:pointer !important; padding:0 !important;
-  background:#9aa0aa !important; box-shadow:0 4px 12px rgba(20,24,33,.10) !important;
-  transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s, filter .18s !important;
-}
+.cbtn{ width:46px !important; height:46px !important; border-radius:14px !important; display:grid !important; place-items:center !important; color:#fff !important; overflow:hidden !important; border:none !important; cursor:pointer !important; padding:0 !important; background:#9aa0aa !important; box-shadow:0 4px 12px rgba(20,24,33,.10) !important; transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s, filter .18s !important; }
 .cbtn:hover{ transform:translateY(-3px) !important; box-shadow:0 10px 22px rgba(20,24,33,.20) !important; filter:saturate(1.08) !important; }
 .cbtn:active{ transform:translateY(-1px) scale(.96) !important; }
 .cbtn.wx{ background:#07C160 !important; }
@@ -64,37 +54,26 @@
 /* 4) 首页两栏 hero + 中线渐隐橙点 */
 .home-hero{ position:relative !important; display:grid !important; grid-template-columns:1fr !important; gap:30px !important; margin:8px 0 44px !important; }
 .home-hero .intro{ margin:0 !important; }
-.tour-panel{
-  position:relative !important; padding:26px 26px 14px !important; border-radius:24px !important;
-  background:linear-gradient(158deg, rgba(255,138,61,.12), rgba(255,255,255,.55) 70%) !important;
-  border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 18px 44px rgba(255,122,26,.10) !important;
-}
+.tour-panel{ position:relative !important; padding:26px 26px 14px !important; border-radius:24px !important; background:linear-gradient(158deg, rgba(255,138,61,.12), rgba(255,255,255,.55) 70%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 18px 44px rgba(255,122,26,.10) !important; }
 .tour-panel .guide-h{ margin-top:0 !important; }
 .tour-panel .tour{ margin:6px 0 0 !important; }
 .tour-panel .tour a{ background:rgba(255,255,255,.62) !important; }
 @media (min-width:980px){
   .home-hero{ grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr) !important; gap:clamp(34px,4.4vw,80px) !important; align-items:start !important; }
-  .home-hero::after{
-    content:"" !important; position:absolute !important; top:6px !important; bottom:6px !important; left:50% !important; transform:translateX(-50%) !important; width:6px !important;
-    background:radial-gradient(circle, rgba(255,122,26,.42) 1.6px, transparent 2.4px) center/6px 20px repeat-y !important;
-    -webkit-mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; pointer-events:none !important;
-  }
+  .home-hero::after{ content:"" !important; position:absolute !important; top:6px !important; bottom:6px !important; left:50% !important; transform:translateX(-50%) !important; width:6px !important; background:radial-gradient(circle, rgba(255,122,26,.42) 1.6px, transparent 2.4px) center/6px 20px repeat-y !important; -webkit-mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; pointer-events:none !important; }
 }
 
-/* 5) 关于我：速览卡贴右上 + 两栏渐隐竖线 + 与下方自然分割 */
-.about-wrap{ align-items:start !important; position:relative !important; }
-@media (min-width:860px){
-  .about-wrap .facts{ border-left:1px solid transparent !important; border-image:linear-gradient(transparent, rgba(255,122,26,.42) 18%, rgba(255,122,26,.42) 82%, transparent) 1 !important; padding-left:clamp(20px,3vw,40px) !important; }
-}
-.sec-divider{ height:1px !important; margin:44px auto !important; max-width:520px !important; position:relative !important;
-  background:linear-gradient(90deg,transparent,rgba(255,122,26,.45),transparent) !important; }
-.sec-divider::after{ content:"\2756" !important; position:absolute !important; left:50% !important; top:50% !important; transform:translate(-50%,-50%) !important;
-  color:#ff7a1a !important; background:var(--bg,#fff) !important; padding:0 14px !important; font-size:.8rem !important; opacity:.75 !important; }
+/* 5) 关于我：简介大卡（左文右数据成组）+ 加强分割 + 能力条间淡线 */
+.about-wrap{ align-items:start !important; position:relative !important; overflow:visible !important; padding:clamp(22px,3vw,40px) !important; border-radius:26px !important; background:linear-gradient(135deg, rgba(255,138,61,.07), rgba(255,255,255,.45) 72%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 16px 40px rgba(255,122,26,.08) !important; }
+.sec-divider{ height:2px !important; margin:54px auto !important; max-width:620px !important; position:relative !important; background:linear-gradient(90deg,transparent,rgba(255,122,26,.55),transparent) !important; }
+.sec-divider::after{ content:"\2756  能力展开  \2756" !important; position:absolute !important; left:50% !important; top:50% !important; transform:translate(-50%,-50%) !important; color:#ff7a1a !important; background:var(--bg,#f6f7f9) !important; padding:0 18px !important; font-size:.82rem !important; letter-spacing:2px !important; opacity:.9 !important; white-space:nowrap !important; }
+.edges .edge{ position:relative !important; }
+.edges .edge + .edge::before{ content:"" !important; position:absolute !important; top:0 !important; left:6% !important; right:6% !important; height:1px !important; background:linear-gradient(90deg,transparent,rgba(255,122,26,.30),transparent) !important; }
 
-/* 6) 隐藏“本机/本机暂存”等提示（视觉清净；真同步靠右下角“同步自检”） */
+/* 6) 隐藏“本机/本机暂存”提示 */
 #postModeBadge{ display:none !important; }
 
-/* 7) 简历在线预览弹窗（带探测 + 兜底） */
+/* 7) 简历预览弹窗（探测 + 兜底） */
 .pdf-modal{ position:fixed; inset:0; background:rgba(15,18,25,.66); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); display:none; place-items:center; z-index:9998; padding:24px; }
 .pdf-modal.open{ display:grid; }
 .pdf-card{ background:#fff; border-radius:18px; width:min(960px,96vw); height:min(82vh,900px); display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden; animation:qrpop .24s cubic-bezier(.2,.9,.25,1); }
@@ -126,19 +105,15 @@
 .qr-close:hover{ color:#666; transform:rotate(90deg); }
 .qr-tip{ margin:14px 0 0; font-size:.8rem; color:#aab0bb; }
 
-/* 9) 底部 footer 两行 */
+/* 9) footer 两行 */
 footer .ft-meta{ display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; justify-content:center; }
 footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; line-height:1.7; }
 
-/* 10) 同步自检：浮动按钮 + 诊断卡片 */
-#syncFab{ position:fixed; right:22px; bottom:22px; z-index:9000; width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
-  background:linear-gradient(145deg,#ff8a3d,#ff6a00); color:#fff; font-size:22px; box-shadow:0 10px 26px rgba(255,106,0,.40);
-  display:grid; place-items:center; transition:transform .2s, box-shadow .2s; }
+/* 10) 同步自检 */
+#syncFab{ position:fixed; right:22px; bottom:22px; z-index:9000; width:52px; height:52px; border-radius:50%; border:none; cursor:pointer; background:linear-gradient(145deg,#ff8a3d,#ff6a00); color:#fff; font-size:22px; box-shadow:0 10px 26px rgba(255,106,0,.40); display:grid; place-items:center; transition:transform .2s, box-shadow .2s; }
 #syncFab:hover{ transform:translateY(-3px) scale(1.05); box-shadow:0 16px 34px rgba(255,106,0,.5); }
 #syncFab:active{ transform:scale(.95); }
-.sync-card{ position:fixed; right:22px; bottom:86px; z-index:9001; width:min(380px,calc(100vw - 32px)); max-height:72vh; overflow:auto;
-  background:#fff; border-radius:18px; box-shadow:0 24px 60px rgba(20,24,33,.28); border:1px solid #eef0f3;
-  display:none; flex-direction:column; animation:qrpop .22s cubic-bezier(.2,.9,.25,1); }
+.sync-card{ position:fixed; right:22px; bottom:86px; z-index:9001; width:min(380px,calc(100vw - 32px)); max-height:72vh; overflow:auto; background:#fff; border-radius:18px; box-shadow:0 24px 60px rgba(20,24,33,.28); border:1px solid #eef0f3; display:none; flex-direction:column; animation:qrpop .22s cubic-bezier(.2,.9,.25,1); }
 .sync-card.open{ display:flex; }
 .sc-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f0f1f4; position:sticky; top:0; background:#fff; }
 .sc-head b{ font-size:.98rem; color:#1f2430; }
@@ -149,8 +124,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 .sc-dot{ flex:0 0 auto; width:9px; height:9px; border-radius:50%; margin-top:6px; box-shadow:0 0 0 3px rgba(0,0,0,.04); }
 .sc-run{ margin-top:6px; border:none; cursor:pointer; background:#ff7a1a; color:#fff; padding:9px 16px; border-radius:10px; font-size:.86rem; font-weight:600; }
 .sc-run:hover{ background:#ff6a00; }
-.sc-code{ position:relative; margin:8px 0 2px; background:#1f2430; color:#e6edf3; font-family:'JetBrains Mono',monospace; font-size:.74rem; line-height:1.6;
-  padding:12px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-all; cursor:pointer; transition:box-shadow .2s; }
+.sc-code{ position:relative; margin:8px 0 2px; background:#1f2430; color:#e6edf3; font-family:'JetBrains Mono',monospace; font-size:.74rem; line-height:1.6; padding:12px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-all; cursor:pointer; transition:box-shadow .2s; }
 .sc-code:hover{ box-shadow:0 0 0 2px rgba(255,122,26,.5); }
 .sc-code::after{ content:"点击复制"; position:absolute; top:6px; right:8px; font-size:.62rem; color:#9aa6b4; font-family:'Noto Sans SC',sans-serif; }
 .sc-code.copied::after{ content:"已复制 ✓"; color:#4ade80; }
@@ -160,11 +134,9 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 
 <div class="app">
 
-  <!-- ============ 侧边栏 ============ -->
   <aside class="side">
     <div class="brand home-active" id="brandHome" role="button" tabindex="0" title="回到首页">
-      <img class="avatar" src="me.jpg" alt="阿历"
-           onerror="this.style.display='none';var f=this.nextElementSibling;if(f)f.style.display='flex';">
+      <img class="avatar" src="me.jpg" alt="阿历" onerror="this.style.display='none';var f=this.nextElementSibling;if(f)f.style.display='flex';">
       <div class="avatar-fb">历</div>
       <div class="brand-txt"><h1>阿历的个人主页</h1><p>数据分析 · 成长博客</p></div>
     </div>
@@ -179,7 +151,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 
     <div class="side-foot">
       <div class="contact-row">
-        <!-- 微信：内联白色双气泡 -->
         <button type="button" class="cbtn wx" data-qr="wechat.jpg" data-qr-title="微信" title="微信扫码加我" aria-label="微信">
           <svg class="cico" viewBox="0 0 32 32">
             <path fill="#fff" d="M12.4 5C6.9 5 2.5 8.6 2.5 13c0 2.5 1.4 4.7 3.7 6.2l-.9 2.9 3.3-1.6c1 .3 2 .4 3.1.4h.5a7 7 0 0 1-.2-1.8c0-4.3 4.1-7.7 9.1-7.7h.5C20.9 7.7 17 5 12.4 5Z"/>
@@ -188,21 +159,12 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
             <circle cx="18.6" cy="18" r="1.1" fill="#07C160"/><circle cx="24" cy="18" r="1.1" fill="#07C160"/>
           </svg>
         </button>
-        <!-- 小红书：白色字标 -->
         <button type="button" class="cbtn xhs" data-qr="xiaohongshu.jpg" data-qr-title="小红书" title="小红书扫码关注我" aria-label="小红书">
           <svg class="cico" viewBox="0 0 32 32"><text x="16" y="20.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" font-family="'Noto Sans SC',sans-serif">小红书</text></svg>
         </button>
-        <!-- QQ：白色企鹅 -->
         <button type="button" class="cbtn qq" data-qr="qq.jpg" data-qr-title="QQ" title="QQ 扫码加我" aria-label="QQ">
-          <svg class="cico" viewBox="0 0 32 32">
-            <ellipse cx="16" cy="17" rx="8" ry="9.5" fill="#fff"/>
-            <ellipse cx="7.5" cy="18.5" rx="2.2" ry="4" fill="#fff"/><ellipse cx="24.5" cy="18.5" rx="2.2" ry="4" fill="#fff"/>
-            <ellipse cx="13.2" cy="13.5" rx="1.3" ry="1.7" fill="#12B7F5"/><ellipse cx="18.8" cy="13.5" rx="1.3" ry="1.7" fill="#12B7F5"/>
-            <path d="M13.8 16.5 16 18.3 18.2 16.5Z" fill="#FF9F00"/>
-            <ellipse cx="13" cy="26" rx="2.2" ry="1.3" fill="#FF9F00"/><ellipse cx="19" cy="26" rx="2.2" ry="1.3" fill="#FF9F00"/>
-          </svg>
+          <svg class="cico" viewBox="0 0 32 32"><text x="16" y="21" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="'Fredoka','Noto Sans SC',sans-serif">QQ</text></svg>
         </button>
-        <!-- 邮箱：白色信封 -->
         <button type="button" class="cbtn mail" data-mail="chift0707@gmail.com" title="给我发邮件" aria-label="邮箱">
           <svg class="cico" viewBox="0 0 32 32">
             <rect x="4" y="8" width="24" height="16" rx="3" fill="#fff"/>
@@ -214,14 +176,12 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     </div>
   </aside>
 
-  <!-- ============ 主区 ============ -->
   <main class="main">
     <div class="tools">
       <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
       <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
     </div>
 
-    <!-- 首页 -->
     <section class="view active" data-view="home"><div class="sec">
       <h1 class="hi reveal">你好呀<span class="accent">！</span> <span class="wave">👋</span></h1>
       <div class="datebar reveal"><span class="d" id="dateText"></span><span class="sep"></span><span class="clock" id="clock">--:--:--</span></div>
@@ -254,7 +214,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
       <div class="posts home-life" id="homeLife"></div>
     </div></section>
 
-    <!-- 学习成长 -->
     <section class="view" data-view="learning"><div class="sec">
       <div class="sec-tag reveal">LEARNING</div>
       <h2 class="sec-h reveal">学习成长</h2>
@@ -296,12 +255,10 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
       <div id="learningGrid"></div>
     </div></section>
 
-    <!-- 笔记详情 -->
     <section class="view" data-view="read"><div class="sec">
       <div id="readInner"></div>
     </div></section>
 
-    <!-- 生活随笔 -->
     <section class="view" data-view="life"><div class="sec">
       <div class="sec-tag reveal">LIFE</div>
       <h2 class="sec-h reveal">生活随笔</h2>
@@ -328,7 +285,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
       <div class="posts" id="postList"></div>
     </div></section>
 
-    <!-- 项目案例 -->
     <section class="view" data-view="projects"><div class="sec">
       <div class="sec-tag reveal">PROJECTS</div>
       <h2 class="sec-h reveal">项目案例</h2>
@@ -336,7 +292,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
       <div class="case-grid" id="caseGrid"></div>
     </div></section>
 
-    <!-- 关于我 -->
     <section class="view" data-view="about"><div class="sec">
       <div class="sec-tag reveal">ABOUT</div>
       <h2 class="sec-h reveal">关于我</h2>
@@ -364,8 +319,8 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
         <div class="ri"><i class="fas fa-file-lines"></i></div>
         <div class="rt"><b>池增历 · 市场数据运营 3 年</b><span>快消 / 电商 · 数据分析 · 增长运营</span></div>
         <div class="resume-actions">
-          <button type="button" class="ra-btn ra-primary" id="resumePreview" data-pdf="池增历-市场数据运营3年-市场营销.pdf"><i class="fas fa-up-right-from-square"></i> 在线预览</button>
-          <a class="ra-btn ra-primary" href="池增历-市场数据运营3年-市场营销.pdf" download style="background:#ff9a4d"><i class="fas fa-download"></i> 下载简历</a>
+          <button type="button" class="ra-btn ra-primary" id="resumePreview" data-pdf="池增历-市场数据运营3年-市场营销专业-本科.pdf"><i class="fas fa-up-right-from-square"></i> 在线预览</button>
+          <a class="ra-btn ra-primary" href="池增历-市场数据运营3年-市场营销专业-本科.pdf" download style="background:#ff9a4d"><i class="fas fa-download"></i> 下载简历</a>
           <a class="ra-btn ra-ghost" href="mailto:chift0707@gmail.com"><i class="fas fa-envelope"></i> 邮件索取</a>
         </div>
       </div>
@@ -384,13 +339,11 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   </main>
 </div>
 
-<!-- 看图大图（app.js 用） -->
 <div class="overlay" id="lightbox">
   <span data-close style="position:absolute;top:18px;right:26px;color:#fff;font-size:34px;line-height:1;cursor:pointer;z-index:2">&times;</span>
   <img class="lb-img" id="lbImg" alt="">
 </div>
 
-<!-- 二维码弹窗 -->
 <div class="qr-modal" id="qrModal">
   <div class="qr-card" id="qrCard">
     <button type="button" class="qr-close" aria-label="关闭">&times;</button>
@@ -401,7 +354,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   </div>
 </div>
 
-<!-- 简历在线预览弹窗 -->
 <div class="pdf-modal" id="pdfModal">
   <div class="pdf-card">
     <div class="pdf-bar">
@@ -418,7 +370,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   </div>
 </div>
 
-<!-- 同步自检：浮动按钮 + 诊断卡片 -->
 <button type="button" id="syncFab" title="同步自检" aria-label="同步自检">🩺</button>
 <div class="sync-card" id="syncCard">
   <div class="sc-head"><b>🩺 同步自检</b><button type="button" id="syncClose" aria-label="关闭">&times;</button></div>
@@ -429,7 +380,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 
 <script src="app.js"></script>
 
-<!-- ===== 外壳交互（独立，不改 app.js） ===== -->
 <script>
 (function(){
   var tools=document.querySelector('.tools');
@@ -439,7 +389,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     t.textContent=m; t.style.cssText='display:block;opacity:1;transform:translate(-50%,0);position:fixed;left:50%;bottom:32px;z-index:10000;background:#1f2430;color:#fff;padding:10px 18px;border-radius:12px;font-size:.88rem;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .3s,transform .3s';
     clearTimeout(t._h); t._h=setTimeout(function(){t.style.opacity='0';t.style.transform='translate(-50%,8px)';},1600); }
 
-  /* ---------- reveal 显示兜底：首屏必现 + 滚动淡入 ---------- */
+  /* reveal 兜底 */
   function revealInView(scope){ (scope||document).querySelectorAll('.reveal').forEach(function(el){
     var r=el.getBoundingClientRect(); if(r.top < (window.innerHeight||0) + 40 && r.bottom > -40) el.classList.add('rv-on'); }); }
   var revEls=document.querySelectorAll('.reveal');
@@ -450,7 +400,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   requestAnimationFrame(function(){ revealInView(document);
     document.querySelectorAll('.view[data-view="home"] .reveal').forEach(function(el){ el.classList.add('rv-on'); }); });
 
-  /* ---------- 二维码 + 邮件 ---------- */
+  /* 二维码 + 邮件 */
   var modal=document.getElementById('qrModal'),card=document.getElementById('qrCard'),
       img=document.getElementById('qrImg'),title=document.getElementById('qrTitle'),fb=document.getElementById('qrFallback');
   function openQR(src,t){ if(!modal)return; card.classList.remove('no-img'); title.textContent='扫码加我 · '+(t||'');
@@ -463,37 +413,35 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     openQR(b.getAttribute('data-qr'), b.getAttribute('data-qr-title')||''); });
   if(modal) modal.addEventListener('click',function(e){ if(e.target===modal||e.target.closest('.qr-close'))closeQR(); });
 
-  /* ---------- 简历在线预览（先探测，杜绝“预览=首页”乌龙） ---------- */
+  /* 简历预览（探测 + 兜底，中文路径编码保护） */
   var pm=document.getElementById('pdfModal'),pf=document.getElementById('pdfFrame'),
       pn=document.getElementById('pdfName'),pd=document.getElementById('pdfDl'),
       po=document.getElementById('pdfOpen'),pLoad=document.getElementById('pdfLoading'),pHint=document.getElementById('pdfHint');
-  function showIframe(file){ pf.src=file; pf.style.display='block'; pLoad.style.display='none'; pHint.style.display='none'; po.style.display='inline-flex'; po.setAttribute('href',file); }
+  var fileEnc='';
+  function showIframe(){ pf.src=fileEnc; pf.style.display='block'; pLoad.style.display='none'; pHint.style.display='none'; po.style.display='inline-flex'; po.setAttribute('href',fileEnc); }
   function showHint(name,msg){ pf.style.display='none'; pLoad.style.display='none'; pHint.style.display='grid';
-    pHint.innerHTML='⚠️ '+msg+'<br>通常是 <b>'+name+'</b> 还没上传到网站根目录，或浏览器禁用了内嵌 PDF。<br>请点右上“新标签打开”或“下载”查看。';
-    po.style.display='inline-flex'; po.setAttribute('href',file0); }
-  var file0='';
-  function openPdf(file){ if(!pm)return; file0=file;
-    var name=decodeURIComponent(file.split('/').pop()); pn.textContent=name; pd.setAttribute('href',file); po.setAttribute('href',file);
+    pHint.innerHTML='⚠️ '+msg+'<br>请确认 <b>'+name+'</b> 已上传到网站根目录、且文件名与仓库<b>一字不差</b>。<br>也可点右上“新标签打开”或“下载”查看。';
+    po.style.display='inline-flex'; po.setAttribute('href',fileEnc); }
+  function openPdf(file){ if(!pm)return; fileEnc=encodeURI(file);
+    var name=decodeURIComponent(file.split('/').pop()); pn.textContent=name; pd.setAttribute('href',fileEnc); po.setAttribute('href',fileEnc);
     pf.style.display='none'; pHint.style.display='none'; po.style.display='none'; pLoad.style.display='grid';
     pm.classList.add('open'); hideTools();
-    fetch(file,{method:'HEAD'}).then(function(r){
+    fetch(fileEnc,{method:'HEAD'}).then(function(r){
       var ct=(r.headers.get('content-type')||'').toLowerCase();
-      if(r.ok && ct.indexOf('pdf')>=0){ showIframe(file); return; }
-      if(r.ok && ct.indexOf('html')>=0){ showHint(name,'这份简历没能取到（被网站兜底成了网页）。'); return; }
-      /* HEAD 不可信，改用 GET 读文件头 */
-      return fetch(file).then(function(r2){ if(!r2.ok) throw 0; return r2.arrayBuffer().then(function(buf){
+      if(r.ok && ct.indexOf('pdf')>=0){ showIframe(); return; }
+      if(r.ok && ct.indexOf('html')>=0){ showHint(name,'取到的是网页不是 PDF（多半文件名对不上，被兜底成首页了）。'); return; }
+      return fetch(fileEnc).then(function(r2){ if(!r2.ok) throw 0; return r2.arrayBuffer().then(function(buf){
         var h=new Uint8Array(buf.slice(0,5)),s=''; for(var i=0;i<h.length;i++) s+=String.fromCharCode(h[i]);
-        if(s==='%PDF-') showIframe(file); else showHint(name,'取到的不是 PDF 文件。'); }); });
+        if(s==='%PDF-') showIframe(); else showHint(name,'取到的不是 PDF 文件。'); }); });
     }).catch(function(){ showHint(name,'读取简历时出错。'); });
   }
-  function closePdf(){ if(!pm)return; pm.classList.remove('open'); pf.src='about:blank'; pf.style.display='none';
-    pLoad.style.display='grid'; pHint.style.display='none'; showTools(); }
+  function closePdf(){ if(!pm)return; pm.classList.remove('open'); pf.src='about:blank'; pf.style.display='none'; pLoad.style.display='grid'; pHint.style.display='none'; showTools(); }
   document.addEventListener('click',function(e){ var b=e.target.closest('[data-pdf]'); if(!b)return; e.preventDefault(); openPdf(b.getAttribute('data-pdf')); });
   if(pm){ pm.addEventListener('click',function(e){ if(e.target===pm)closePdf(); });
     var pc=document.getElementById('pdfClose'); if(pc)pc.addEventListener('click',closePdf); }
   document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closeQR(); closePdf(); } });
 
-  /* ---------- 顶部头像 = 回首页 ---------- */
+  /* 顶部头像 = 回首页 */
   var brand=document.getElementById('brandHome');
   function goHome(){
     document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -512,20 +460,18 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     if(home) goHome(); else { var av=document.querySelector('.view.active'); if(av) revealInView(av); }
   });
 
-  /* ---------- 底部年份 ---------- */
   var y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
 
-  /* ---------- 清洗“本机/本机暂存”提示（含卡片右上灰标） ---------- */
+  /* 清洗“本机”提示 */
   var CLEAN='分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图，联网后所有设备实时同步。';
   function cleanSub(){ var s=document.getElementById('postSubText'); if(s && /连不上|本机暂存|仅本机/.test(s.textContent)) s.innerHTML=CLEAN; }
   function hideLocalBadges(root){ (root||document).querySelectorAll('#postList *, #homeLife *').forEach(function(el){
-    var t=(el.textContent||'').trim();
-    if(t.length<=6 && /^(本机|本地|本机暂存|本地暂存)$/.test(t)) el.style.display='none'; }); }
+    var t=(el.textContent||'').trim(); if(t.length<=6 && /^(本机|本地|本机暂存|本地暂存)$/.test(t)) el.style.display='none'; }); }
   cleanSub(); hideLocalBadges();
   if(window.MutationObserver){ var mo=new MutationObserver(function(){ cleanSub(); hideLocalBadges(); });
     ['postList','homeLife','postSubText'].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{childList:true,subtree:true,characterData:true}); }); }
 
-  /* ---------- 同步自检（页面内，免 F12） ---------- */
+  /* 同步自检（特征字符串探测，鲁棒） */
   var fab=document.getElementById('syncFab'),scard=document.getElementById('syncCard'),
       sbody=document.getElementById('syncBody'),srun=document.getElementById('syncRun'),sclose=document.getElementById('syncClose');
   function el(tag,cls,html){ var n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; }
@@ -541,25 +487,28 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     sbody.appendChild(row(window.supabase?'#16a34a':'#dc2626', window.supabase?'<b>云端库</b>：已加载就绪 ✅':'<b>云端库</b>：没加载成功 ❌（CDN 不通，换个网络再试）'));
     fetch('app.js').then(function(r){return r.text();}).then(function(src){
       var m=src.match(/createClient\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']/);
+      var url=m&&m[1], key=m&&m[2];
+      if(!url){ var mu=src.match(/https?:\/\/[A-Za-z0-9.\-]+\.supabase\.co[^"'\s`]*/); if(mu) url=mu[0]; }
+      if(!key){ var mk=src.match(/eyJ[A-Za-z0-9_\-]{30,}/); if(mk) key=mk[0]; }
       var tbl=(src.match(/\.from\(\s*["']([^"']+)["']/g)||[]).map(function(x){var mm=x.match(/["']([^"']+)["']/);return mm&&mm[1];}).filter(Boolean);
       var table=tbl[0]||'';
-      if(!m){ sbody.appendChild(row('#d97706','<b>云端钥匙</b>：没自动读到。请人工核对 app.js 顶部 createClient 的两行有没有填、有没有抄错。')); addRerun(); return; }
-      var url=m[1],key=m[2];
-      sbody.appendChild(row('#2563eb','<b>读到的表</b>：'+(table||'（未识别，见 app.js 的 .from）')+'，正在实测连接…'));
-      var target=url.replace(/\/$/,'')+'/rest/v1/'+(table||'')+'?select=*&limit=1';
+      if(!url||!key){ sbody.appendChild(row('#d97706','<b>云端钥匙</b>：没读到。请人工核对 app.js 顶部 createClient 的 URL / key 两行有没有填、有没有抄错。')); addRerun(); return; }
+      sbody.appendChild(row('#16a34a','<b>云端钥匙</b>：已读到地址与密钥 ✅（表：'+(table||'未识别')+'），实测连接…'));
+      var base=url.replace(/\/$/,'');
+      var target=table?(base+'/rest/v1/'+table+'?select=*&limit=1'):(base+'/rest/v1/');
       fetch(target,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){
         if(r.status>=200&&r.status<300){
           sbody.appendChild(row('#16a34a','<b>云端连接</b>：完全通畅 ✅ 钥匙、表、权限全对。'));
-          sbody.appendChild(row('#16a34a','👉 现在发布一条，<b>用手机或另一台电脑</b>打开网站验证即可看到。若仍显示旧内容，按 Ctrl+Shift+R 强刷一次。'));
+          sbody.appendChild(row('#16a34a','👉 现在发布一条，<b>用手机或另一台电脑</b>打开网站验证即可。若仍显示旧内容，按 Ctrl+Shift+R 强刷一次。'));
         } else if(r.status===401){
-          sbody.appendChild(row('#dc2626','<b>云端连接</b>：401 钥匙被拒 🔑'));
+          sbody.appendChild(row('#dc2626','<b>云端连接</b>：401 密钥被拒 🔑'));
           sbody.appendChild(row('#d97706','👉 核对 app.js 顶部 URL / key 是否抄错（注意 I/1、O/0、l/1 长得太像）。'));
         } else if(r.status===403){
           sbody.appendChild(row('#dc2626','<b>云端连接</b>：403 权限被拦 🔒 —— 这是“换设备看不到”的最常见原因！'));
-          sbody.appendChild(row('#7c3aed','👉 表存在，但没开写入权限。复制下面命令，去 Supabase 后台左侧 <b>SQL Editor</b> 粘贴 → Run：'));
-          var sql = table
-            ? ('CREATE POLICY "pub_read"  ON "'+table+'" FOR SELECT USING (true);\nCREATE POLICY "pub_write" ON "'+table+'" FOR INSERT WITH CHECK (true);\nCREATE POLICY "pub_upd"   ON "'+table+'" FOR UPDATE USING (true);\nCREATE POLICY "pub_del"   ON "'+table+'" FOR DELETE USING (true);')
-            : '-- 把 表名 换成 app.js 里 .from("...") 的名字，再执行上面四条';
+          sbody.appendChild(row('#7c3aed','👉 表存在但没开写入权限。复制下面命令，去 Supabase 后台左侧 <b>SQL Editor</b> 粘贴 → Run：'));
+          var sql=table
+            ?('CREATE POLICY "pub_read"  ON "'+table+'" FOR SELECT USING (true);\nCREATE POLICY "pub_write" ON "'+table+'" FOR INSERT WITH CHECK (true);\nCREATE POLICY "pub_upd"   ON "'+table+'" FOR UPDATE USING (true);\nCREATE POLICY "pub_del"   ON "'+table+'" FOR DELETE USING (true);')
+            :'-- 把 表名 换成 app.js 里 .from("...") 的名字，再执行上面四条';
           var pre=el('pre','sc-code'); pre.textContent=sql; pre.title='点击复制'; pre.addEventListener('click',function(){copySql(pre);}); sbody.appendChild(pre);
           sbody.appendChild(row('#7c3aed','或更快验证：后台 <b>Table Editor → 该表 → 关掉 “Enable Row Level Security”</b>，强刷后再发布。'));
         } else if(r.status===404){
@@ -576,14 +525,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   if(srun) srun.addEventListener('click',runSyncCheck);
   if(fab) fab.addEventListener('click',function(){ var open=scard.classList.toggle('open'); if(open && !sbody.querySelector('.sc-row')) runSyncCheck(); });
   if(sclose) sclose.addEventListener('click',function(){ scard.classList.remove('open'); });
-
-  /* ---------- 控制台也打印一份（开发者排查用） ---------- */
-  function log(c,t){ console.log('%c'+t,'color:'+c+';font-weight:700;font-size:13px'); }
-  function syncDoctor(){
-    console.log('%c—— 🩺 同步医生（控制台备份） ——','color:#ff7a1a;font-weight:800;font-size:14px');
-    log('#64748b','提示：页面右下角也有“🩺 同步自检”按钮，点它即可在页面内看结论，无需看控制台。');
-  }
-  if(document.readyState==='complete') setTimeout(syncDoctor,1200); else window.addEventListener('load',function(){setTimeout(syncDoctor,1200);});
 })();
 </script>
 </body>
