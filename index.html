@@ -21,7 +21,11 @@
 <style>
 /* ===== 优化层：只调外观/结构/新增组件，绝不改 style.css / app.js；整段删掉即恢复原样 ===== */
 
-/* 1) 版心贴左（全局） + 首页加宽（往右衍生，填满右栏） */
+/* 0) reveal 显示兜底：保证首屏“你好呀/时间/正文”一定出现，保留淡入 */
+.reveal{ transition:opacity .6s ease, transform .6s ease !important; }
+.reveal.rv-on{ opacity:1 !important; transform:none !important; }
+
+/* 1) 版心贴左 + 首页加宽 */
 .main > .view{ width:100% !important; max-width:none !important; justify-self:stretch !important; }
 .view > .sec, .main > .sec{
   width:auto !important; max-width:min(1180px,100%) !important;
@@ -34,19 +38,16 @@
 .brand:hover{ background:rgba(255,138,61,.07) !important; }
 .brand-txt h1{
   font-size:1.55rem !important; font-weight:800 !important; line-height:1.2 !important;
-  letter-spacing:.3px !important; margin:0 !important; white-space:nowrap !important;
-  color:var(--ink,#1f2430) !important;
+  letter-spacing:.3px !important; margin:0 !important; white-space:nowrap !important; color:var(--ink,#1f2430) !important;
 }
 .brand.home-active .brand-txt h1{ color:var(--brand,#ff7a1a) !important; }
 .brand.home-active{ background:rgba(255,138,61,.10) !important; }
-
-/* 3) 签名两行 */
 .sign{ line-height:1.75 !important; }
 
-/* 4) 联系图标：品牌色方块 + 官方白色标(img) + 手画兜底(svg) */
+/* 3) 联系图标：品牌色方块 + 内联白色手画标（不依赖外部图，绝不空白） */
 .contact-row{ display:flex !important; gap:12px !important; flex-wrap:wrap !important; }
 .cbtn{
-  width:46px !important; height:46px !important; border-radius:14px !important; position:relative !important;
+  width:46px !important; height:46px !important; border-radius:14px !important;
   display:grid !important; place-items:center !important; color:#fff !important; overflow:hidden !important;
   border:none !important; cursor:pointer !important; padding:0 !important;
   background:#9aa0aa !important; box-shadow:0 4px 12px rgba(20,24,33,.10) !important;
@@ -58,19 +59,15 @@
 .cbtn.xhs{ background:#FF2442 !important; }
 .cbtn.qq{ background:#12B7F5 !important; }
 .cbtn.mail{ background:#5b6470 !important; }
-.cbtn .cico{ width:30px !important; height:30px !important; object-fit:contain !important; display:block !important; filter:brightness(0) invert(1) !important; }
-.cbtn .cfb{ display:none !important; width:26px !important; height:26px !important; }
-.cbtn .cico.broken{ display:none !important; }
-.cbtn .cico.broken + .cfb{ display:block !important; }
+.cbtn .cico{ width:30px !important; height:30px !important; display:block !important; }
 
-/* 5) 首页两栏 hero：左引言 / 右导览面板 + 中线渐隐点（自然分割符号） */
+/* 4) 首页两栏 hero + 中线渐隐橙点 */
 .home-hero{ position:relative !important; display:grid !important; grid-template-columns:1fr !important; gap:30px !important; margin:8px 0 44px !important; }
 .home-hero .intro{ margin:0 !important; }
 .tour-panel{
   position:relative !important; padding:26px 26px 14px !important; border-radius:24px !important;
   background:linear-gradient(158deg, rgba(255,138,61,.12), rgba(255,255,255,.55) 70%) !important;
-  border:1px solid rgba(255,138,61,.16) !important;
-  box-shadow:0 18px 44px rgba(255,122,26,.10) !important;
+  border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 18px 44px rgba(255,122,26,.10) !important;
 }
 .tour-panel .guide-h{ margin-top:0 !important; }
 .tour-panel .tour{ margin:6px 0 0 !important; }
@@ -78,39 +75,46 @@
 @media (min-width:980px){
   .home-hero{ grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr) !important; gap:clamp(34px,4.4vw,80px) !important; align-items:start !important; }
   .home-hero::after{
-    content:"" !important; position:absolute !important; top:6px !important; bottom:6px !important;
-    left:calc(minmax(0,1.12fr) + 0px) !important; /* fallback below */
-    left:50% !important; transform:translateX(-50%) !important; width:6px !important;
+    content:"" !important; position:absolute !important; top:6px !important; bottom:6px !important; left:50% !important; transform:translateX(-50%) !important; width:6px !important;
     background:radial-gradient(circle, rgba(255,122,26,.42) 1.6px, transparent 2.4px) center/6px 20px repeat-y !important;
-    -webkit-mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important;
-            mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important;
-    pointer-events:none !important;
+    -webkit-mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; pointer-events:none !important;
   }
 }
 
-/* 6) 隐藏“连不上/本机暂存/本机”等提示（视觉清净；真同步靠下面的“同步医生”） */
+/* 5) 关于我：速览卡贴右上 + 两栏渐隐竖线 + 与下方自然分割 */
+.about-wrap{ align-items:start !important; position:relative !important; }
+@media (min-width:860px){
+  .about-wrap .facts{ border-left:1px solid transparent !important; border-image:linear-gradient(transparent, rgba(255,122,26,.42) 18%, rgba(255,122,26,.42) 82%, transparent) 1 !important; padding-left:clamp(20px,3vw,40px) !important; }
+}
+.sec-divider{ height:1px !important; margin:44px auto !important; max-width:520px !important; position:relative !important;
+  background:linear-gradient(90deg,transparent,rgba(255,122,26,.45),transparent) !important; }
+.sec-divider::after{ content:"\2756" !important; position:absolute !important; left:50% !important; top:50% !important; transform:translate(-50%,-50%) !important;
+  color:#ff7a1a !important; background:var(--bg,#fff) !important; padding:0 14px !important; font-size:.8rem !important; opacity:.75 !important; }
+
+/* 6) 隐藏“本机/本机暂存”等提示（视觉清净；真同步靠右下角“同步自检”） */
 #postModeBadge{ display:none !important; }
-.post-src,.src-tag,.badge-local,.post-local,.tag-local{ display:none !important; }
 
-/* 7) 简历在线预览弹窗 */
-.pdf-modal{ position:fixed; inset:0; background:rgba(15,18,25,.66); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px);
-  display:none; place-items:center; z-index:9998; padding:24px; }
+/* 7) 简历在线预览弹窗（带探测 + 兜底） */
+.pdf-modal{ position:fixed; inset:0; background:rgba(15,18,25,.66); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); display:none; place-items:center; z-index:9998; padding:24px; }
 .pdf-modal.open{ display:grid; }
-.pdf-card{ background:#fff; border-radius:18px; width:min(960px,96vw); height:min(82vh,900px); display:flex; flex-direction:column;
-  box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden; animation:qrpop .24s cubic-bezier(.2,.9,.25,1); }
-.pdf-bar{ display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid #eef0f3; background:#fafbfc; }
-.pdf-bar b{ font-size:.98rem; color:#1f2430; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pdf-bar a,.pdf-bar button{ border:none; cursor:pointer; font-size:.86rem; padding:8px 14px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+.pdf-card{ background:#fff; border-radius:18px; width:min(960px,96vw); height:min(82vh,900px); display:flex; flex-direction:column; box-shadow:0 30px 80px rgba(0,0,0,.45); overflow:hidden; animation:qrpop .24s cubic-bezier(.2,.9,.25,1); }
+.pdf-bar{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid #eef0f3; background:#fafbfc; }
+.pdf-bar b{ font-size:.96rem; color:#1f2430; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pdf-bar a,.pdf-bar button{ border:none; cursor:pointer; font-size:.84rem; padding:8px 13px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
 .pdf-dl{ background:#ff7a1a; color:#fff; }
+.pdf-open{ background:#eef3ff; color:#2563eb; }
 .pdf-close{ background:#eef0f3; color:#444; font-size:1.1rem; }
-.pdf-card iframe{ flex:1; width:100%; border:0; background:#525659; }
+.pdf-stage{ flex:1; position:relative; background:#525659; }
+.pdf-stage iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+.pdf-loading,.pdf-hint{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:28px; line-height:1.85; }
+.pdf-loading{ color:#e8e8e8; font-size:.92rem; }
+.pdf-hint{ background:#fff; color:#555; font-size:.92rem; }
+.pdf-hint b{ color:#ff7a1a; font-family:'JetBrains Mono',monospace; }
 
-/* 8) 二维码弹窗（沿用） */
-.qr-modal{ position:fixed; inset:0; background:rgba(15,18,25,.62); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px);
-  display:none; place-items:center; z-index:9999; padding:20px; }
+/* 8) 二维码弹窗 */
+.qr-modal{ position:fixed; inset:0; background:rgba(15,18,25,.62); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); display:none; place-items:center; z-index:9999; padding:20px; }
 .qr-modal.open{ display:grid; }
-.qr-card{ background:#fff; border-radius:22px; padding:28px 26px 24px; max-width:320px; width:100%; text-align:center;
-  box-shadow:0 30px 80px rgba(0,0,0,.40); position:relative; animation:qrpop .24s cubic-bezier(.2,.9,.25,1); }
+.qr-card{ background:#fff; border-radius:22px; padding:28px 26px 24px; max-width:320px; width:100%; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.40); position:relative; animation:qrpop .24s cubic-bezier(.2,.9,.25,1); }
 @keyframes qrpop{ from{ transform:scale(.88) translateY(8px); opacity:0; } to{ transform:scale(1) translateY(0); opacity:1; } }
 .qr-card h4{ margin:0 0 16px; font-size:1.08rem; font-weight:700; color:#1f2430; }
 .qr-card img{ width:224px; height:224px; object-fit:contain; border-radius:14px; border:1px solid #eef0f3; background:#fafbfc; }
@@ -125,6 +129,31 @@
 /* 9) 底部 footer 两行 */
 footer .ft-meta{ display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; justify-content:center; }
 footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; line-height:1.7; }
+
+/* 10) 同步自检：浮动按钮 + 诊断卡片 */
+#syncFab{ position:fixed; right:22px; bottom:22px; z-index:9000; width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(145deg,#ff8a3d,#ff6a00); color:#fff; font-size:22px; box-shadow:0 10px 26px rgba(255,106,0,.40);
+  display:grid; place-items:center; transition:transform .2s, box-shadow .2s; }
+#syncFab:hover{ transform:translateY(-3px) scale(1.05); box-shadow:0 16px 34px rgba(255,106,0,.5); }
+#syncFab:active{ transform:scale(.95); }
+.sync-card{ position:fixed; right:22px; bottom:86px; z-index:9001; width:min(380px,calc(100vw - 32px)); max-height:72vh; overflow:auto;
+  background:#fff; border-radius:18px; box-shadow:0 24px 60px rgba(20,24,33,.28); border:1px solid #eef0f3;
+  display:none; flex-direction:column; animation:qrpop .22s cubic-bezier(.2,.9,.25,1); }
+.sync-card.open{ display:flex; }
+.sc-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f0f1f4; position:sticky; top:0; background:#fff; }
+.sc-head b{ font-size:.98rem; color:#1f2430; }
+.sc-head button{ border:none; background:#f0f1f4; width:28px; height:28px; border-radius:8px; cursor:pointer; color:#666; font-size:1.1rem; }
+.sc-body{ padding:14px 16px 18px; font-size:.86rem; color:#444; line-height:1.6; }
+.sc-row{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px dashed #f0f1f4; }
+.sc-row:last-child{ border-bottom:none; }
+.sc-dot{ flex:0 0 auto; width:9px; height:9px; border-radius:50%; margin-top:6px; box-shadow:0 0 0 3px rgba(0,0,0,.04); }
+.sc-run{ margin-top:6px; border:none; cursor:pointer; background:#ff7a1a; color:#fff; padding:9px 16px; border-radius:10px; font-size:.86rem; font-weight:600; }
+.sc-run:hover{ background:#ff6a00; }
+.sc-code{ position:relative; margin:8px 0 2px; background:#1f2430; color:#e6edf3; font-family:'JetBrains Mono',monospace; font-size:.74rem; line-height:1.6;
+  padding:12px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-all; cursor:pointer; transition:box-shadow .2s; }
+.sc-code:hover{ box-shadow:0 0 0 2px rgba(255,122,26,.5); }
+.sc-code::after{ content:"点击复制"; position:absolute; top:6px; right:8px; font-size:.62rem; color:#9aa6b4; font-family:'Noto Sans SC',sans-serif; }
+.sc-code.copied::after{ content:"已复制 ✓"; color:#4ade80; }
 </style>
 </head>
 <body>
@@ -141,7 +170,6 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     </div>
     <p class="sign">用数字讲好业务的故事<br>记录生活的每一个精彩瞬间</p>
 
-    <!-- 导航：关于我 / 项目案例 / 学习成长 / 生活随笔（首页由顶部头像进入） -->
     <ul class="nav" id="nav">
       <li><a data-nav="about"    href="#about"><span class="nico">🙋</span>关于我</a></li>
       <li><a data-nav="projects" href="#projects"><span class="nico">💼</span>项目案例</a></li>
@@ -151,24 +179,35 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 
     <div class="side-foot">
       <div class="contact-row">
-        <!-- 微信：官方白色标 + 手画兜底 -->
+        <!-- 微信：内联白色双气泡 -->
         <button type="button" class="cbtn wx" data-qr="wechat.jpg" data-qr-title="微信" title="微信扫码加我" aria-label="微信">
-          <img class="cico" src="https://cdn.simpleicons.org/wechat/FFFFFF" alt="" onerror="this.classList.add('broken')">
-          <svg class="cfb" viewBox="0 0 24 24" fill="none"><ellipse cx="9" cy="9.4" rx="7" ry="5.9" fill="#fff"/><path d="M5.4 14.2 3.4 16.4 6.3 15.1Z" fill="#fff"/><circle cx="6.7" cy="8.6" r="1" fill="#07C160"/><circle cx="11.1" cy="8.6" r="1" fill="#07C160"/><ellipse cx="16.4" cy="15" rx="5.4" ry="4.5" fill="#fff"/><path d="M19.6 18.4 21.2 20.2 18.9 19.1Z" fill="#fff"/><circle cx="14.6" cy="14.3" r=".9" fill="#07C160"/><circle cx="18.1" cy="14.3" r=".9" fill="#07C160"/></svg>
+          <svg class="cico" viewBox="0 0 32 32">
+            <path fill="#fff" d="M12.4 5C6.9 5 2.5 8.6 2.5 13c0 2.5 1.4 4.7 3.7 6.2l-.9 2.9 3.3-1.6c1 .3 2 .4 3.1.4h.5a7 7 0 0 1-.2-1.8c0-4.3 4.1-7.7 9.1-7.7h.5C20.9 7.7 17 5 12.4 5Z"/>
+            <circle cx="9" cy="11.4" r="1.25" fill="#07C160"/><circle cx="15" cy="11.4" r="1.25" fill="#07C160"/>
+            <path fill="#fff" d="M29.5 19.1c0-3.6-3.6-6.5-8-6.5s-8 2.9-8 6.5 3.6 6.5 8 6.5c.9 0 1.8-.1 2.7-.4l2.6 1.3-.7-2.3c2-1.2 3.4-3.1 3.4-5.1Z"/>
+            <circle cx="18.6" cy="18" r="1.1" fill="#07C160"/><circle cx="24" cy="18" r="1.1" fill="#07C160"/>
+          </svg>
         </button>
-        <!-- 小红书：官方白色字标 + 手画兜底 -->
+        <!-- 小红书：白色字标 -->
         <button type="button" class="cbtn xhs" data-qr="xiaohongshu.jpg" data-qr-title="小红书" title="小红书扫码关注我" aria-label="小红书">
-          <img class="cico" src="https://cdn.simpleicons.org/xiaohongshu/FFFFFF" alt="" onerror="this.classList.add('broken')">
-          <svg class="cfb" viewBox="0 0 24 24"><text x="12" y="15.4" text-anchor="middle" font-size="7" font-weight="800" fill="#fff" font-family="'Noto Sans SC',sans-serif">小红书</text></svg>
+          <svg class="cico" viewBox="0 0 32 32"><text x="16" y="20.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" font-family="'Noto Sans SC',sans-serif">小红书</text></svg>
         </button>
-        <!-- QQ：官方白色企鹅 + 手画兜底 -->
+        <!-- QQ：白色企鹅 -->
         <button type="button" class="cbtn qq" data-qr="qq.jpg" data-qr-title="QQ" title="QQ 扫码加我" aria-label="QQ">
-          <img class="cico" src="https://cdn.simpleicons.org/tencentqq/FFFFFF" alt="" onerror="this.classList.add('broken')">
-          <svg class="cfb" viewBox="0 0 24 24"><ellipse cx="12" cy="13.5" rx="6.2" ry="7.2" fill="#fff"/><ellipse cx="5.6" cy="14.5" rx="1.7" ry="3.2" fill="#fff"/><ellipse cx="18.4" cy="14.5" rx="1.7" ry="3.2" fill="#fff"/><ellipse cx="9.9" cy="10.6" rx="1.05" ry="1.3" fill="#12B7F5"/><ellipse cx="14.1" cy="10.6" rx="1.05" ry="1.3" fill="#12B7F5"/><path d="M10.4 13 12 14.4 13.6 13Z" fill="#FF9F00"/></svg>
+          <svg class="cico" viewBox="0 0 32 32">
+            <ellipse cx="16" cy="17" rx="8" ry="9.5" fill="#fff"/>
+            <ellipse cx="7.5" cy="18.5" rx="2.2" ry="4" fill="#fff"/><ellipse cx="24.5" cy="18.5" rx="2.2" ry="4" fill="#fff"/>
+            <ellipse cx="13.2" cy="13.5" rx="1.3" ry="1.7" fill="#12B7F5"/><ellipse cx="18.8" cy="13.5" rx="1.3" ry="1.7" fill="#12B7F5"/>
+            <path d="M13.8 16.5 16 18.3 18.2 16.5Z" fill="#FF9F00"/>
+            <ellipse cx="13" cy="26" rx="2.2" ry="1.3" fill="#FF9F00"/><ellipse cx="19" cy="26" rx="2.2" ry="1.3" fill="#FF9F00"/>
+          </svg>
         </button>
-        <!-- 邮箱：手画白色信封 -->
+        <!-- 邮箱：白色信封 -->
         <button type="button" class="cbtn mail" data-mail="chift0707@gmail.com" title="给我发邮件" aria-label="邮箱">
-          <svg class="cfb" style="display:block" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.2" fill="#fff"/><path d="M3.6 7.2 12 13 20.4 7.2" stroke="#5b6470" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="cico" viewBox="0 0 32 32">
+            <rect x="4" y="8" width="24" height="16" rx="3" fill="#fff"/>
+            <path d="M5 9.6 16 17 27 9.6" stroke="#5b6470" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
       </div>
       <div class="copy">© 2026 阿历 · 数字花园</div>
@@ -266,7 +305,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     <section class="view" data-view="life"><div class="sec">
       <div class="sec-tag reveal">LIFE</div>
       <h2 class="sec-h reveal">生活随笔</h2>
-      <p class="sec-sub reveal" id="postSubText">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。</p>
+      <p class="sec-sub reveal" id="postSubText">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图，联网后所有设备实时同步。</p>
 
       <div class="post-box reveal">
         <div class="etitle"><i class="fas fa-comment-dots"></i> 发一条随笔 <span id="postModeBadge" class="post-mode"><i class="fas fa-hard-drive"></i> 本机暂存</span></div>
@@ -311,6 +350,8 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
           <div class="fact"><span class="num">∞</span><span class="lab"><b>持续生长</b>这座花园不会停</span></div>
         </div>
       </div>
+
+      <div class="sec-divider reveal" aria-hidden="true"></div>
 
       <div class="edges reveal">
         <div class="edge"><span class="no">01</span><div><h3><i class="fas fa-chart-column"></i> 把模糊需求变成数据模型</h3><p>库存健康度诊断、智能补货模型，让“该备多少货”从拍脑袋变成可计算。</p></div></div>
@@ -365,54 +406,98 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   <div class="pdf-card">
     <div class="pdf-bar">
       <b id="pdfName">简历预览</b>
+      <a class="pdf-open" id="pdfOpen" href="#" target="_blank" rel="noopener" style="display:none"><i class="fas fa-up-right-from-square"></i> 新标签打开</a>
       <a class="pdf-dl" id="pdfDl" href="#" download><i class="fas fa-download"></i> 下载</a>
       <button type="button" class="pdf-close" id="pdfClose" aria-label="关闭">&times;</button>
     </div>
-    <iframe id="pdfFrame" src="about:blank" title="简历预览"></iframe>
+    <div class="pdf-stage">
+      <div class="pdf-loading" id="pdfLoading">正在加载预览…</div>
+      <div class="pdf-hint" id="pdfHint" style="display:none"></div>
+      <iframe id="pdfFrame" src="about:blank" title="简历预览" style="display:none"></iframe>
+    </div>
   </div>
+</div>
+
+<!-- 同步自检：浮动按钮 + 诊断卡片 -->
+<button type="button" id="syncFab" title="同步自检" aria-label="同步自检">🩺</button>
+<div class="sync-card" id="syncCard">
+  <div class="sc-head"><b>🩺 同步自检</b><button type="button" id="syncClose" aria-label="关闭">&times;</button></div>
+  <div class="sc-body" id="syncBody">点下方按钮，自动检查“换设备能否看到内容”。<br><button type="button" class="sc-run" id="syncRun">开始体检</button></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
 
-<!-- ===== 外壳交互：图标弹窗 / 简历预览 / 首页路由 / 提示清洗 / 同步医生（均独立，不依赖改 app.js） ===== -->
+<!-- ===== 外壳交互（独立，不改 app.js） ===== -->
 <script>
 (function(){
+  var tools=document.querySelector('.tools');
+  function hideTools(){ if(tools) tools.style.display='none'; }
+  function showTools(){ if(tools) tools.style.display=''; }
+  function myToast(m){ var t=document.getElementById('toast'); if(!t)return;
+    t.textContent=m; t.style.cssText='display:block;opacity:1;transform:translate(-50%,0);position:fixed;left:50%;bottom:32px;z-index:10000;background:#1f2430;color:#fff;padding:10px 18px;border-radius:12px;font-size:.88rem;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .3s,transform .3s';
+    clearTimeout(t._h); t._h=setTimeout(function(){t.style.opacity='0';t.style.transform='translate(-50%,8px)';},1600); }
+
+  /* ---------- reveal 显示兜底：首屏必现 + 滚动淡入 ---------- */
+  function revealInView(scope){ (scope||document).querySelectorAll('.reveal').forEach(function(el){
+    var r=el.getBoundingClientRect(); if(r.top < (window.innerHeight||0) + 40 && r.bottom > -40) el.classList.add('rv-on'); }); }
+  var revEls=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var ro=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('rv-on'); ro.unobserve(e.target); } }); },{threshold:.06, rootMargin:'0px 0px -5% 0px'});
+    revEls.forEach(function(el){ ro.observe(el); });
+  } else { revEls.forEach(function(el){ el.classList.add('rv-on'); }); }
+  requestAnimationFrame(function(){ revealInView(document);
+    document.querySelectorAll('.view[data-view="home"] .reveal').forEach(function(el){ el.classList.add('rv-on'); }); });
+
   /* ---------- 二维码 + 邮件 ---------- */
   var modal=document.getElementById('qrModal'),card=document.getElementById('qrCard'),
       img=document.getElementById('qrImg'),title=document.getElementById('qrTitle'),fb=document.getElementById('qrFallback');
-  function openQR(src,t){ if(!modal)return; card.classList.remove('no-img');
-    title.textContent='扫码加我 · '+(t||'');
+  function openQR(src,t){ if(!modal)return; card.classList.remove('no-img'); title.textContent='扫码加我 · '+(t||'');
     img.onload=function(){card.classList.remove('no-img');};
     img.onerror=function(){card.classList.add('no-img'); if(fb)fb.innerHTML='还没上传 <b>'+src+'</b><br>把这张二维码图片放到网站根目录，<br>刷新后这里就能扫码 👆';};
-    img.src=src; modal.classList.add('open'); }
-  function closeQR(){ if(modal)modal.classList.remove('open'); }
+    img.src=src; modal.classList.add('open'); hideTools(); }
+  function closeQR(){ if(modal){ modal.classList.remove('open'); showTools(); } }
   document.addEventListener('click',function(e){ var b=e.target.closest('[data-qr],[data-mail]'); if(!b)return; e.preventDefault();
     if(b.hasAttribute('data-mail')){ location.href='mailto:'+b.getAttribute('data-mail'); return; }
     openQR(b.getAttribute('data-qr'), b.getAttribute('data-qr-title')||''); });
   if(modal) modal.addEventListener('click',function(e){ if(e.target===modal||e.target.closest('.qr-close'))closeQR(); });
 
-  /* ---------- 简历在线预览 ---------- */
+  /* ---------- 简历在线预览（先探测，杜绝“预览=首页”乌龙） ---------- */
   var pm=document.getElementById('pdfModal'),pf=document.getElementById('pdfFrame'),
-      pn=document.getElementById('pdfName'),pd=document.getElementById('pdfDl');
-  function openPdf(file){ if(!pm)return; var name=file.split('/').pop();
-    pn.textContent=decodeURIComponent(name); pd.setAttribute('href',file);
-    pf.src=encodeURI(file); pm.classList.add('open'); }
-  function closePdf(){ if(!pm)return; pm.classList.remove('open'); pf.src='about:blank'; }
+      pn=document.getElementById('pdfName'),pd=document.getElementById('pdfDl'),
+      po=document.getElementById('pdfOpen'),pLoad=document.getElementById('pdfLoading'),pHint=document.getElementById('pdfHint');
+  function showIframe(file){ pf.src=file; pf.style.display='block'; pLoad.style.display='none'; pHint.style.display='none'; po.style.display='inline-flex'; po.setAttribute('href',file); }
+  function showHint(name,msg){ pf.style.display='none'; pLoad.style.display='none'; pHint.style.display='grid';
+    pHint.innerHTML='⚠️ '+msg+'<br>通常是 <b>'+name+'</b> 还没上传到网站根目录，或浏览器禁用了内嵌 PDF。<br>请点右上“新标签打开”或“下载”查看。';
+    po.style.display='inline-flex'; po.setAttribute('href',file0); }
+  var file0='';
+  function openPdf(file){ if(!pm)return; file0=file;
+    var name=decodeURIComponent(file.split('/').pop()); pn.textContent=name; pd.setAttribute('href',file); po.setAttribute('href',file);
+    pf.style.display='none'; pHint.style.display='none'; po.style.display='none'; pLoad.style.display='grid';
+    pm.classList.add('open'); hideTools();
+    fetch(file,{method:'HEAD'}).then(function(r){
+      var ct=(r.headers.get('content-type')||'').toLowerCase();
+      if(r.ok && ct.indexOf('pdf')>=0){ showIframe(file); return; }
+      if(r.ok && ct.indexOf('html')>=0){ showHint(name,'这份简历没能取到（被网站兜底成了网页）。'); return; }
+      /* HEAD 不可信，改用 GET 读文件头 */
+      return fetch(file).then(function(r2){ if(!r2.ok) throw 0; return r2.arrayBuffer().then(function(buf){
+        var h=new Uint8Array(buf.slice(0,5)),s=''; for(var i=0;i<h.length;i++) s+=String.fromCharCode(h[i]);
+        if(s==='%PDF-') showIframe(file); else showHint(name,'取到的不是 PDF 文件。'); }); });
+    }).catch(function(){ showHint(name,'读取简历时出错。'); });
+  }
+  function closePdf(){ if(!pm)return; pm.classList.remove('open'); pf.src='about:blank'; pf.style.display='none';
+    pLoad.style.display='grid'; pHint.style.display='none'; showTools(); }
   document.addEventListener('click',function(e){ var b=e.target.closest('[data-pdf]'); if(!b)return; e.preventDefault(); openPdf(b.getAttribute('data-pdf')); });
   if(pm){ pm.addEventListener('click',function(e){ if(e.target===pm)closePdf(); });
     var pc=document.getElementById('pdfClose'); if(pc)pc.addEventListener('click',closePdf); }
   document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closeQR(); closePdf(); } });
 
-  /* ---------- 顶部头像 = 回首页（带 reveal 兜底，绝不黑屏） ---------- */
+  /* ---------- 顶部头像 = 回首页 ---------- */
   var brand=document.getElementById('brandHome');
-  function showReveals(scope){ scope.querySelectorAll('.reveal').forEach(function(el){
-    el.classList.add('in','show','reveal-in','visible','is-visible');
-    el.style.opacity='1'; el.style.transform='none'; }); }
   function goHome(){
     document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
-    var h=document.querySelector('.view[data-view="home"]'); if(h){ h.classList.add('active'); showReveals(h); }
+    var h=document.querySelector('.view[data-view="home"]'); if(h){ h.classList.add('active'); revealInView(h); }
     document.querySelectorAll('#nav a').forEach(function(a){a.classList.remove('active');});
     if(brand) brand.classList.add('home-active');
     window.scrollTo({top:0,behavior:'smooth'});
@@ -424,54 +509,81 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   window.addEventListener('hashchange',function(){
     var home=(location.hash===''||location.hash==='#home');
     if(brand) brand.classList.toggle('home-active',home);
-    if(home) goHome();
+    if(home) goHome(); else { var av=document.querySelector('.view.active'); if(av) revealInView(av); }
   });
 
   /* ---------- 底部年份 ---------- */
   var y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
 
-  /* ---------- 清洗“连不上/本机”提示（视觉清净） ---------- */
+  /* ---------- 清洗“本机/本机暂存”提示（含卡片右上灰标） ---------- */
   var CLEAN='分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图，联网后所有设备实时同步。';
   function cleanSub(){ var s=document.getElementById('postSubText'); if(s && /连不上|本机暂存|仅本机/.test(s.textContent)) s.innerHTML=CLEAN; }
   function hideLocalBadges(root){ (root||document).querySelectorAll('#postList *, #homeLife *').forEach(function(el){
-    if(el.children.length===0 && /^(本机|本地|本机暂存)$/.test((el.textContent||'').trim())) el.style.display='none'; }); }
+    var t=(el.textContent||'').trim();
+    if(t.length<=6 && /^(本机|本地|本机暂存|本地暂存)$/.test(t)) el.style.display='none'; }); }
   cleanSub(); hideLocalBadges();
-  if(window.MutationObserver){
-    var mo=new MutationObserver(function(){ cleanSub(); hideLocalBadges(); });
-    ['postList','homeLife','postSubText'].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{childList:true,subtree:true,characterData:true}); });
-  }
+  if(window.MutationObserver){ var mo=new MutationObserver(function(){ cleanSub(); hideLocalBadges(); });
+    ['postList','homeLife','postSubText'].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{childList:true,subtree:true,characterData:true}); }); }
 
-  /* ---------- 同步医生：自动体检 + 人话病因 + 可复制修复（只打印控制台，不污染页面） ---------- */
-  function badge(){ var b=document.getElementById('postModeBadge'),s=document.getElementById('postSubText');
-    var bt=(b&&b.textContent)||'', st=(s&&s.textContent)||'';
-    return /连不上|本机暂存|仅本机/.test(st) || /本机/.test(bt) ? '离线/本机' : (/实时|同步/.test(bt) ? '在线' : '未知'); }
-  function log(c,t){ console.log('%c'+t,'color:'+c+';font-weight:700;font-size:13px'); }
-  function syncDoctor(){
-    console.log('%c—— 🩺 同步医生 · 自动体检 ——','color:#ff7a1a;font-weight:800;font-size:14px');
-    log(window.supabase?'#16a34a':'#dc2626', (window.supabase?'✅':'❌')+' 第1项 云端库加载：'+(window.supabase?'已就绪':'未加载（CDN 不通，看 Network）'));
-    log('#2563eb','📡 第2项 当前 app.js 自报状态：'+badge()+'（仅参考）');
+  /* ---------- 同步自检（页面内，免 F12） ---------- */
+  var fab=document.getElementById('syncFab'),scard=document.getElementById('syncCard'),
+      sbody=document.getElementById('syncBody'),srun=document.getElementById('syncRun'),sclose=document.getElementById('syncClose');
+  function el(tag,cls,html){ var n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; }
+  function row(color,html){ var r=el('div','sc-row'); var d=el('span','sc-dot'); d.style.background=color; r.appendChild(d); r.appendChild(el('span',null,html)); return r; }
+  function clearBody(){ while(sbody.firstChild) sbody.removeChild(sbody.firstChild); }
+  function copySql(pre){ var txt=pre.textContent;
+    function done(){ pre.classList.add('copied'); myToast('修复命令已复制，去 Supabase 后台 SQL Editor 粘贴运行'); setTimeout(function(){pre.classList.remove('copied');},1800); }
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(function(){ fallbackCopy(txt,done); }); }
+    else fallbackCopy(txt,done); }
+  function fallbackCopy(txt,cb){ var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb&&cb(); }
+  function runSyncCheck(){
+    clearBody();
+    sbody.appendChild(row(window.supabase?'#16a34a':'#dc2626', window.supabase?'<b>云端库</b>：已加载就绪 ✅':'<b>云端库</b>：没加载成功 ❌（CDN 不通，换个网络再试）'));
     fetch('app.js').then(function(r){return r.text();}).then(function(src){
       var m=src.match(/createClient\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']/);
       var tbl=(src.match(/\.from\(\s*["']([^"']+)["']/g)||[]).map(function(x){var mm=x.match(/["']([^"']+)["']/);return mm&&mm[1];}).filter(Boolean);
-      if(!m){ log('#d97706','⚠️ 没在 app.js 里自动读到云端钥匙（写法可能较特殊）。请人工核对 app.js 顶部 createClient 的两行是否填写、是否抄错。'); return; }
-      var url=m[1],key=m[2],table=tbl[0]||'';
-      log('#2563eb','🔎 读到云端地址与表名，正在实测连接…'+(table?' 表='+table:''));
-      var target=table?(url.replace(/\/$/,'')+'/rest/v1/'+table+'?select=*&limit=1'):(url.replace(/\/$/,'')+'/rest/v1/');
+      var table=tbl[0]||'';
+      if(!m){ sbody.appendChild(row('#d97706','<b>云端钥匙</b>：没自动读到。请人工核对 app.js 顶部 createClient 的两行有没有填、有没有抄错。')); addRerun(); return; }
+      var url=m[1],key=m[2];
+      sbody.appendChild(row('#2563eb','<b>读到的表</b>：'+(table||'（未识别，见 app.js 的 .from）')+'，正在实测连接…'));
+      var target=url.replace(/\/$/,'')+'/rest/v1/'+(table||'')+'?select=*&limit=1';
       fetch(target,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){
-        if(r.status>=200&&r.status<300){ log('#16a34a','✅ 第3项 云端完全通畅！钥匙、表、权限全对。若页面仍显示本机，请 Ctrl+Shift+R 强刷一次；之后换设备应能看到。'); }
-        else if(r.status===401){ log('#dc2626','🔑 第3项 401：钥匙被云端拒绝。请核对 app.js 顶部 URL / key 是否抄错（注意 I/1、O/0、l/1）。'); }
-        else if(r.status===403){ log('#dc2626','🔒 第3项 403：表存在但权限(RLS)被拦——这是“换设备看不到”的最常见原因！');
-          log('#7c3aed','👉 修复：Supabase 后台 → Table Editor → 该表 → 关闭 “Enable Row Level Security” 先验证；或在 SQL Editor 粘贴执行：');
-          console.log('%c'+(table?
-            ('CREATE POLICY "pub_read"  ON "'+table+'" FOR SELECT USING (true);\nCREATE POLICY "pub_write" ON "'+table+'" FOR INSERT WITH CHECK (true);\nCREATE POLICY "pub_upd"   ON "'+table+'" FOR UPDATE USING (true);'):
-            '-- 把 表名 换成 app.js 里 .from("...") 的名字'), 'color:#7c3aed;font-family:monospace;font-size:12px;background:#f5f3ff;padding:8px;border-radius:6px;display:block'); }
-        else if(r.status===404){ log('#dc2626','🗂 第3项 404：表不存在。请在 Supabase 后台建表 '+(table||'（见 app.js 的 .from）')+'，含 app.js 用到的列。'); }
-        else { log('#d97706','⚠️ 第3项 状态 '+r.status+'：把这条截图发我，我对着 app.js 行号定位。'); }
-      }).catch(function(){ log('#dc2626','🌐 第3项 网络失败：你的网络到云端不通（墙/公司网/代理）。换个网络再试。'); });
-    }).catch(function(){ log('#d97706','⚠️ 读取 app.js 失败，无法自动体检。请手动核对钥匙与后台表/权限。'); });
-    log('#64748b','—— 体检结束。把以上几行截图发我，即可精确收尾 ——');
+        if(r.status>=200&&r.status<300){
+          sbody.appendChild(row('#16a34a','<b>云端连接</b>：完全通畅 ✅ 钥匙、表、权限全对。'));
+          sbody.appendChild(row('#16a34a','👉 现在发布一条，<b>用手机或另一台电脑</b>打开网站验证即可看到。若仍显示旧内容，按 Ctrl+Shift+R 强刷一次。'));
+        } else if(r.status===401){
+          sbody.appendChild(row('#dc2626','<b>云端连接</b>：401 钥匙被拒 🔑'));
+          sbody.appendChild(row('#d97706','👉 核对 app.js 顶部 URL / key 是否抄错（注意 I/1、O/0、l/1 长得太像）。'));
+        } else if(r.status===403){
+          sbody.appendChild(row('#dc2626','<b>云端连接</b>：403 权限被拦 🔒 —— 这是“换设备看不到”的最常见原因！'));
+          sbody.appendChild(row('#7c3aed','👉 表存在，但没开写入权限。复制下面命令，去 Supabase 后台左侧 <b>SQL Editor</b> 粘贴 → Run：'));
+          var sql = table
+            ? ('CREATE POLICY "pub_read"  ON "'+table+'" FOR SELECT USING (true);\nCREATE POLICY "pub_write" ON "'+table+'" FOR INSERT WITH CHECK (true);\nCREATE POLICY "pub_upd"   ON "'+table+'" FOR UPDATE USING (true);\nCREATE POLICY "pub_del"   ON "'+table+'" FOR DELETE USING (true);')
+            : '-- 把 表名 换成 app.js 里 .from("...") 的名字，再执行上面四条';
+          var pre=el('pre','sc-code'); pre.textContent=sql; pre.title='点击复制'; pre.addEventListener('click',function(){copySql(pre);}); sbody.appendChild(pre);
+          sbody.appendChild(row('#7c3aed','或更快验证：后台 <b>Table Editor → 该表 → 关掉 “Enable Row Level Security”</b>，强刷后再发布。'));
+        } else if(r.status===404){
+          sbody.appendChild(row('#dc2626','<b>云端连接</b>：404 表不存在 🗂'));
+          sbody.appendChild(row('#d97706','👉 在 Supabase 后台建表 <b>'+(table||'（见 app.js 的 .from）')+'</b>，含 app.js 用到的列。'));
+        } else {
+          sbody.appendChild(row('#d97706','<b>云端连接</b>：状态 '+r.status+'。把这一行截图发我，我对着 app.js 行号定位。'));
+        }
+        addRerun();
+      }).catch(function(){ sbody.appendChild(row('#dc2626','<b>云端连接</b>：网络失败 🌐 你的网络到云端不通（墙/公司网/代理），换个网络再试。')); addRerun(); });
+    }).catch(function(){ sbody.appendChild(row('#d97706','<b>读取 app.js 失败</b>，无法自动体检。请确认网站已部署、app.js 可访问。')); addRerun(); });
   }
-  if(document.readyState==='complete') setTimeout(syncDoctor,1500); else window.addEventListener('load',function(){setTimeout(syncDoctor,1500);});
+  function addRerun(){ var b=el('button','sc-run','重新体检'); b.style.marginTop='12px'; b.addEventListener('click',runSyncCheck); sbody.appendChild(b); }
+  if(srun) srun.addEventListener('click',runSyncCheck);
+  if(fab) fab.addEventListener('click',function(){ var open=scard.classList.toggle('open'); if(open && !sbody.querySelector('.sc-row')) runSyncCheck(); });
+  if(sclose) sclose.addEventListener('click',function(){ scard.classList.remove('open'); });
+
+  /* ---------- 控制台也打印一份（开发者排查用） ---------- */
+  function log(c,t){ console.log('%c'+t,'color:'+c+';font-weight:700;font-size:13px'); }
+  function syncDoctor(){
+    console.log('%c—— 🩺 同步医生（控制台备份） ——','color:#ff7a1a;font-weight:800;font-size:14px');
+    log('#64748b','提示：页面右下角也有“🩺 同步自检”按钮，点它即可在页面内看结论，无需看控制台。');
+  }
+  if(document.readyState==='complete') setTimeout(syncDoctor,1200); else window.addEventListener('load',function(){setTimeout(syncDoctor,1200);});
 })();
 </script>
 </body>
