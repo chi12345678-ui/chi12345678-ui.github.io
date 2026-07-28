@@ -495,3 +495,88 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mkBtn); else mkBtn();
   if (window.OFFLINE) setTimeout(toastOFF, 900);
 })();
+/* ===== 朋友圈九宫格 + 首页圆润卡片 补丁（追加在最末尾，不删改任何原有代码） ===== */
+(function () {
+  /* —— 1. 注入样式 —— */
+  var css = [
+    '.life-grid{display:grid;gap:6px;margin:10px 0 6px;max-width:440px;animation:lgIn .4s ease both;}',
+    '@keyframes lgIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}',
+    '.life-grid.lg-c1{grid-template-columns:1fr;max-width:320px;}',
+    '.life-grid.lg-c2{grid-template-columns:1fr 1fr;}',
+    '.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
+    '.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:12px;background:rgba(127,127,127,.12);cursor:pointer;}',
+    '.lg-cell.lg-single{aspect-ratio:4/3;max-height:360px;}',
+    '.lg-cell img.limg{width:100%;height:100%;object-fit:cover;display:block;margin:0;border-radius:0;transition:transform .4s cubic-bezier(.2,.7,.2,1);}',
+    '.lg-cell:hover img.limg{transform:scale(1.07);}',
+    '.lg-more{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,20,20,.5);color:#fff;font-weight:800;font-size:24px;letter-spacing:1px;backdrop-filter:blur(2px);}',
+    '.article-gallery{display:grid;gap:6px;grid-template-columns:repeat(3,1fr);margin:14px 0;}',
+    '.article-gallery .gal-item{aspect-ratio:1/1;overflow:hidden;border-radius:12px;margin:0;}',
+    '.article-gallery .gal-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease;}',
+    '.article-gallery .gal-item:hover img{transform:scale(1.07);}',
+    '#homeLife{display:flex;flex-direction:column;gap:12px;}',
+    '#homeLife .post{background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.78));border:1px solid rgba(17,24,39,.06);border-radius:20px;padding:14px 16px 12px;margin:0;box-shadow:0 6px 20px rgba(17,24,39,.07);transition:transform .25s ease,box-shadow .25s ease;}',
+    '#homeLife .post:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(17,24,39,.12);}',
+    '#homeLife .post .ph{margin-bottom:8px;}',
+    '#homeLife .post .pav{width:34px;height:34px;border-radius:11px;}',
+    '#homeLife .post .ptxt{font-size:14.5px;line-height:1.65;margin:2px 0 4px;}',
+    '#homeLife .post .ptxt p{margin:0 0 4px;}',
+    '#homeLife .life-grid{max-width:100%;margin:8px 0 6px;gap:5px;}',
+    '#homeLife .lg-cell{border-radius:10px;}',
+    '#homeLife .post .ptags{margin-top:8px;}',
+    '[data-theme="dark"] #homeLife .post{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border-color:rgba(255,255,255,.08);box-shadow:0 6px 20px rgba(0,0,0,.35);}',
+    '[data-theme="dark"] #homeLife .post:hover{box-shadow:0 12px 28px rgba(0,0,0,.45);}',
+    '[data-theme="dark"] .lg-cell{background:rgba(255,255,255,.08);}'
+  ].join('');
+  var st = document.createElement('style');
+  st.setAttribute('data-patch', 'life-grid');
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  /* —— 2. 覆盖 postHTML：多图改九宫格，home 模式只露 3 张 + 「+N」 —— */
+  window.postHTML = function (p, mode) {
+    var raw = (p && (p.content != null ? p.content : p.txt)) || '';
+    var isH = window.__isHTML && window.__isHTML(raw);
+    var txtHtml = isH ? raw : toRTEHTML(raw);
+    var ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
+    var ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
+    var tags = (p.tags || []).map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('');
+    var imgs = p.images || [];
+    var isHome = mode === 'home';
+    var n = imgs.length;
+    var cols = n >= 3 ? 3 : n;
+    var shown = isHome ? imgs.slice(0, 3) : imgs;
+    var extra = n - shown.length;
+    var imgHtml = '';
+    if (n) {
+      var cells = shown.map(function (s, i) {
+        var more = (isHome && i === shown.length - 1 && extra > 0) ? '<span class="lg-more">+' + extra + '</span>' : '';
+        return '<div class="lg-cell' + (n === 1 ? ' lg-single' : '') + '"><img class="limg" src="' + s + '" data-img="' + s + '" alt="" loading="lazy">' + more + '</div>';
+      }).join('');
+      imgHtml = '<div class="life-grid lg-c' + cols + (isHome ? ' lg-home' : '') + '">' + cells + '</div>';
+    }
+    var pinned = isPinned(p) ? '<span class="pin-flag">📌 置顶</span>' : '';
+    var flag = p._local ? '<span class="draft-flag">📴 本机</span>' : '';
+    var mgmt = p._seed ? '' : '<div class="life-mgmt"><button class="pc-m" data-life-edit="' + esc(p.id) + '" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-life-del="' + esc(p.id) + '" data-local="' + (p._local ? 1 : 0) + '" title="删除"><i class="fas fa-trash"></i></button></div>';
+    return '<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">' + relTime(ts) + '</div></div>' + pinned + flag + mgmt + '</div><div class="' + ptxtCls + '">' + txtHtml + '</div>' + imgHtml + (tags ? '<div class="ptags">' + tags + '</div>' : '') + '</div>';
+  };
+
+  /* —— 3. 覆盖 renderHomeLife：首页用 home 预览模式 —— */
+  window.renderHomeLife = function () {
+    var g = document.getElementById('homeLife'); if (!g) return;
+    var h = document.getElementById('homeLifeH'), m = document.getElementById('homeLifeMore');
+    var list = lifeList.slice(0, 4);
+    if (!list.length) { if (h) h.style.display = 'none'; if (m) m.style.display = 'none'; g.innerHTML = ''; return; }
+    if (h) h.style.display = 'flex'; if (m) m.style.display = 'flex';
+    g.innerHTML = list.map(function (x) { return window.postHTML(x, 'home'); }).join('');
+  };
+
+  /* —— 4. 立即用新版重渲染当前页，消除首屏旧样式一闪 —— */
+  try {
+    var h2 = (location.hash || '').replace(/^#/, '').split('/')[0] || 'home';
+    if (h2 === 'home') { window.renderHomeLife(); }
+    if (h2 === 'life' && typeof lifeList !== 'undefined' && lifeList.length) {
+      var pl = document.getElementById('postList');
+      if (pl) pl.innerHTML = lifeList.map(function (x) { return window.postHTML(x); }).join('');
+    }
+  } catch (e) {}
+})();
