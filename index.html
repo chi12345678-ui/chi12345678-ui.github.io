@@ -59,15 +59,35 @@
   .home-hero::after{ content:"" !important; position:absolute !important; top:6px !important; bottom:6px !important; left:50% !important; transform:translateX(-50%) !important; width:6px !important; background:radial-gradient(circle, rgba(255,122,26,.42) 1.6px, transparent 2.4px) center/6px 20px repeat-y !important; -webkit-mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; pointer-events:none !important; }
 }
 
-/* 4b) 首页三块：标题左 + “更多”右 + 微交互 */
-.home-block-head{ display:none; align-items:center; justify-content:space-between; gap:12px; margin:40px 0 16px !important; }
+/* 4b) 首页三块：博客横板列表（整行宽卡 + 左橙引用条）+ 标题/更多 + 微交互 */
+.home-block-head{ display:none; align-items:center; justify-content:space-between; gap:12px; margin:42px 0 16px !important; }
 .home-block-head .block-h{ margin:0 !important; }
 .home-more{ display:inline-flex !important; align-items:center; gap:7px; font-size:.88rem !important; font-weight:600 !important; color:var(--brand,#ff7a1a) !important; text-decoration:none !important; padding:7px 14px !important; border-radius:999px !important; background:rgba(255,122,26,.08) !important; border:1px solid rgba(255,122,26,.18) !important; transition:background .2s, transform .2s, box-shadow .2s !important; white-space:nowrap !important; }
 .home-more:hover{ background:rgba(255,122,26,.16) !important; transform:translateY(-1px) !important; box-shadow:0 6px 16px rgba(255,122,26,.18) !important; }
 .home-more i{ transition:transform .2s !important; }
 .home-more:hover i{ transform:translateX(3px) !important; }
-#homeCases .case-card, #homeCases > *{ transition:transform .2s, box-shadow .2s !important; }
-#homeCases .case-card:hover, #homeCases > *:hover{ transform:translateY(-4px) !important; box-shadow:0 16px 36px rgba(20,24,33,.12) !important; }
+/* 三块容器：单列纵向 = 博客列表（覆盖 style.css 的网格） */
+#homeCases, #homeLatest, #homeLife{ display:flex !important; flex-direction:column !important; gap:16px !important; width:100% !important; max-width:none !important; }
+/* 每条 = 整行宽卡，自适应高，左橙 accent 条 */
+#homeCases > *, #homeLatest > *, #homeLife > *{
+  width:100% !important; max-width:none !important; height:auto !important; min-height:0 !important;
+  position:relative !important; text-align:left !important;
+  box-shadow: inset 4px 0 0 rgba(255,122,26,.85), 0 6px 18px rgba(20,24,33,.07) !important;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s !important;
+}
+#homeCases > *:hover, #homeLatest > *:hover, #homeLife > *:hover{
+  transform:translateY(-3px) !important;
+  box-shadow: inset 5px 0 0 #ff7a1a, 0 16px 36px rgba(20,24,33,.13) !important;
+}
+/* 博客感：标题/正文左对齐、标题稍大（选不到不生效，安全） */
+#homeCases h3, #homeLatest h3, #homeLatest h4{ font-size:1.12rem !important; text-align:left !important; }
+#homeCases p, #homeLatest p, #homeLife p{ text-align:left !important; }
+[data-theme="dark"] #homeCases > *, [data-theme="dark"] #homeLatest > *, [data-theme="dark"] #homeLife > *{
+  box-shadow: inset 4px 0 0 #ff8a3d, 0 6px 18px rgba(0,0,0,.30) !important;
+}
+[data-theme="dark"] #homeCases > *:hover, [data-theme="dark"] #homeLatest > *:hover, [data-theme="dark"] #homeLife > *:hover{
+  box-shadow: inset 5px 0 0 #ff9a4d, 0 16px 36px rgba(0,0,0,.42) !important;
+}
 
 /* 5) 关于我：简介大卡 + 加强分割 + 能力条间淡线 */
 .about-wrap{ align-items:start !important; position:relative !important; overflow:visible !important; padding:clamp(22px,3vw,40px) !important; border-radius:26px !important; background:linear-gradient(135deg, rgba(255,138,61,.07), rgba(255,255,255,.45) 72%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 16px 40px rgba(255,122,26,.08) !important; }
@@ -531,7 +551,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   if(window.MutationObserver){ var mo=new MutationObserver(function(){ cleanSub(); hideLocalBadges(); refreshHome(); });
     ['postList','homeLife','postSubText','caseGrid','homeLatest'].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{childList:true,subtree:true,characterData:true}); }); }
 
-  /* 首页三块：项目案例克隆 + 学习/随笔截断 3 + 显示标题&更多 */
+  /* 首页三块：项目案例克隆 + 学习/随笔截断 3 + 显示标题&更多（容器样式见 CSS 4b：博客横板列表） */
   var caseGrid=document.getElementById('caseGrid'), homeCases=document.getElementById('homeCases'), homeCasesHead=document.getElementById('homeCasesHead');
   var homeLatest=document.getElementById('homeLatest'), homeLatestHead=document.getElementById('homeLatestHead');
   var homeLife=document.getElementById('homeLife'), homeLifeHead=document.getElementById('homeLifeHead');
