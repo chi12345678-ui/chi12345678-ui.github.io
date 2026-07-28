@@ -46,8 +46,9 @@
 .cbtn.mail{ background:#5b6470 !important; }
 .cbtn .cico{ width:30px !important; height:30px !important; display:block !important; }
 
-/* 4) 首页两栏 hero + 中线渐隐橙点 */
+/* 4) 首页两栏 hero（已移除中间橙点分隔线，避免压字） */
 .home-hero{ position:relative !important; display:grid !important; grid-template-columns:1fr !important; gap:30px !important; margin:8px 0 44px !important; }
+.home-hero::after{ display:none !important; }
 .home-hero .intro{ margin:0 !important; }
 .tour-panel{ position:relative !important; padding:26px 26px 14px !important; border-radius:24px !important; background:linear-gradient(158deg, rgba(255,138,61,.12), rgba(255,255,255,.55) 70%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 18px 44px rgba(255,122,26,.10) !important; }
 .tour-panel .guide-h{ margin-top:0 !important; }
@@ -56,38 +57,43 @@
 .tour-panel .tour a:hover{ transform:translateY(-2px) !important; box-shadow:0 8px 20px rgba(255,122,26,.12) !important; }
 @media (min-width:980px){
   .home-hero{ grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr) !important; gap:clamp(34px,4.4vw,80px) !important; align-items:start !important; }
-  .home-hero::after{ content:"" !important; position:absolute !important; top:6px !important; bottom:6px !important; left:50% !important; transform:translateX(-50%) !important; width:6px !important; background:radial-gradient(circle, rgba(255,122,26,.42) 1.6px, transparent 2.4px) center/6px 20px repeat-y !important; -webkit-mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; mask:linear-gradient(#000,transparent 8%,#000 50%,transparent 96%) !important; pointer-events:none !important; }
 }
 
-/* 4b) 首页三块：博客横板列表（整行宽卡 + 左橙引用条）+ 标题/更多 + 微交互 */
+/* 4b) 首页三块：标题左 + 更多右 */
 .home-block-head{ display:none; align-items:center; justify-content:space-between; gap:12px; margin:42px 0 16px !important; }
 .home-block-head .block-h{ margin:0 !important; }
 .home-more{ display:inline-flex !important; align-items:center; gap:7px; font-size:.88rem !important; font-weight:600 !important; color:var(--brand,#ff7a1a) !important; text-decoration:none !important; padding:7px 14px !important; border-radius:999px !important; background:rgba(255,122,26,.08) !important; border:1px solid rgba(255,122,26,.18) !important; transition:background .2s, transform .2s, box-shadow .2s !important; white-space:nowrap !important; }
 .home-more:hover{ background:rgba(255,122,26,.16) !important; transform:translateY(-1px) !important; box-shadow:0 6px 16px rgba(255,122,26,.18) !important; }
 .home-more i{ transition:transform .2s !important; }
 .home-more:hover i{ transform:translateX(3px) !important; }
-/* 三块容器：单列纵向 = 博客列表（覆盖 style.css 的网格） */
+
+/* 4c) 三块容器：单列博客横板 */
 #homeCases, #homeLatest, #homeLife{ display:flex !important; flex-direction:column !important; gap:16px !important; width:100% !important; max-width:none !important; }
-/* 每条 = 整行宽卡，自适应高，左橙 accent 条 */
-#homeCases > *, #homeLatest > *, #homeLife > *{
-  width:100% !important; max-width:none !important; height:auto !important; min-height:0 !important;
-  position:relative !important; text-align:left !important;
-  box-shadow: inset 4px 0 0 rgba(255,122,26,.85), 0 6px 18px rgba(20,24,33,.07) !important;
-  transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s !important;
-}
-#homeCases > *:hover, #homeLatest > *:hover, #homeLife > *:hover{
-  transform:translateY(-3px) !important;
-  box-shadow: inset 5px 0 0 #ff7a1a, 0 16px 36px rgba(20,24,33,.13) !important;
-}
-/* 博客感：标题/正文左对齐、标题稍大（选不到不生效，安全） */
-#homeCases h3, #homeLatest h3, #homeLatest h4{ font-size:1.12rem !important; text-align:left !important; }
-#homeCases p, #homeLatest p, #homeLife p{ text-align:left !important; }
-[data-theme="dark"] #homeCases > *, [data-theme="dark"] #homeLatest > *, [data-theme="dark"] #homeLife > *{
-  box-shadow: inset 4px 0 0 #ff8a3d, 0 6px 18px rgba(0,0,0,.30) !important;
-}
-[data-theme="dark"] #homeCases > *:hover, [data-theme="dark"] #homeLatest > *:hover, [data-theme="dark"] #homeLife > *:hover{
-  box-shadow: inset 5px 0 0 #ff9a4d, 0 16px 36px rgba(0,0,0,.42) !important;
-}
+#homeCases > *, #homeLatest > *, #homeLife > *{ width:100% !important; max-width:none !important; height:auto !important; min-height:0 !important; position:relative !important; text-align:left !important; transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s !important; }
+
+/* 项目案例：尊重自带左封面，仅轻阴影 + hover 浮起 */
+#homeCases > *{ box-shadow:0 6px 18px rgba(20,24,33,.07) !important; }
+#homeCases > *:hover{ transform:translateY(-3px) !important; box-shadow:0 16px 36px rgba(20,24,33,.13) !important; }
+
+/* 学习成长：白底 + 左橙引用条 = 笔记感 */
+#homeLatest > *{ background:#fff !important; border-radius:16px !important; box-shadow: inset 4px 0 0 #ff7a1a, 0 6px 18px rgba(20,24,33,.07) !important; }
+#homeLatest > *:hover{ transform:translateY(-3px) !important; box-shadow: inset 5px 0 0 #ff6a00, 0 16px 36px rgba(20,24,33,.13) !important; }
+
+/* 生活随笔：暖米底 + 左嫩绿引用条 = 动态感（与学习块区分） */
+#homeLife > *{ background:linear-gradient(135deg, rgba(7,193,96,.07), rgba(255,250,242,.9)) !important; border:1px solid rgba(7,193,96,.16) !important; border-radius:18px !important; box-shadow: inset 4px 0 0 #2bb673, 0 6px 18px rgba(20,80,50,.07) !important; }
+#homeLife > *:hover{ transform:translateY(-3px) !important; box-shadow: inset 5px 0 0 #1fa866, 0 16px 34px rgba(20,80,50,.12) !important; }
+
+/* 首页隐藏“编辑/删除”管理按钮（展示橱窗不需要；要编辑去对应栏目页） */
+#homeLatest button:has(.fa-pen), #homeLatest button:has(.fa-pencil), #homeLatest button:has(.fa-trash), #homeLatest button:has(.fa-edit),
+#homeLife  button:has(.fa-pen), #homeLife  button:has(.fa-pencil), #homeLife  button:has(.fa-trash), #homeLife  button:has(.fa-edit),
+#homeLatest a:has(.fa-pen), #homeLatest a:has(.fa-trash), #homeLife a:has(.fa-pen), #homeLife a:has(.fa-trash){ display:none !important; }
+
+[data-theme="dark"] #homeLatest > *{ background:#1b1f27 !important; box-shadow: inset 4px 0 0 #ff8a3d, 0 6px 18px rgba(0,0,0,.30) !important; }
+[data-theme="dark"] #homeLatest > *:hover{ box-shadow: inset 5px 0 0 #ff9a4d, 0 16px 36px rgba(0,0,0,.42) !important; }
+[data-theme="dark"] #homeLife > *{ background:linear-gradient(135deg, rgba(7,193,96,.12), rgba(27,31,39,.9)) !important; border-color:rgba(7,193,96,.22) !important; box-shadow: inset 4px 0 0 #2bb673, 0 6px 18px rgba(0,0,0,.30) !important; }
+[data-theme="dark"] #homeLife > *:hover{ box-shadow: inset 5px 0 0 #34d089, 0 16px 34px rgba(0,0,0,.42) !important; }
+[data-theme="dark"] #homeCases > *{ box-shadow:0 6px 18px rgba(0,0,0,.30) !important; }
+[data-theme="dark"] #homeCases > *:hover{ box-shadow:0 16px 36px rgba(0,0,0,.42) !important; }
 
 /* 5) 关于我：简介大卡 + 加强分割 + 能力条间淡线 */
 .about-wrap{ align-items:start !important; position:relative !important; overflow:visible !important; padding:clamp(22px,3vw,40px) !important; border-radius:26px !important; background:linear-gradient(135deg, rgba(255,138,61,.07), rgba(255,255,255,.45) 72%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 16px 40px rgba(255,122,26,.08) !important; }
@@ -164,9 +170,9 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 #syncFab{ position:fixed; right:22px; bottom:22px; z-index:9000; width:52px; height:52px; border-radius:50%; border:none; cursor:pointer; background:linear-gradient(145deg,#ff8a3d,#ff6a00); color:#fff; font-size:22px; box-shadow:0 10px 26px rgba(255,106,0,.40); display:grid; place-items:center; transition:transform .2s, box-shadow .2s; }
 #syncFab:hover{ transform:translateY(-3px) scale(1.05); box-shadow:0 16px 34px rgba(255,106,0,.5); }
 #syncFab:active{ transform:scale(.95); }
-.sync-card{ position:fixed; right:22px; bottom:86px; z-index:9001; width:min(380px,calc(100vw - 32px)); max-height:72vh; overflow:auto; background:#fff; border-radius:18px; box-shadow:0 24px 60px rgba(20,24,33,.28); border:1px solid #eef0f3; display:none; flex-direction:column; animation:qrpop .22s cubic-bezier(.2,.9,.25,1); }
+.sync-card{ position:fixed; right:22px; bottom:86px; z-index:9001; width:min(400px,calc(100vw - 32px)); max-height:80vh; overflow:auto; background:#fff; border-radius:18px; box-shadow:0 24px 60px rgba(20,24,33,.28); border:1px solid #eef0f3; display:none; flex-direction:column; animation:qrpop .22s cubic-bezier(.2,.9,.25,1); }
 .sync-card.open{ display:flex; }
-.sc-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f0f1f4; position:sticky; top:0; background:#fff; }
+.sc-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f0f1f4; position:sticky; top:0; background:#fff; z-index:1; }
 .sc-head b{ font-size:.98rem; color:#1f2430; }
 .sc-head button{ border:none; background:#f0f1f4; width:28px; height:28px; border-radius:8px; cursor:pointer; color:#666; font-size:1.1rem; }
 .sc-body{ padding:14px 16px 18px; font-size:.86rem; color:#444; line-height:1.6; }
@@ -175,10 +181,22 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 .sc-dot{ flex:0 0 auto; width:9px; height:9px; border-radius:50%; margin-top:6px; box-shadow:0 0 0 3px rgba(0,0,0,.04); }
 .sc-run{ margin-top:6px; border:none; cursor:pointer; background:#ff7a1a; color:#fff; padding:9px 16px; border-radius:10px; font-size:.86rem; font-weight:600; }
 .sc-run:hover{ background:#ff6a00; }
+.sc-verdict{ margin-top:10px; padding:11px 13px; border-radius:12px; background:#fff7ef; border:1px solid rgba(255,122,26,.25); color:#7a4410; line-height:1.7; }
+.sc-verdict.bad{ background:#fef2f2; border-color:rgba(220,38,38,.25); color:#7f1d1d; }
+.sc-verdict.good{ background:#f0fdf4; border-color:rgba(22,163,74,.25); color:#14532d; }
 .sc-code{ position:relative; margin:8px 0 2px; background:#1f2430; color:#e6edf3; font-family:'JetBrains Mono',monospace; font-size:.74rem; line-height:1.6; padding:12px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-all; cursor:pointer; transition:box-shadow .2s; }
 .sc-code:hover{ box-shadow:0 0 0 2px rgba(255,122,26,.5); }
 .sc-code::after{ content:"点击复制"; position:absolute; top:6px; right:8px; font-size:.62rem; color:#9aa6b4; font-family:'Noto Sans SC',sans-serif; }
 .sc-code.copied::after{ content:"已复制 ✓"; color:#4ade80; }
+[data-theme="dark"] .sync-card{ background:#1b1f27; border-color:#2c323e; }
+[data-theme="dark"] .sc-head{ background:#1b1f27; border-bottom-color:#2c323e; }
+[data-theme="dark"] .sc-head b{ color:#eef1f6; }
+[data-theme="dark"] .sc-head button{ background:#2c323e; color:#c7ccd6; }
+[data-theme="dark"] .sc-body{ color:#c2c8d4; }
+[data-theme="dark"] .sc-row{ border-bottom-color:#2c323e; }
+[data-theme="dark"] .sc-verdict{ background:#2a2118; border-color:rgba(255,122,26,.3); color:#f0c79a; }
+[data-theme="dark"] .sc-verdict.bad{ background:#2a1818; border-color:rgba(220,38,38,.3); color:#f3b4b4; }
+[data-theme="dark"] .sc-verdict.good{ background:#13241a; border-color:rgba(22,163,74,.3); color:#a7e8c0; }
 </style>
 </head>
 <body>
@@ -436,7 +454,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 <button type="button" id="syncFab" title="同步自检" aria-label="同步自检">🩺</button>
 <div class="sync-card" id="syncCard">
   <div class="sc-head"><b>🩺 同步自检</b><button type="button" id="syncClose" aria-label="关闭">&times;</button></div>
-  <div class="sc-body" id="syncBody">点下方按钮，自动检查“换设备能否看到内容”。<br><button type="button" class="sc-run" id="syncRun">开始体检</button></div>
+  <div class="sc-body" id="syncBody">点下方按钮，自动检查“换设备能否看到内容”：实测读权限、读出<b>云端真实条数</b>，再和你<b>本机可见条数</b>对比，定位是不是“没传上云”。<br><button type="button" class="sc-run" id="syncRun">开始体检</button></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -551,7 +569,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   if(window.MutationObserver){ var mo=new MutationObserver(function(){ cleanSub(); hideLocalBadges(); refreshHome(); });
     ['postList','homeLife','postSubText','caseGrid','homeLatest'].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{childList:true,subtree:true,characterData:true}); }); }
 
-  /* 首页三块：项目案例克隆 + 学习/随笔截断 3 + 显示标题&更多（容器样式见 CSS 4b：博客横板列表） */
+  /* 首页三块：项目案例克隆 + 学习/随笔截断 3 + 显示标题&更多 */
   var caseGrid=document.getElementById('caseGrid'), homeCases=document.getElementById('homeCases'), homeCasesHead=document.getElementById('homeCasesHead');
   var homeLatest=document.getElementById('homeLatest'), homeLatestHead=document.getElementById('homeLatestHead');
   var homeLife=document.getElementById('homeLife'), homeLifeHead=document.getElementById('homeLifeHead');
@@ -571,7 +589,7 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
   refreshHome();
   setTimeout(refreshHome,600); setTimeout(refreshHome,1800);
 
-  /* 同步自检：先信应用自报，再抓钥匙二次确认 */
+  /* ===== 同步自检（重做）：读权限实测 + 云端真实条数 + 本机可见条数对比 + 一键修复SQL ===== */
   var fab=document.getElementById('syncFab'),scard=document.getElementById('syncCard'),
       sbody=document.getElementById('syncBody'),srun=document.getElementById('syncRun'),sclose=document.getElementById('syncClose');
   function el(tag,cls,html){ var n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; }
@@ -586,44 +604,141 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
     if(/已连接|云端数据库|访客也能/.test(t)) return true;
     if(/连不上|本机暂存|仅本机|本地暂存/.test(t)) return false;
     return null; }
+  function renderedCount(){
+    var a=(document.getElementById('postList')||{}).children, b=(document.getElementById('learningGrid')||{}).children;
+    return (a?a.length:0)+(b?b.length:0);
+  }
+  function parseKeys(src){
+    var m=src.match(/createClient\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']/);
+    var url=m&&m[1], key=m&&m[2];
+    if(!url){ var mu=src.match(/https?:\/\/[A-Za-z0-9.\-]+\.supabase\.co[^"'\s`]*/); if(mu) url=mu[0]; }
+    if(!key){ var mk=src.match(/eyJ[A-Za-z0-9_\-]{30,}/); if(mk) key=mk[0]; }
+    var tbl=(src.match(/\.from\(\s*["']([^"']+)["']/g)||[]).map(function(x){var mm=x.match(/["']([^"']+)["']/);return mm&&mm[1];}).filter(Boolean);
+    var tables=[]; tbl.forEach(function(t){ if(tables.indexOf(t)<0) tables.push(t); });
+    return {url:url,key:key,tables:tables};
+  }
+  function buildFixSql(tables){
+    if(!tables||!tables.length) return '-- 没自动识别到表名：把下面的 表名 换成 app.js 里 .from("...") 的名字\n-- 对每张表都执行下面 4 条（幂等，重复运行不报错）\n';
+    var out='-- 一键补齐 读/写/改/删 公开策略（幂等，重复运行不报错）\n-- 涉及表：'+tables.join(', ')+'\n';
+    tables.forEach(function(t){
+      out+='\nDO $$ BEGIN CREATE POLICY "pub_select" ON "'+t+'" FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+      out+='DO $$ BEGIN CREATE POLICY "pub_insert" ON "'+t+'" FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+      out+='DO $$ BEGIN CREATE POLICY "pub_update" ON "'+t+'" FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+      out+='DO $$ BEGIN CREATE POLICY "pub_delete" ON "'+t+'" FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+    });
+    return out;
+  }
   function runSyncCheck(){
     clearBody();
     sbody.appendChild(row(window.supabase?'#16a34a':'#dc2626', window.supabase?'<b>云端库</b>：已加载就绪 ✅':'<b>云端库</b>：没加载成功 ❌（CDN 不通，换个网络再试）'));
     var says=appSays();
-    if(says===true) sbody.appendChild(row('#16a34a','<b>应用自报</b>：已连接云端数据库 ✅（这是 app.js 自己的判断，可信）'));
+    if(says===true) sbody.appendChild(row('#16a34a','<b>应用自报</b>：已连接云端 ✅（注意：这通常只代表“读”通，不代表“写”通）'));
     else if(says===false) sbody.appendChild(row('#d97706','<b>应用自报</b>：当前离线 / 本机暂存 ⚠️'));
     else sbody.appendChild(row('#94a3b8','<b>应用自报</b>：暂未捕获到状态（发布一条后会更新）'));
+
+    var rendered=renderedCount();
+    sbody.appendChild(row('#64748b','<b>本机当前可见</b>：'+rendered+' 条（学习+随笔，仅供参考）'));
+
     fetch('app.js').then(function(r){return r.text();}).then(function(src){
-      var m=src.match(/createClient\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']/);
-      var url=m&&m[1], key=m&&m[2];
-      if(!url){ var mu=src.match(/https?:\/\/[A-Za-z0-9.\-]+\.supabase\.co[^"'\s`]*/); if(mu) url=mu[0]; }
-      if(!key){ var mk=src.match(/eyJ[A-Za-z0-9_\-]{30,}/); if(mk) key=mk[0]; }
-      var tbl=(src.match(/\.from\(\s*["']([^"']+)["']/g)||[]).map(function(x){var mm=x.match(/["']([^"']+)["']/);return mm&&mm[1];}).filter(Boolean);
-      var table=tbl[0]||'';
-      if(url&&key){
-        sbody.appendChild(row('#2563eb','<b>实测连接</b>：读到钥匙，正在验证…（表：'+(table||'未识别')+'）'));
-        var base=url.replace(/\/$/,''); var target=table?(base+'/rest/v1/'+table+'?select=*&limit=1'):(base+'/rest/v1/');
-        fetch(target,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){
-          if(r.status>=200&&r.status<300){ sbody.appendChild(row('#16a34a','<b>结论</b>：完全通畅 ✅ 钥匙、表、权限全对。'));
-            sbody.appendChild(row('#16a34a','👉 发布一条，<b>用手机或另一台电脑</b>打开网站验证即可。')); }
-          else if(r.status===401){ sbody.appendChild(row('#dc2626','<b>结论</b>：401 密钥被拒 🔑 核对 app.js 顶部 URL / key 是否抄错。')); }
-          else if(r.status===403){ sbody.appendChild(row('#dc2626','<b>结论</b>：403 权限被拦 🔒 复制下面命令去 SQL Editor 运行：'));
-            var sql=table?('CREATE POLICY "pub_read"  ON "'+table+'" FOR SELECT USING (true);\nCREATE POLICY "pub_write" ON "'+table+'" FOR INSERT WITH CHECK (true);\nCREATE POLICY "pub_upd"   ON "'+table+'" FOR UPDATE USING (true);\nCREATE POLICY "pub_del"   ON "'+table+'" FOR DELETE USING (true);'):'-- 把 表名 换成 app.js 里 .from("...") 的名字';
-            var pre=el('pre','sc-code'); pre.textContent=sql; pre.addEventListener('click',function(){copySql(pre);}); sbody.appendChild(pre); }
-          else if(r.status===404){ sbody.appendChild(row('#dc2626','<b>结论</b>：404 表不存在 🗂 在后台建表 <b>'+(table||'见 .from')+'</b>。')); }
-          else { sbody.appendChild(row('#d97706','<b>结论</b>：状态 '+r.status+'，截图发我定位。')); }
-          addRerun();
-        }).catch(function(){ sbody.appendChild(row('#dc2626','<b>结论</b>：网络失败 🌐 换个网络再试。')); addRerun(); });
-      } else {
-        if(says===true){ sbody.appendChild(row('#16a34a','<b>结论</b>：钥匙写法较特殊未自动识别，但应用已确认连通 ✅ 无需手动配置。'));
-          sbody.appendChild(row('#16a34a','👉 直接发布一条，<b>用手机或另一台电脑</b>打开验证即可看到。')); }
-        else if(says===false){ sbody.appendChild(row('#d97706','<b>结论</b>：应用显示离线。请确认设备已联网；联网后刷新，副标题若变“已连接”即恢复。')); }
-        else { sbody.appendChild(row('#d97706','<b>结论</b>：没读到钥匙、应用也暂未确认连接。请核对 app.js 顶部 createClient 的 URL / key 两行有没有填、有没有抄错。')); }
-        addRerun();
+      var k=parseKeys(src);
+      var url=k.url, key=k.key, tables=k.tables, table=tables[0]||'';
+      if(!url||!key){
+        sbody.appendChild(row(says===true?'#16a34a':'#d97706', says===true?'<b>读权限实测</b>：钥匙写法特殊未自动识别，但应用已确认连通 ✅':'<b>读权限实测</b>：没读到钥匙 ❌ 请核对 app.js 顶部 createClient 的 URL / key 两行。'));
+        finish(says, null, rendered, tables, key?'':'nokey');
+        return;
       }
-    }).catch(function(){ sbody.appendChild(row(says===true?'#16a34a':'#d97706', says===true?'<b>结论</b>：应用已连通 ✅（读取 app.js 失败，但功能正常，无需配置）。':'<b>读取 app.js 失败</b>，请确认网站已部署。')); addRerun(); });
+      var base=url.replace(/\/$/,'');
+      var target=base+'/rest/v1/'+(table||'')+'?select=id';
+      sbody.appendChild(row('#2563eb','<b>读权限实测</b>：正在向云端表 <b>'+(table||'未识别')+'</b> 读取…'));
+      fetch(target,{headers:{'apikey':key,'Authorization':'Bearer '+key,'Prefer':'count=exact','Range':'0-0'}}).then(function(r){
+        var cloud=null, cr=r.headers.get('content-range')||''; var cm=cr.match(/\/(\d+)/); if(cm) cloud=parseInt(cm[1],10);
+        if(r.status>=200&&r.status<300){
+          if(cloud===null){ /* 头没暴露，退而求其次数返回数组 */ }
+          sbody.appendChild(row('#16a34a','<b>读权限实测</b>：通过 ✅'+(cloud!==null?'　云端真实条数 = <b>'+cloud+'</b>':'　（云端条数头未返回，见下方对比）')));
+          if(cloud===null){
+            return r.json().then(function(arr){ var n=Array.isArray(arr)?arr.length:null;
+              sbody.appendChild(row('#64748b','<b>云端取样</b>：'+(n!==null?('首屏取到 '+n+' 条（总数头被浏览器屏蔽，仅作参考）'):'取到数据但无法计数')));
+              finish(says, n, rendered, tables, 'ok');
+            }).catch(function(){ finish(says, null, rendered, tables, 'ok'); });
+          }
+          finish(says, cloud, rendered, tables, 'ok');
+        } else if(r.status===401){
+          sbody.appendChild(row('#dc2626','<b>读权限实测</b>：401 密钥被拒 🔑 核对 app.js 顶部 URL / key 是否抄错。'));
+          finish(says, null, rendered, tables, '401');
+        } else if(r.status===403){
+          sbody.appendChild(row('#dc2626','<b>读权限实测</b>：403 读权限被拦 🔒 连“读”都没开，必须运行下方修复SQL。'));
+          finish(says, null, rendered, tables, '403');
+        } else if(r.status===404){
+          sbody.appendChild(row('#dc2626','<b>读权限实测</b>：404 表不存在 🗂 在后台建表 <b>'+(table||'见 .from')+'</b>。'));
+          finish(says, null, rendered, tables, '404');
+        } else {
+          sbody.appendChild(row('#d97706','<b>读权限实测</b>：状态 '+r.status+'，截图发我定位。'));
+          finish(says, null, rendered, tables, 'other');
+        }
+      }).catch(function(){
+        sbody.appendChild(row('#dc2626','<b>读权限实测</b>：网络失败 🌐 换个网络再试。'));
+        finish(says, null, rendered, tables, 'net');
+      });
+    }).catch(function(){
+      sbody.appendChild(row(says===true?'#16a34a':'#d97706', says===true?'<b>读权限实测</b>：读取 app.js 失败，但应用已连通 ✅':'<b>读取 app.js 失败</b>，请确认网站已部署。'));
+      finish(says, null, rendered, [], says===true?'ok':'nokey');
+    });
   }
-  function addRerun(){ var b=el('button','sc-run','重新体检'); b.style.marginTop='12px'; b.addEventListener('click',runSyncCheck); sbody.appendChild(b); }
+
+  function finish(says, cloud, rendered, tables, code){
+    var v=el('div','sc-verdict');
+    var needSql=false;
+    if(code==='403'||code==='401'||code==='404'){
+      needSql=true;
+      v.className='sc-verdict bad';
+      v.innerHTML='🚨 <b>权限/表有问题</b>。这就是“换手机看不到”的根因之一：内容根本没进云端。<br>👉 复制下方修复SQL → 去 Supabase 后台 <b>SQL Editor</b> 运行 → 回<b>发布过内容的那台设备</b>刷新页面触发补传 → 换手机强刷。';
+    } else if(code==='nokey'){
+      v.className='sc-verdict '+(says===true?'good':'bad');
+      v.innerHTML = says===true
+        ? '✅ 应用已连通，钥匙写法特殊未自动实测。若换手机仍看不到，多半是<b>写入(INSERT)策略</b>没开，建议运行下方修复SQL兜底。'
+        : '⚠️ 没读到钥匙、应用也暂未确认连接。请核对 app.js 顶部 createClient 的 URL / key 是否填了、抄对。';
+      needSql = says!==true;
+    } else if(code==='net'){
+      v.className='sc-verdict bad';
+      v.innerHTML='🌐 网络没通，无法实测。请连上网络后点“重新体检”。';
+    } else {
+      // code==='ok'
+      if(cloud!==null && rendered>cloud){
+        needSql=true;
+        v.className='sc-verdict bad';
+        var diff=rendered-cloud;
+        v.innerHTML='⚠️ 本机可见 <b>'+rendered+'</b> 条，云端只有 <b>'+cloud+'</b> 条 —— 有约 <b>'+diff+'</b> 条<b>只存在你这台设备、没传上云</b>。<br>这正是“换手机看不到”的原因：写入(INSERT)策略没开，发布时补传静默失败。<br>👉 运行下方修复SQL → 回<b>本机</b>刷新触发补传 → 换手机强刷即可看到。';
+      } else if(cloud!==null && cloud===0 && rendered===0){
+        v.className='sc-verdict';
+        v.innerHTML='📭 云端和本机都还是空的——你还没发布过内容。先发一条学习记录或随笔，再点“重新体检”。';
+      } else if(cloud!==null && cloud===0 && rendered>0){
+        needSql=true;
+        v.className='sc-verdict bad';
+        v.innerHTML='⚠️ 云端 <b>0</b> 条，但本机有 <b>'+rendered+'</b> 条 —— 内容<b>完全没传上云</b>，写入策略没开。<br>👉 运行下方修复SQL → 回<b>本机</b>刷新触发补传 → 换手机强刷。';
+      } else {
+        v.className='sc-verdict good';
+        var cTxt = cloud!==null?('云端 <b>'+cloud+'</b> 条'):'云端已能读到数据';
+        v.innerHTML='✅ '+cTxt+'，且本机没有“多余未上传”的内容，读写链路看起来是通的。<br>👉 换手机请用 <b>无痕模式 / 清缓存后强刷</b> 打开网址验证；若仍空，运行下方修复SQL兜底一次最稳。';
+      }
+    }
+    sbody.appendChild(v);
+
+    // 修复SQL（一律给出，幂等；needSql 时强调，否则作为兜底）
+    var sql=buildFixSql(tables);
+    var pre=el('pre','sc-code'); pre.textContent=sql;
+    pre.addEventListener('click',function(){copySql(pre);});
+    var lab=el('div',null, needSql?'<b style="color:#dc2626">⬇ 必做：点下面黑框复制修复SQL</b>':'<b style="color:#64748b">⬇ 兜底修复SQL（点黑框复制，可选）</b>');
+    lab.style.marginTop='10px';
+    sbody.appendChild(lab);
+    sbody.appendChild(pre);
+
+    var tip=el('div',null,'<span style="opacity:.8">最稳的验证：跑完SQL后，<b>在本机随便发一条新的</b>，立刻换手机强刷——新发的能出现，就说明同步彻底通了。</span>');
+    tip.style.marginTop='8px';
+    sbody.appendChild(tip);
+
+    var b=el('button','sc-run','重新体检'); b.style.marginTop='12px'; b.addEventListener('click',runSyncCheck); sbody.appendChild(b);
+  }
+
   if(srun) srun.addEventListener('click',runSyncCheck);
   if(fab) fab.addEventListener('click',function(){ var open=scard.classList.toggle('open'); if(open && !sbody.querySelector('.sc-row')) runSyncCheck(); });
   if(sclose) sclose.addEventListener('click',function(){ scard.classList.remove('open'); });
