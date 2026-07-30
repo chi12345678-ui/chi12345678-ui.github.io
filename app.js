@@ -764,58 +764,37 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   var mo = new MutationObserver(function () { mountAll(); });
   mo.observe(document.body, { childList: true, subtree: true });
 })();
-/* ============ 补丁 C：首页"生活随笔·最新"区块收窄到 2/3 ============ */
-(function () {
+/* ===== 补丁 C′：只窄首页"生活随笔·最新"，案例/学习保持满宽 ===== */
+(function(){
   'use strict';
-
-  var css = '[data-narrow="home-life"]{width:70% !important;max-width:1180px !important;' +
-            'margin-left:0 !important;margin-right:auto !important;}';
-  var st = document.createElement('style');
-  st.setAttribute('data-patch', 'home-life-narrow');
-  st.textContent = css;
+  document.querySelectorAll('[data-narrow]').forEach(function(el){el.removeAttribute('data-narrow')});
+  var old=document.querySelector('style[data-patch="home-life-narrow"]');if(old)old.remove();
+  var st=document.createElement('style');
+  st.setAttribute('data-patch','home-life-narrow');
+  st.textContent='[data-narrow="home-life"]{width:70%!important;max-width:1180px!important;margin-left:0!important;margin-right:auto!important}';
   document.head.appendChild(st);
-
-  // 1) 找标题：文本同时含"生活随笔"和"最新"，且很短（排除整页/正文）
-  function findTitle() {
-    var cands = document.querySelectorAll('h1,h2,h3,h4,[class*="title"],[class*="head"],[class*="sec"]');
-    var hit = null;
-    cands.forEach(function (el) {
-      var t = (el.textContent || '').replace(/\s+/g, '');
-      if (t.indexOf('生活随笔') > -1 && t.indexOf('最新') > -1 && t.length < 16) hit = el;
-    });
-    if (hit) return hit;
-    var all = document.querySelectorAll('*');
-    for (var i = 0; i < all.length; i++) {
-      var own = '';
-      all[i].childNodes.forEach(function (n) { if (n.nodeType === 3) own += n.textContent; });
-      own = own.replace(/\s+/g, '');
-      if (own.indexOf('生活随笔') > -1 && own.indexOf('最新') > -1) return all[i];
+  function txt(el){return (el.textContent||'').replace(/\s+/g,'')}
+  function isLifeTitle(el){var t=txt(el);return t.indexOf('生活随笔')>-1&&t.indexOf('最新')>-1&&t.length<16}
+  function findTitle(){var hit=null;document.querySelectorAll('h1,h2,h3,h4,[class*="title"],[class*="head"],[class*="sec"],div,span').forEach(function(el){if(!hit&&isLifeTitle(el))hit=el});return hit}
+  function containerOf(el){
+    var p=el.parentElement;
+    while(p&&p!==document.body&&p!==document.documentElement){
+      var pt=txt(p);
+      var safe=pt.indexOf('生活随笔')>-1&&pt.indexOf('学习成长')===-1&&pt.indexOf('项目案例')===-1;
+      if(safe&&p.offsetWidth>=300&&p.querySelector('img'))return p;   // 命中即停，不继续往上爬
+      if(!safe&&pt.indexOf('生活随笔')>-1)return null;               // 爬到公共祖先=越界，放弃
+      p=p.parentElement;
     }
     return null;
   }
-
-  // 2) 从标题往上，找"第一层里面装着 <img> 的盒子" = 区块容器
-  function containerOf(el) {
-    var p = el.parentElement;
-    while (p && p !== document.body && p !== document.documentElement) {
-      if (p.offsetWidth >= 300 && p.querySelector('img')) return p;
-      p = p.parentElement;
-    }
-    return el.parentElement;
+  function apply(){
+    var t=findTitle();if(!t)return;
+    var sec=containerOf(t);
+    if(!sec){console.warn('[narrow] 未定位到安全容器，已放弃窄化——若首页随笔仍满宽，请截首页图');return}
+    if(sec.dataset.narrow)return;
+    sec.setAttribute('data-narrow','home-life');
+    console.log('%c[narrow] 仅首页随笔 →','color:#ea580c;font-weight:700',sec.tagName,sec.className||'(none)','w=',sec.offsetWidth);
   }
-
-  function apply() {
-    var t = findTitle();
-    if (!t) return;
-    var sec = containerOf(t);
-    if (!sec || sec.dataset.narrow) return;     // 已处理过，跳过（也防 observer 递归）
-    sec.setAttribute('data-narrow', 'home-life');
-    console.log('[narrow-home-life] applied →', sec.tagName, sec.className || '(no class)', 'width=', sec.offsetWidth);
-  }
-
-  apply();
-  setTimeout(apply, 500);
-  setTimeout(apply, 1500);
-  var mo = new MutationObserver(function () { apply(); });
-  mo.observe(document.body, { childList: true, subtree: true });
+  apply();setTimeout(apply,400);setTimeout(apply,1200);
+  var mo=new MutationObserver(apply);mo.observe(document.body,{childList:true,subtree:true});
 })();
