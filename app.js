@@ -871,3 +871,64 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
 
   console.log('%c[patchH] 干净根治版已挂载：发布即刷首页 / 无横幅 / 扫描按钮已隐藏 / 无轮询','color:#16a34a;font-weight:700');
 })();
+/* ===== 补丁 J：编辑器调大 + 首页同步根治 + 数据诊断（只追加·不删任何东西·自包含·幂等） =====
+   修1 首页同步：包装 renderPosts——作者各路径画独立页后顺手 renderHomeLife()，
+        时序天然正确（调用时 lifeList 已是最新），无延时抢跑、无死循环、不改作者源码。
+   修2 编辑器调大：!important 顶回 v5/v6/v7/补丁B 的压缩；仅放宽 learning/life 两页版心，
+        首页/关于/案例的 .sec 保持不动。
+   修3 只读诊断：把随笔数据现状打到 Console，便于核对"旧随笔在不在池子里"。
+   不删 H：H 继续负责隐藏右下角体检按钮 + 清旧横幅，留着无妨。
+*/
+(function(){
+  'use strict';
+  if(window.__patchJ){ return; }
+  window.__patchJ=1;
+
+  /* 1) 编辑器调大 + 写作页版心放宽（纯 CSS，!important 覆盖历史压缩规则） */
+  var st=document.createElement('style'); st.setAttribute('data-patch','J');
+  st.textContent=[
+    /* 仅学习成长 / 生活随笔两页放宽版心，其余页保持原样 */
+    '.view[data-view="learning"].active .sec,.view[data-view="life"].active .sec{max-width:1180px !important}',
+    /* 编辑器撑满版心，不再缩在中间一小条 */
+    '.editor,.post-box{max-width:100% !important;width:100% !important;margin-left:0 !important;margin-right:0 !important}',
+    /* 学习成长正文区：加高 + 字号行距放大，写长文不憋屈 */
+    '.editor .rte{min-height:420px !important;max-height:80vh !important;font-size:17px !important;line-height:1.9 !important}',
+    /* 生活随笔输入区：也加高 */
+    '.post-box .rte{min-height:200px !important;max-height:72vh !important;font-size:16.5px !important;line-height:1.85 !important}',
+    /* 标题输入加大 */
+    '.editor input.ti{font-size:22px !important;padding:15px 16px !important}',
+    /* 工具栏按钮略放大，点得更准 */
+    '.editor .rte-bar,.post-box .rte-bar{padding:10px 12px !important}',
+    '.editor .rte-b,.post-box .rte-b{min-width:34px !important;height:34px !important;font-size:14px !important}'
+  ].join('');
+  (document.head||document.documentElement).appendChild(st);
+
+  /* 2) 根治首页同步：包装 renderPosts（闭包直接改顶层绑定，module/普通脚本通吃） */
+  if(typeof renderPosts==='function' && typeof renderHomeLife==='function' && !window.__rpWrapped){
+    var _origRP=renderPosts; window.__rpWrapped=1;
+    renderPosts=function(posts, off){
+      try{ _origRP(posts, off); }catch(e){}      /* 作者原逻辑：画独立页 */
+      try{ renderHomeLife(); }catch(e){}          /* 补一刀：画首页（用同一份最新 lifeList） */
+    };
+    console.log('%c[patchJ] renderPosts 已包装 → 发布/保存后首页将随独立页一起刷新','color:#16a34a;font-weight:700');
+  } else {
+    console.warn('[patchJ] 未能包装 renderPosts（若首页仍不刷新，请把此行截图发我）');
+  }
+
+  /* 3) 只读诊断：核对"旧随笔到底在不在"，只读不写，零风险 */
+  function diag(){
+    try{
+      var ll=0; try{ ll=(typeof lifeList!=='undefined' && lifeList)?lifeList.length:0; }catch(e){}
+      var posted=0,local=0,hid=0,hidc=0;
+      try{ posted=(JSON.parse(localStorage.getItem('chi_posts_posted_v1'))||[]).length; }catch(e){}
+      try{ local =(JSON.parse(localStorage.getItem('chi_posts_local_v1')) ||[]).length; }catch(e){}
+      try{ hid   =(JSON.parse(localStorage.getItem('chi_life_hide'))       ||[]).length; }catch(e){}
+      try{ hidc  =(JSON.parse(localStorage.getItem('chi_life_hide_content'))||[]).length; }catch(e){}
+      console.log('%c[patchJ 诊断] 随笔数据现状 →','color:#16a34a;font-weight:700',
+        '当前显示池lifeList='+ll+' | 乐观池posted='+posted+' | 本机local='+local+' | 隐藏id='+hid+' | 隐藏内容指纹='+hidc);
+    }catch(e){}
+  }
+  setTimeout(diag,1500); setTimeout(diag,4500);
+
+  console.log('%c[patchJ] 已挂载：编辑器调大 + 首页同步根治 + 数据诊断','color:#16a34a;font-weight:700');
+})();
