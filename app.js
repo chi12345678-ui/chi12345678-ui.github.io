@@ -806,3 +806,119 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
 
   console.log('%c[patchK] 终版已挂载：首页同步 + 编辑器调大 + 🩺体检按钮已移除（无轮询/无刷屏）','color:#16a34a;font-weight:700');
 })();
+/* ===== 补丁 M（图纸到位·一次结清）：纯追加 / 幂等 / 不改作者原代码 =====
+   修① 内容回得来：关"极速离线" + 隐藏 iframe 原生 fetch 重写 supabase 通道
+        （30s 超时，绕开作者代码里"所有云端请求 2.5s 硬超时"的误杀，也不看 OFFLINE）。
+   修② 恢复右下角🩺同步自检（被补丁 K 误藏；它是实测"云端 vs 本机条数"+
+        一键生成 INSERT 修复 SQL 的唯一入口，内容没上云时全靠它）。
+   修③ 布局·学习成长/生活随笔：把"内容列表"搬到"编辑框"上方
+        （真实节点：learning=#learningGrid 与 .editor；life=#postList+.life-toolbar 与 .post-box）。
+   修④ 布局·首页"生活随笔·最新"橱窗收窄（真实 id=#homeLife），去右侧空白、与上方横板块分层。
+   全部用真实 id/class（已逐行核对 index.html 与 app.js），不再猜。
+*/
+(function(){
+  'use strict';
+  if (window.__patchM) return;
+  window.__patchM = 1;
+
+  /* ---------- 修④ 首页随笔橱窗收窄 + 修② 恢复🩺（CSS） ---------- */
+  var st = document.createElement('style');
+  st.setAttribute('data-patch','M');
+  st.textContent = [
+    /* 收窄到朋友圈最佳阅读宽；左对齐继承版心贴左；特异性 1,2,0 + !important 稳赢优化层 #homeLife(1,0,0) */
+    '.view[data-view="home"] #homeLife{ max-width:min(760px,100%) !important; width:100% !important; }',
+    '.view[data-view="home"] #homeLife > *{ max-width:100% !important; }',
+    /* 恢复🩺：覆盖补丁 K 的 #syncFab,#syncCard{display:none!important}（更高特异性 + 后加载 + !important 赢） */
+    '#syncFab{ display:grid !important; }',
+    '#syncCard{ display:none !important; }',
+    '#syncCard.open{ display:flex !important; }'
+  ].join('');
+  (document.head||document.documentElement).appendChild(st);
+
+  /* ---------- 修① 关极速离线 + 原生 fetch 重写云端通道（绕 2.5s 误杀） ---------- */
+  var wasOff = (localStorage.getItem('chi_offline') === '1');
+  try { localStorage.setItem('chi_offline','0'); window.OFFLINE = false; } catch(e){}
+  try {
+    var ob = document.getElementById('offlineBtn');
+    if (ob) { ob.classList.remove('off'); ob.innerHTML = '<i class="fas fa-cloud"></i>';
+      ob.title = '在线模式：自动同步云端（慢时自动落本机）'; }
+  } catch(e){}
+
+  var nativeFetch = null;
+  try {
+    var ifr = document.createElement('iframe');
+    ifr.style.display='none'; ifr.setAttribute('aria-hidden','1');
+    (document.body||document.documentElement).appendChild(ifr); /* 不可 remove，否则 bind 失效 */
+    if (ifr.contentWindow && ifr.contentWindow.fetch) nativeFetch = ifr.contentWindow.fetch.bind(ifr.contentWindow);
+  } catch(e){}
+  if (!nativeFetch && window.fetch && window.fetch.bind) nativeFetch = window.fetch.bind(window);
+
+  if (nativeFetch) {
+    var isSB = function(u){ return !!u && (u.indexOf('supabase.co')>=0 || u.indexOf('supabase.in')>=0); };
+    var hijacked = window.fetch; /* 当前 = 作者"2.5s + OFFLINE"版 */
+    window.fetch = function(input, init){
+      var url = typeof input==='string' ? input : ((input && input.url)||'');
+      if (!isSB(url)) return hijacked(input, init); /* 非云端：透传作者逻辑 */
+      var ctrl = new AbortController();
+      var t = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 30000); /* 30s，不再 2.5s 误杀 */
+      var merged; try { merged = Object.assign({}, init, { signal: ctrl.signal }); } catch(e){ merged = init; }
+      var p = nativeFetch(input, merged); /* 走原生：不看 OFFLINE、不 2.5s */
+      p.then(function(){clearTimeout(t);}, function(){clearTimeout(t);});
+      return p;
+    };
+    console.log('%c[patchM] 已用原生 fetch 重写云端通道（30s，绕开 2.5s 误杀 / 极速离线拦截）','color:#0ea5e9;font-weight:700');
+  } else {
+    console.warn('[patchM] 未拿到原生 fetch，仅靠关闭极速离线生效');
+  }
+
+  /* ---------- 修③ 搬节点：列表上移、编辑框下移（真实节点，幂等） ---------- */
+  function moveListAboveEditor(){
+    try {
+      /* 学习成长：#learningGrid 搬到 .editor 之前 */
+      var lEd = document.querySelector('.view[data-view="learning"] .editor');
+      var lGrid = document.getElementById('learningGrid');
+      if (lEd && lGrid && lEd.parentNode === lGrid.parentNode) {
+        if (lEd.compareDocumentPosition(lGrid) & Node.DOCUMENT_POSITION_FOLLOWING) lEd.parentNode.insertBefore(lGrid, lEd);
+      }
+      /* 生活随笔：.life-toolbar + #postList 搬到 .post-box 之前（导出按钮留在列表正上方） */
+      var pBox = document.querySelector('.view[data-view="life"] .post-box');
+      var pList = document.getElementById('postList');
+      var pBar = document.querySelector('.view[data-view="life"] .life-toolbar');
+      if (pBox && pList && pBox.parentNode === pList.parentNode) {
+        if (pBox.compareDocumentPosition(pList) & Node.DOCUMENT_POSITION_FOLLOWING) {
+          if (pBar && pBar.parentNode === pBox.parentNode) pBox.parentNode.insertBefore(pBar, pBox);
+          pBox.parentNode.insertBefore(pList, pBox);
+        }
+      }
+      console.log('%c[patchM] 布局已调整：学习成长 / 生活随笔 = 列表在上、编辑框在下','color:#16a34a;font-weight:700');
+    } catch(e){ console.warn('[patchM] 搬节点异常', e); }
+  }
+
+  /* ---------- 修① 主动重拉云端 + 重画（无需手刷） ---------- */
+  function refreshAll(){
+    try { if (typeof invalidateLearning === 'function') invalidateLearning(); } catch(e){}
+    var p1 = (typeof loadPosts === 'function') ? Promise.resolve().then(function(){ return loadPosts(); }) : Promise.resolve();
+    var p2 = (typeof loadLearning === 'function') ? Promise.resolve().then(function(){ return loadLearning(); }) : Promise.resolve();
+    Promise.all([p1,p2]).then(function(){
+      try {
+        if (typeof renderHomeLatest === 'function') renderHomeLatest();
+        if (typeof renderHomeLife === 'function') renderHomeLife();
+        if (typeof renderLearningList === 'function') renderLearningList();
+        if (typeof renderPosts === 'function' && typeof lifeList !== 'undefined') renderPosts(lifeList, false);
+        var lc = (typeof lifeList !== 'undefined' && lifeList) ? lifeList.length : '?';
+        var lr = (typeof learningList !== 'undefined' && learningList) ? learningList.length : '?';
+        console.log('%c[patchM] 已重拉云端并重画 → 随笔 lifeList=' + lc + ' 条 / 笔记 learningList=' + lr + ' 条','color:#16a34a;font-weight:700');
+        if (lc !== '?' && lc <= 2) console.warn('%c[patchM] 随笔仍≤2 条 → 内容多半没传上云（INSERT 权限没开）。点右下角🩺→开始体检→复制修复 SQL 去 Supabase 运行→回发布设备刷新→电脑再刷。','color:#d97706;font-weight:700');
+      } catch(e){ console.warn('[patchM] 重画异常', e); }
+    }).catch(function(e){ console.warn('[patchM] 重拉异常', e); });
+  }
+
+  /* ---------- 启动：先搬节点（DOM 已就绪），再重拉 ---------- */
+  function boot(){
+    moveListAboveEditor();
+    console.log('%c[patchM] 已挂载：极速离线 ' + (wasOff ? '由【开】→【关】' : '确认关') + ' ｜ 4 项修复就位','color:#16a34a;font-weight:700');
+    setTimeout(refreshAll, 700);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
