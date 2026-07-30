@@ -984,3 +984,110 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   setTimeout(function(){ flash('✅ 补丁E v1 已挂载：首页随笔已捏窄 + 首页"最新"已接管','#16a34a'); }, 1100);
   console.log('%c[patchE] v1 已挂载（首页捏窄 + 双最新兜底）','color:#16a34a;font-weight:700');
 })();
+/* ===== 补丁 F：真·发布即刷新 + 去弹窗 + 去扫描按钮（自包含·幂等·不改作者源码） =====
+   机制铁律：闭包函数引用拦不到（故不 wrap publishX/renderX），但
+   (1) localStorage.setItem 是全局对象方法→可拦截→当作"发布事件"信号，强制重画首页+列表；
+   (2) 列表容器 DOM 用 MutationObserver 监听→作者 render 完补合并"乐观池+本机草稿"→防 loadX 冲掉新条目；
+   两套配合：force 重画只由 setItem 触发一次，observer 用"合并有新增才重画"作闸门→不会死循环。
+   主动调用的 renderX / 读写的 learningList·lifeList / 池函数 均为全局→主动调用有效。
+   附带：捏窄 #homeLife（幂等）；秒删 D/E 横幅；隐藏右下"扫描/体检"悬浮按钮。
+*/
+(function(){
+  'use strict';
+  if(window.__patchF){ return; }
+  window.__patchF=1;
+
+  /* 捏窄首页"生活随笔·最新"（与 E 同值，幂等；若学习成长首页也右空，把 #homeLife 后加 ,#homeLatest） */
+  var st=document.createElement('style'); st.setAttribute('data-patch','F');
+  st.textContent='#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}#homeLife>*{max-width:100%}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function safe(fn){ try{ return fn(); }catch(e){ return undefined; } }
+  function L_get(){ try{ return learningList; }catch(e){ return null; } }
+  function L_set(a){ try{ learningList=a; return true; }catch(e){ return false; } }
+  function F_get(){ try{ return lifeList; }catch(e){ return null; } }
+  function F_set(a){ try{ lifeList=a; return true; }catch(e){ return false; } }
+
+  function merge(getL,setL,postedFn,draftFn,fp,fl){
+    try{
+      var L=getL(); if(!L) return false;
+      var have={}; L.forEach(function(x){ if(x&&x.id!=null) have[String(x.id)]=1; });
+      var add=[];
+      try{ (postedFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fp]=true; add.push(x); } }); }catch(e){}
+      try{ (draftFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fl]=true; add.push(x); } }); }catch(e){}
+      if(add.length){ var m=add.concat(L); try{ if(typeof sortPosts==='function') m=sortPosts(m); }catch(e){} setL(m); return true; }
+    }catch(e){}
+    return false;
+  }
+  function mergeL(){ return merge(L_get,L_set,function(){return getPostedLR();},function(){return getLR();},'_posted','_local'); }
+  function mergeF(){ return merge(F_get,F_set,function(){return getPostedLife();},function(){return loadLocal();},'_posted','_local'); }
+
+  function rLearn(){ try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){} }
+  function rHomeL(){ try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){} }
+  function rHomeF(){ try{ if(typeof renderHomeLife==='function') renderHomeLife(); }catch(e){} }
+
+  /* force：setItem 触发，无条件重画一次（首页+学习），靠 observer 闸门防循环 */
+  function forceRender(){ mergeL(); mergeF(); rLearn(); rHomeL(); rHomeF(); }
+  /* gated：observer 触发，合并有新增才重画（作者 render 完补刀，且自身收敛） */
+  function gatedRender(){ var a=mergeL(), b=mergeF(); if(a){ rLearn(); rHomeL(); } if(b){ rHomeF(); } }
+
+  /* (1) 拦截 localStorage.setItem —— 这是拦得到的"发布事件" */
+  try{
+    var origSet=localStorage.setItem.bind(localStorage);
+    var fT=0;
+    localStorage.setItem=function(k,v){
+      var ret; try{ ret=origSet(k,v); }catch(e){ throw e; }
+      if(!fT){ fT=setTimeout(function(){ fT=0; forceRender(); }, 220); }
+      return ret;
+    };
+  }catch(e){ console.warn('[patchF] setItem wrap fail', e); }
+
+  /* (2) 监听列表容器 DOM —— 作者 render 完补合并，堵 loadX 冲条目 */
+  function observeContainers(){
+    var ids=['learningGrid','homeLatest','homeLife','postList'], seen={};
+    ids.forEach(function(id){
+      var el=document.getElementById(id);
+      if(el && !seen[id]){ seen[id]=1;
+        new MutationObserver(function(){ if(!gT){ gT=setTimeout(function(){ gT=0; gatedRender(); }, 120); } })
+          .observe(el, {childList:true, subtree:true});
+      }
+    });
+    if(Object.keys(seen).length<ids.length){ setTimeout(observeContainers, 500); }
+  }
+  var gT=0;
+  observeContainers();
+
+  /* 隐藏右下"扫描/体检"悬浮按钮 + 秒删 D/E 横幅 */
+  function killScanner(){
+    var done=document.querySelector('[data-patch-kill="1"]');
+    if(done && getComputedStyle(done).display==='none'){ /* 已杀且仍隐藏，仅校验，不全扫 */ }
+    else{
+      var W=window.innerWidth, H=window.innerHeight;
+      var nodes=document.querySelectorAll('body *');
+      for(var i=0;i<nodes.length;i++){
+        var el=nodes[i]; if(el.getAttribute('data-patch-kill')) continue;
+        var cs=getComputedStyle(el); if(cs.position!=='fixed') continue;
+        var r=el.getBoundingClientRect();
+        if(r.width<30||r.width>90||r.height<30||r.height>90) continue;
+        if(Math.abs(r.width-r.height)>14) continue;
+        if(r.top < H*0.5) continue;                 /* 只要下半屏，排除右上按钮组 */
+        if((W-r.right)>70 || (H-r.bottom)>140) continue;  /* 必须贴右下角 */
+        var html=(el.innerHTML||'').toLowerCase();
+        var hit=/stethoscope|scan|听诊|扫描|检测|pulse|wave|diag|activity|heartbeat/.test(html) || (el.textContent||'').trim().length===0;
+        if(hit){ el.style.setProperty('display','none','important'); el.setAttribute('data-patch-kill','1'); }
+      }
+    }
+  }
+  function cleanFlashes(){
+    var s=document.querySelectorAll('[id^="patchE-flash"],[id^="patchD-flash"],[id="patchD-flash"],[id="patchE-flash"]');
+    for(var i=0;i<s.length;i++){ try{ s[i].remove(); }catch(e){} }
+  }
+  var bT=0;
+  new MutationObserver(function(){ if(!bT){ bT=setTimeout(function(){ bT=0; killScanner(); cleanFlashes(); }, 200); } })
+    .observe(document.body, {childList:true, subtree:true});
+
+  /* 安装即跑一次 */
+  setTimeout(function(){ forceRender(); killScanner(); cleanFlashes(); }, 800);
+  setTimeout(function(){ killScanner(); cleanFlashes(); }, 1600);
+  console.log('%c[patchF] 已挂载：真·发布即刷新 / 无页面弹窗 / 扫描按钮已隐藏','color:#16a34a;font-weight:700');
+})();
