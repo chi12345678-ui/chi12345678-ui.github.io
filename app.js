@@ -5,7 +5,7 @@ let sb = null;
 try { sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null; } catch (e) { sb = null; }
 
 /* ===== 工具 ===== */
-const esc = s => String(s == null ? '' : s).replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const withTimeout = (p, ms) => Promise.race([Promise.resolve(p), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
 function relTime(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -28,6 +28,7 @@ const isPinned = a => (a.tags || []).includes('置顶');
 function sortPosts(arr) { return arr.slice().sort((a, b) => { const pa = isPinned(a) ? 1 : 0, pb = isPinned(b) ? 1 : 0; if (pa !== pb) return pb - pa; return new Date(b.created_at) - new Date(a.created_at); }); }
 window.__isHTML = function (s) { return /<[a-z][\s\S]*>/i.test(s || ''); };
 function toRTEHTML(raw) { raw = raw == null ? '' : String(raw); if (window.__isHTML(raw)) return raw; return raw.split('\n').map(l => { const e = esc(l); return '<p>' + (e || '<br>') + '</p>'; }).join(''); }
+function normTxt(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
 
 /* ===== 乐观发布池：自己发的立刻可见、刷新不丢 ===== */
 const POSTED_LIFE_KEY = 'chi_posts_posted_v1', POSTED_LR_KEY = 'chi_lr_posted_v1';
@@ -38,6 +39,106 @@ const setPostedLR = a => localStorage.setItem(POSTED_LR_KEY, JSON.stringify(a));
 function dedupePostedArr(arr, key) { return arr.filter(p => { if (!p._posted) return true; const pt = new Date(p.created_at).getTime(); return !arr.some(o => !o._posted && !o._local && (o[key] || '') === (p[key] || '') && Math.abs(new Date(o.created_at).getTime() - pt) < 120000); }); }
 function confirmPostedArr(pool, data, key, setFn) { if (!pool.length) return; const remain = pool.filter(p => { const pt = new Date(p.created_at).getTime(); return !data.some(o => (o[key] || '') === (p[key] || '') && Math.abs(new Date(o.created_at).getTime() - pt) < 120000); }); if (remain.length !== pool.length) setFn(remain); }
 
+/* ===== 数据找回①：把备份并入"乐观显示池"（断网也可见、自动去重） ===== */
+function recoverLifeBackup() {
+  try {
+    const BACKUP = 'dg_life_migrated_backup';
+    const raw = localStorage.getItem(BACKUP);
+    if (!raw) return;
+    const backup = JSON.parse(raw);
+    if (!Array.isArray(backup) || !backup.length) return;
+    const hide = (() => { try { const r = JSON.parse(localStorage.getItem('chi_life_hide')); return Array.isArray(r) ? r : []; } catch (e) { return []; } })();
+    let posted = getPostedLife();
+    const have = {};
+    posted.forEach(p => { have['c:' + ((p && p.content) != null ? p.content : '')] = 1; });
+    let added = 0;
+    backup.forEach(p => {
+      if (!p) return;
+      if (p.id && hide.indexOf(p.id) >= 0) return;
+      const content = (p.content != null ? p.content : (p.txt || ''));
+      const key = 'c:' + content;
+      if (have[key]) return;
+      have[key] = 1;
+      let ca = p.created_at || null;
+      if (!ca && p.ts) { try { ca = new Date(p.ts).toISOString(); } catch (e) { ca = null; } }
+      if (!ca) ca = new Date().toISOString();
+      posted.push({ id: p.id || uid('LF'), content: content, tags: p.tags || [], images: p.images || [], created_at: ca });
+      added++;
+    });
+    if (added) { setPostedLife(posted); console.log('[recover] 备份已并入本机显示池 ' + added + ' 条（稍后自动上云）。'); }
+  } catch (e) { console.warn('[recover] 跳过：', e); }
+}
+
+/* ===== 数据找回②：把备份真正同步到云端（一次性、按内容去重、尽量保留原时间） ===== */
+async function migrateBackupToCloud() {
+  if (!sb) return;
+  if (localStorage.getItem('dg_life_migrated_done') === '1') return;
+  let backup = [];
+  try { const raw = localStorage.getItem('dg_life_migrated_backup'); if (raw) backup = JSON.parse(raw); } catch (e) { return; }
+  if (!Array.isArray(backup) || !backup.length) { localStorage.setItem('dg_life_migrated_done', '1'); return; }
+  const have = new Set();
+  try {
+    const res = await withTimeout(sb.from('posts').select('content').limit(1000), 8000);
+    if (res.error || !res.data) return;
+    res.data.forEach(p => have.add(normTxt(p.content)));
+  } catch (e) { return; }
+  let uploaded = 0, skipped = 0, failed = 0;
+  for (const p of backup) {
+    if (!p) continue;
+    const content = (p.content != null ? p.content : (p.txt || ''));
+    if (!normTxt(content) && !(p.images || []).length) continue;
+    const key = normTxt(content);
+    if (key && have.has(key)) { skipped++; continue; }
+    let ca = p.created_at || null;
+    if (!ca && p.ts) { try { ca = new Date(p.ts).toISOString(); } catch (e) { ca = null; } }
+    const payload = { content, tags: p.tags || [], images: p.images || [] };
+    let ok = false;
+    try {
+      let r;
+      if (ca) { r = await withTimeout(sb.from('posts').insert({ ...payload, created_at: ca }), 15000); if (r.error) r = await withTimeout(sb.from('posts').insert(payload), 15000); }
+      else { r = await withTimeout(sb.from('posts').insert(payload), 15000); }
+      ok = !r.error;
+    } catch (e) { try { const r2 = await withTimeout(sb.from('posts').insert(payload), 15000); ok = !r2.error; } catch (e2) { ok = false; } }
+    if (ok) { uploaded++; if (key) have.add(key); } else failed++;
+  }
+  if (failed === 0) {
+    localStorage.setItem('dg_life_migrated_done', '1');
+    if (uploaded > 0) { showToast(`备份已同步到云端：新上传 ${uploaded} 条，已存在跳过 ${skipped} 条 ✓`, 5000); loadPosts().then(() => renderHomeLife()); }
+    else if (skipped > 0) { console.log('[migrate] 备份均已在云端，无需重复上传。'); }
+  } else {
+    showToast(`备份同步：成功 ${uploaded}、跳过 ${skipped}、失败 ${failed}（刷新后自动重试）`, 6000);
+  }
+}
+
+/* ===== 一键导出全部随笔为 JSON ===== */
+function exportLifeJSON() {
+  const data = lifeList.map(p => ({
+    id: p.id,
+    content: p.content != null ? p.content : (p.txt || ''),
+    tags: p.tags || [],
+    images: p.images || [],
+    created_at: p.created_at || (p.ts ? new Date(p.ts).toISOString() : null)
+  }));
+  if (!data.length) { showToast('暂无随笔可导出'); return; }
+  const payload = { exported_at: new Date().toISOString(), count: data.length, posts: data };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '生活随笔备份_' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`已导出 ${data.length} 条随笔 ✓`);
+}
+function injectExportBtn() {
+  const list = document.getElementById('postList');
+  if (!list || document.getElementById('lifeExportBtn')) return;
+  const bar = document.createElement('div');
+  bar.className = 'life-toolbar';
+  bar.innerHTML = '<button type="button" class="btn btn-ghost" id="lifeExportBtn" title="把当前全部随笔打包成 JSON 下载到本机"><i class="fas fa-file-export"></i> 导出全部随笔 (JSON)</button>';
+  list.parentNode.insertBefore(bar, list);
+  document.getElementById('lifeExportBtn').addEventListener('click', exportLifeJSON);
+}
+
 /* ===== 路由 ===== */
 const views = [...document.querySelectorAll('.view')];
 const navLinks = [...document.querySelectorAll('#nav a')];
@@ -46,25 +147,14 @@ function showView(n) { views.forEach(v => v.classList.toggle('active', v.dataset
 function setNav(n) { navLinks.forEach(a => a.classList.toggle('active', a.dataset.nav === n)); }
 function go(target) { const cur = location.hash.replace(/^#/, ''); if (cur === target) { route(); } else { location.hash = target; } }
 function curHash() { return location.hash.replace(/^#/, '') || 'home'; }
-
-function primeLearningSync() {
-  if (learningList.length) return;
-  learningList = sortPosts([...SEED_LEARNING, ...getLR().map(x => ({ ...x, _local: true })), ...getPostedLR().map(x => ({ ...x, _posted: true }))]);
-  learningList = applyLocalOverlay(learningList);
-}
-function primeLifeSync() {
-  if (lifeList.length) return;
-  const hide = getLifeHide();
-  lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
-}
-
+function primeLearningSync() { if (learningList.length) return; learningList = sortPosts([...SEED_LEARNING, ...getLR().map(x => ({ ...x, _local: true })), ...getPostedLR().map(x => ({ ...x, _posted: true }))]); learningList = applyLocalOverlay(learningList); }
+function primeLifeSync() { if (lifeList.length) return; const hide = getLifeHide(); lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]); }
 async function route() {
   const h = curHash(); const [view, param] = h.split('/');
   if (view === 'read') {
     primeLearningSync();
     const art = learningList.find(a => String(a.id) === param);
-    if (art) { renderRead(art, false); showView('read'); setNav('learning'); }
-    else { showView('learning'); setNav('learning'); }
+    if (art) { renderRead(art, false); showView('read'); setNav('learning'); } else { showView('learning'); setNav('learning'); }
     loadLearning().then(() => { if (curHash() === 'read/' + param) { const a2 = learningList.find(x => String(x.id) === param); if (a2) renderRead(a2, false); else go('learning'); } });
     return;
   }
@@ -80,7 +170,6 @@ async function route() {
     loadPosts().then(() => { if (curHash() === 'home') renderHomeLife(); });
   }
 }
-
 document.addEventListener('click', e => {
   const sync = e.target.closest('.sync-btn'); if (sync) { e.preventDefault(); e.stopPropagation(); resyncOne(sync.dataset.sync); return; }
   const ed = e.target.closest('[data-edit]'); if (ed) { e.preventDefault(); e.stopPropagation(); editLearning(ed.dataset.edit); return; }
@@ -130,8 +219,7 @@ async function loadLearning() {
       }
     }
     const cloudArr = cloud ? cloud.map(p => ({ ...p, emoji: p.emoji || '📝' })) : null;
-    const useSeed = !cloudArr || cloudArr.length === 0;
-    const base = (cloudArr || []).concat(useSeed ? SEED_LEARNING : []);
+    const useSeed = !cloudArr || cloudArr.length === 0; const base = (cloudArr || []).concat(useSeed ? SEED_LEARNING : []);
     const postedLR = getPostedLR().map(x => ({ ...x, _posted: true }));
     learningList = sortPosts([...base, ...getLR().map(x => ({ ...x, _local: true })), ...postedLR]);
     learningList = applyLocalOverlay(learningList);
@@ -143,8 +231,7 @@ async function loadLearning() {
 function invalidateLearning() { _lp = null; }
 function cardHTML(p, i) {
   const imgs = p.images || []; const cover = imgs[0] ? `background-image:url('${imgs[0]}')` : `background:${GRADS[i % GRADS.length]}`;
-  const tags = (p.tags || []).slice(0, 4).map(t => `<span>${esc(t)}</span>`).join('');
-  const ex = (p.content || '').replace(/<[^>]+>/g, '').replace(/https?:\/\/\S+/g, '').replace(/\n+/g, ' ').trim().slice(0, 120);
+  const tags = (p.tags || []).slice(0, 4).map(t => `<span>${esc(t)}</span>`).join(''); const ex = (p.content || '').replace(/<[^>]+>/g, '').replace(/https?:\/\/\S+/g, '').replace(/\n+/g, ' ').trim().slice(0, 120);
   const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : ''; const localFlag = p._local ? `<span class="draft-flag">📴 本机</span>` : '';
   const mgmt = `<div class="pc-mgmt"><button class="pc-m" data-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button>${p._local ? `<button class="pc-m sync-btn" data-sync="${esc(p.id)}" title="同步云端"><i class="fas fa-rotate"></i></button>` : ''}</div>`;
   return `<article class="postcard postcard--row" data-id="${esc(p.id)}"><div class="pc-thumb" style="${cover}"><span class="pc-emoji">${p.emoji || '📝'}</span></div><div class="pc-main"><div class="pc-top"><span class="pc-date">${fmtDate(p.created_at || new Date().toISOString())}</span>${pinned}${localFlag}</div><h3 class="pc-title">${esc(p.title || '无标题')}</h3><p class="pc-ex">${esc(ex)}</p><div class="pc-tags">${tags}</div></div>${mgmt}</article>`;
@@ -160,23 +247,18 @@ async function resyncOne(id) { const d = getLR(); const x = d.find(a => a.id ===
 function renderRead(p, preview) {
   const tags = (p.tags || []).map(t => `<span class="mtag">${esc(t)}</span>`).join('');
   const imgs = p.images || [];
-  const gallery = imgs.length ? `<div class="article-gallery">${imgs.map(s => `<div class="gal-item" data-img="${s}"><img src="${s}" alt=""></div>`).join('')}</div>` : '';
-  const links = p.links || [];
+  const gallery = imgs.length ? `<div class="article-gallery">${imgs.map(s => `<div class="gal-item" data-img="${s}"><img src="${s}" alt=""></div>`).join('')}</div>` : ''; const links = p.links || [];
   const refs = links.length ? `<div class="article-refs"><h4><i class="fas fa-link"></i> 参考链接</h4>${links.map(l => `<a class="ref-card" href="${esc(l.url)}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i><span><b>${esc(l.text || l.url)}</b><small>${esc(l.url)}</small></span><i class="fas fa-external-link-alt"></i></a>`).join('')}</div>` : '';
   let nav = '';
   if (!preview) {
     const idx = learningList.findIndex(a => String(a.id) === String(p.id));
-    const newer = idx > 0 ? learningList[idx - 1] : null; const older = idx >= 0 && idx < learningList.length - 1 ? learningList[idx + 1] : null;
-    const card = (a, dir, cls) => a ? `<div class="an ${cls}" data-id="${esc(a.id)}"><i class="fas fa-arrow-${dir}"></i><span><small>${dir === 'left' ? '上一篇' : '下一篇'}</small><b>${esc(a.title || '无标题')}</b></span></div>` : `<div class="an disabled"><i class="fas fa-arrow-${dir}"></i><span><small>${dir === 'left' ? '上一篇' : '下一篇'}</small><b>没有了</b></span></div>`;
+    const newer = idx > 0 ? learningList[idx - 1] : null; const older = idx >= 0 && idx < learningList.length - 1 ? learningList[idx + 1] : null; const card = (a, dir, cls) => a ? `<div class="an ${cls}" data-id="${esc(a.id)}"><i class="fas fa-arrow-${dir}"></i><span><small>${dir === 'left' ? '上一篇' : '下一篇'}</small><b>${esc(a.title || '无标题')}</b></span></div>` : `<div class="an disabled"><i class="fas fa-arrow-${dir}"></i><span><small>${dir === 'left' ? '上一篇' : '下一篇'}</small><b>没有了</b></span></div>`;
     nav = `<div class="article-nav">${card(older, 'left', '')}${card(newer, 'right', 'next')}</div>`;
   }
-  const localBar = p._local ? `<div class="preview-bar"><i class="fas fa-hard-drive"></i> 这篇还在本机，联网后会自动同步。<button class="btn btn-ghost" id="syncNow" style="padding:7px 14px"><i class="fas fa-rotate"></i> 立即同步</button></div>` : '';
-  const bar = preview ? `<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>` : `<div class="read-bar"><span class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</span><span class="rb-spacer"></span><button class="btn btn-ghost rb-btn" id="editCur"><i class="fas fa-pen"></i> 编辑</button><button class="btn btn-ghost rb-btn rb-del" id="delCur"><i class="fas fa-trash"></i> 删除</button></div>`;
-  document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML && window.__isHTML(p.content)) ? p.content : toRTEHTML(p.content || '')}</div>${gallery}${refs}${nav}</article>`;
-  document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
+  const localBar = p._local ? `<div class="preview-bar"><i class="fas fa-hard-drive"></i> 这篇还在本机，联网后会自动同步。<button class="btn btn-ghost" id="syncNow" style="padding:7px 14px"><i class="fas fa-rotate"></i> 立即同步</button></div>` : ''; const bar = preview ? `<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>` : `<div class="read-bar"><span class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</span><span class="rb-spacer"></span><button class="btn btn-ghost rb-btn" id="editCur"><i class="fas fa-pen"></i> 编辑</button><button class="btn btn-ghost rb-btn rb-del" id="delCur"><i class="fas fa-trash"></i> 删除</button></div>`;
+  document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML && window.__isHTML(p.content)) ? p.content : toRTEHTML(p.content || '')}</div>${gallery}${refs}${nav}</article>`; document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
   const bl = document.getElementById('backList'); if (bl) bl.onclick = () => go('learning');
-  const be = document.getElementById('backEdit'); if (be) be.onclick = () => go('learning');
-  const sn = document.getElementById('syncNow'); if (sn) sn.onclick = () => resyncOne(p.id);
+  const be = document.getElementById('backEdit'); if (be) be.onclick = () => go('learning'); const sn = document.getElementById('syncNow'); if (sn) sn.onclick = () => resyncOne(p.id);
   const ec = document.getElementById('editCur'); if (ec) ec.onclick = () => editLearning(p.id);
   const dc = document.getElementById('delCur'); if (dc) dc.onclick = () => deleteLearning(p.id, !!p._local);
   document.getElementById('readInner').querySelectorAll('.an[data-id]').forEach(a => a.onclick = () => go('read/' + a.dataset.id));
@@ -203,8 +285,7 @@ async function deleteLearning(id, isLocal) {
   if (isLocal) { setLR(getLR().filter(a => String(a.id) !== sid)); }
   else if (isSeed) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); }
   else if (sb) {
-    let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
-    if (!ok) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); if (curHash().startsWith('read/')) go('learning'); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); return; }
+    let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } } if (!ok) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); if (curHash().startsWith('read/')) go('learning'); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); return; }
   } else { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); }
   invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest();
   if (curHash().startsWith('read/')) go('learning');
@@ -227,8 +308,7 @@ async function publishLearning() {
     const sid = String(editingId); const isSeed = sid.indexOf('seed-') === 0;
     let ok = false;
     const ppLR = getPostedLR(); const piLR = ppLR.findIndex(a => String(a.id) === sid);
-    if (piLR >= 0) { ppLR[piLR] = Object.assign({}, ppLR[piLR], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }); setPostedLR(ppLR); ok = true; }
-    if (typeof editingLocal !== 'undefined' && editingLocal) {
+    if (piLR >= 0) { ppLR[piLR] = Object.assign({}, ppLR[piLR], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }); setPostedLR(ppLR); ok = true; } if (typeof editingLocal !== 'undefined' && editingLocal) {
       const d = getLR(); const idx = d.findIndex(a => String(a.id) === sid);
       if (idx >= 0) { d[idx] = Object.assign({}, d[idx], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }); setLR(d); ok = true; }
     } else if (isSeed) {
@@ -242,13 +322,11 @@ async function publishLearning() {
   }
   const p = gatherPost(); if (!p.title) { document.getElementById('lrTitle').focus(); showToast('请填写标题'); return; }
   const btn = document.getElementById('lrPub'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发布中…';
-  let ok = false;
-  if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('learning').insert({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, emoji: '📝' }), 20000); ok = !res.error; } catch (e) { } } }
+  let ok = false; if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('learning').insert({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, emoji: '📝' }), 20000); ok = !res.error; } catch (e) { } } }
   btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> 发布';
   document.getElementById('lrTitle').value = ''; if (window.__rte) window.__rte.clear(); else document.getElementById('lrContent').value = ''; document.getElementById('lrTags').value = ''; lrImages = []; lrLinks = []; renderThumbs(); renderLinkList();
   if (ok) {
-    const pool = getPostedLR(); pool.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString() }); setPostedLR(pool);
-    invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已发布 ✓ 同步到云端'); return;
+    const pool = getPostedLR(); pool.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString() }); setPostedLR(pool); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已发布 ✓ 同步到云端'); return;
   }
   const d = getLR(); d.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString(), _local: true }); setLR(d);
   invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest();
@@ -274,9 +352,17 @@ function postHTML(p) {
   const ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
   const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
   const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join('');
-  const imgs = p.images || []; const imgHtml = imgs.map(s => `<img class="limg" src="${s}" data-img="${s}" alt="">`).join('');
+  /* —— 九宫格图片：全部平铺，1/2/3 列自适应，保留 .limg 以支持点击放大 —— */
+  const imgs = p.images || [];
+  let imgHtml = '';
+  if (imgs.length) {
+    const cols = imgs.length >= 3 ? 3 : imgs.length;
+    const cells = imgs.map(s => `<div class="lg-cell"><img class="limg" src="${esc(s)}" data-img="${esc(s)}" alt="" loading="lazy"></div>`).join('');
+    imgHtml = `<div class="life-grid lg-c${cols}">${cells}</div>`;
+  }
   const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : '';
   const flag = p._local ? `<span class="draft-flag">📴 本机</span>` : '';
+  /* —— 删除/编辑沿用原版事件委托属性（data-life-edit / data-life-del），绝不改成 onclick —— */
   const mgmt = p._seed ? '' : `<div class="life-mgmt"><button class="pc-m" data-life-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-life-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button></div>`;
   return `<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div>${pinned}${flag}${mgmt}</div><div class="${ptxtCls}">${txtHtml}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`;
 }
@@ -284,8 +370,7 @@ function mergeByTime(a, b) { return sortPosts([...a, ...b]); }
 function renderPosts(posts, off) { if (!posts || !posts.length) { postList.innerHTML = off ? '<div class="no-result">离线暂存模式，先写一条存本机吧 ✍️</div>' : '<div class="no-result">还没有随笔，写第一条吧 ✍️</div>'; return; } postList.innerHTML = posts.map(postHTML).join(''); }
 function renderHomeLife() {
   const g = document.getElementById('homeLife'); if (!g) return;
-  const h = document.getElementById('homeLifeH'), m = document.getElementById('homeLifeMore');
-  const list = lifeList.slice(0, 4);
+  const h = document.getElementById('homeLifeH'), m = document.getElementById('homeLifeMore'); const list = lifeList.slice(0, 4);
   if (!list.length) { if (h) h.style.display = 'none'; if (m) m.style.display = 'none'; g.innerHTML = ''; return; }
   if (h) h.style.display = 'flex'; if (m) m.style.display = 'flex'; g.innerHTML = list.map(postHTML).join('');
 }
@@ -294,20 +379,17 @@ async function loadPosts() {
   if (sb) { try { const res = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); data = res.data; err = res.error; } catch (e) { err = e; } }
   const hide = getLifeHide();
   if (err || data === null) {
-    cloudOK = false; setLiveBadge(false); setSubText(false);
-    lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+    cloudOK = false; setLiveBadge(false); setSubText(false); lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
     renderPosts(lifeList, true); return;
   }
   cloudOK = true; setLiveBadge(true); setSubText(true);
-  const local = loadLocal(); if (local.length) { const remain = []; for (const x of local) { let ok = false; try { const r = await withTimeout(sb.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 12000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } saveLocal(remain); if (remain.length !== local.length) { try { const r2 = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) data = r2.data; } catch (e) { } } }
-  seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
+  const local = loadLocal(); if (local.length) { const remain = []; for (const x of local) { let ok = false; try { const r = await withTimeout(sb.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 12000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } saveLocal(remain); if (remain.length !== local.length) { try { const r2 = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) data = r2.data; } catch (e) { } } } seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
   const seedLife = (!data || !data.length) ? SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })) : [];
   lifeList = mergeByTime(data || [], seedLife.concat(loadLocal().map(x => ({ ...x, _local: true }))));
   const postedLife = getPostedLife().map(x => ({ ...x, _posted: true }));
   lifeList = sortPosts([...lifeList, ...postedLife]);
   lifeList = dedupePostedArr(lifeList, 'content');
-  confirmPostedArr(getPostedLife(), data || [], 'content', setPostedLife);
-  renderPosts(lifeList, false);
+  confirmPostedArr(getPostedLife(), data || [], 'content', setPostedLife); renderPosts(lifeList, false);
 }
 function subscribeRT() { if (!sb) return; try { sb.channel('posts-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, pl => { if (!cloudOK) return; const p = pl.new; if (!p || seenIds.has(p.id)) return; seenIds.add(p.id); const e = postList.querySelector('.no-result'); if (e) e.remove(); postList.insertAdjacentHTML('afterbegin', postHTML(p)); }).subscribe(); } catch (e) { } }
 function setLifeEditorMode(on) { postPub.innerHTML = on ? SAVE_HTML : PUB_HTML; let cb = document.getElementById('lifeCancel'); if (on && !cb) { postPub.insertAdjacentHTML('afterend', '<button class="btn btn-ghost" id="lifeCancel" style="margin-left:8px"><i class="fas fa-xmark"></i> 取消编辑</button>'); document.getElementById('lifeCancel').onclick = clearLifeEditor; } else if (!on && cb) cb.remove(); }
@@ -318,15 +400,13 @@ async function deleteLife(id, isLocal) {
   const sid = String(id);
   const target = lifeList.find(p => String(p.id) === sid);
   const isSeed = !!(target && target._seed);
-  const pp = getPostedLife(); if (pp.some(a => String(a.id) === sid)) setPostedLife(pp.filter(a => String(a.id) !== sid));
-  if (isLocal) { saveLocal(loadLocal().filter(a => String(a.id) !== sid)); }
+  const pp = getPostedLife(); if (pp.some(a => String(a.id) === sid)) setPostedLife(pp.filter(a => String(a.id) !== sid)); if (isLocal) { saveLocal(loadLocal().filter(a => String(a.id) !== sid)); }
   else if (isSeed) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
   else if (sb) {
     let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
     if (!ok) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); if (lifeEditId === sid) clearLifeEditor(); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); loadPosts(); return; }
   } else { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
-  if (lifeEditId === sid) clearLifeEditor();
-  showToast('已删除 ✓'); loadPosts();
+  if (lifeEditId === sid) clearLifeEditor(); showToast('已删除 ✓'); loadPosts();
 }
 async function publishLife() {
   if (lifeEditId) {
@@ -337,21 +417,18 @@ async function publishLife() {
     const sid = String(lifeEditId); let ok = false;
     const pp = getPostedLife(); const pi = pp.findIndex(a => String(a.id) === sid);
     if (pi >= 0) { pp[pi] = Object.assign({}, pp[pi], { content, tags, images: imgs }); setPostedLife(pp); ok = true; }
-    if (lifeEditLocal) { const l = loadLocal(); const idx = l.findIndex(a => String(a.id) === sid); if (idx >= 0) { l[idx] = Object.assign({}, l[idx], { content, tags, images: imgs }); saveLocal(l); ok = true; } }
-    else if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').update({ content, tags, images: imgs }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } } }
+    if (lifeEditLocal) { const l = loadLocal(); const idx = l.findIndex(a => String(a.id) === sid); if (idx >= 0) { l[idx] = Object.assign({}, l[idx], { content, tags, images: imgs }); saveLocal(l); ok = true; } } else if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').update({ content, tags, images: imgs }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } } }
     postPub.disabled = false;
     if (ok) { clearLifeEditor(); showToast('已保存修改 ✓'); loadPosts(); return; }
     postPub.innerHTML = SAVE_HTML; showToast('保存失败 · 原内容未丢失'); return;
   }
   const content = (window.__rteLife && window.__rteLife.isEmpty()) ? '' : postInput.value.trim();
-  if (!content && !lifeImages.length) { if (window.__rteLife) window.__rteLife.focus(); else postInput.focus(); return; }
-  const tags = postTags.value.split(/[,，]/).map(t => t.trim()).filter(Boolean); const imgs = lifeImages.slice(); postPub.disabled = true; postPub.textContent = '发布中…';
+  if (!content && !lifeImages.length) { if (window.__rteLife) window.__rteLife.focus(); else postInput.focus(); return; } const tags = postTags.value.split(/[,，]/).map(t => t.trim()).filter(Boolean); const imgs = lifeImages.slice(); postPub.disabled = true; postPub.textContent = '发布中…';
   let ok = false; if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('posts').insert({ content, tags, images: imgs }), 20000); ok = !res.error; } catch (e) { } } }
   postPub.innerHTML = PUB_HTML; postPub.disabled = false;
   if (window.__rteLife) window.__rteLife.clear(); else postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs();
   if (ok) {
-    const pool = getPostedLife(); pool.unshift({ id: uid('LF'), content, tags, images: imgs, created_at: new Date().toISOString() }); setPostedLife(pool);
-    showToast('已发布 ✓ 实时同步中…'); loadPosts(); return;
+    const pool = getPostedLife(); pool.unshift({ id: uid('LF'), content, tags, images: imgs, created_at: new Date().toISOString() }); setPostedLife(pool); showToast('已发布 ✓ 实时同步中…'); loadPosts(); return;
   }
   const l = loadLocal(); l.unshift({ id: uid('LF'), content, tags, images: imgs, ts: Date.now(), created_at: new Date().toISOString(), _local: true }); saveLocal(l);
   cloudOK = false; setLiveBadge(false); setSubText(false);
@@ -403,16 +480,14 @@ function makeRTE(ta, opts) {
     g('字号', ['小|fs:15px', '标准|fs:17px', '大|fs:21px', '特大|fs:27px']), sep(),
     b('fa-bold', '加粗', 'bold'), b('fa-italic', '斜体', 'italic'), b('fa-underline', '下划线', 'underline'), sep(),
     g('行距', ['紧凑|lh:1.5', '舒适|lh:1.85', '宽松|lh:2.2']), g('段距', ['紧|pg:6px', '中|pg:14px', '松|pg:24px']), sep(),
-    b('fa-align-left', '左对齐', 'justifyLeft'), b('fa-align-center', '居中', 'justifyCenter'), b('fa-align-right', '右对齐', 'justifyRight'), sep(),
-    b('fa-quote-left', '引用', 'quote'), b('fa-list-ul', '无序列表', 'insertUnorderedList'), b('fa-list-ol', '有序列表', 'insertOrderedList'),
+    b('fa-align-left', '左对齐', 'justifyLeft'), b('fa-align-center', '居中', 'justifyCenter'), b('fa-align-right', '右对齐', 'justifyRight'), sep(), b('fa-quote-left', '引用', 'quote'), b('fa-list-ul', '无序列表', 'insertUnorderedList'), b('fa-list-ol', '有序列表', 'insertOrderedList'),
     b('fa-link', '链接', 'link'), b('fa-image', '图片', 'img'), b('fa-grip-lines', '分割线', 'insertHorizontalRule'), sep(),
     b('fa-plus', '放大字号', 'fontSizePlus'), b('fa-minus', '缩小字号', 'fontSizeMinus'), sep(),
     b('fa-eraser', '清除格式', 'removeFormat'), b('fa-rotate-left', '撤销', 'undo')
   ].join('');
   var ed = document.createElement('div'); ed.className = 'rte'; ed.contentEditable = 'true';
   ed.setAttribute('data-ph', opts.ph || '');
-  ed.style.setProperty('--rte-lh', '1.85'); ed.style.setProperty('--rte-pg', '14px');
-  ta.parentNode.insertBefore(wrap, ta); wrap.appendChild(bar); wrap.appendChild(ed); wrap.appendChild(ta); ta.style.display = 'none';
+  ed.style.setProperty('--rte-lh', '1.85'); ed.style.setProperty('--rte-pg', '14px'); ta.parentNode.insertBefore(wrap, ta); wrap.appendChild(bar); wrap.appendChild(ed); wrap.appendChild(ta); ta.style.display = 'none';
   function syncEmpty() { ed.classList.toggle('is-empty', !ed.textContent.trim() && !ed.querySelector('img,li,blockquote,hr')); }
   function saveRange() { var s = getSelection(); if (s && s.rangeCount && ed.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange(); }
   function restoreRange() { if (savedRange) { var s = getSelection(); s.removeAllRanges(); s.addRange(savedRange); } }
@@ -425,8 +500,7 @@ function makeRTE(ta, opts) {
     if (!refNode || !ed.contains(refNode)) refNode = ed;
     var cur = parseInt(getComputedStyle(refNode).fontSize) || 16;
     var ns = Math.min(40, Math.max(12, cur + dir * 2));
-    if (s && s.rangeCount && !s.isCollapsed) {
-      var rng = s.getRangeAt(0);
+    if (s && s.rangeCount && !s.isCollapsed) { var rng = s.getRangeAt(0);
       try { var sp = document.createElement('span'); sp.style.fontSize = ns + 'px'; rng.surroundContents(sp); }
       catch (e) { var f = rng.extractContents(); var sp2 = document.createElement('span'); sp2.style.fontSize = ns + 'px'; sp2.appendChild(f); rng.insertNode(sp2); }
     } else {
@@ -438,8 +512,7 @@ function makeRTE(ta, opts) {
   function run(c) {
     try { document.execCommand('styleWithCSS', false, 'true'); } catch (e) { }
     if (c === 'quote') document.execCommand('formatBlock', false, 'blockquote');
-    else if (c === 'link') { var u = prompt('链接地址 https://…'); if (u) document.execCommand('createLink', false, u); }
-    else if (c === 'img') { var ui = prompt('图片地址 https://…'); if (ui) document.execCommand('insertImage', false, ui); }
+    else if (c === 'link') { var u = prompt('链接地址 https://…'); if (u) document.execCommand('createLink', false, u); } else if (c === 'img') { var ui = prompt('图片地址 https://…'); if (ui) document.execCommand('insertImage', false, ui); }
     else if (c === 'removeFormat') { document.execCommand('removeFormat'); document.execCommand('formatBlock', false, 'p'); }
     else if (c === 'fontSizePlus') changeSelFontSize(1);
     else if (c === 'fontSizeMinus') changeSelFontSize(-1);
@@ -448,12 +521,10 @@ function makeRTE(ta, opts) {
   }
   function after() { descSet(ed.innerHTML); syncEmpty(); saveRange(); }
   ed.addEventListener('input', function () { descSet(ed.innerHTML); syncEmpty(); saveRange(); });
-  ed.addEventListener('mouseup', saveRange); ed.addEventListener('keyup', saveRange);
-  ed.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (typeof opts.onCtrlEnter === 'function') opts.onCtrlEnter(); } });
+  ed.addEventListener('mouseup', saveRange); ed.addEventListener('keyup', saveRange); ed.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (typeof opts.onCtrlEnter === 'function') opts.onCtrlEnter(); } });
   bar.addEventListener('mousedown', function (e) { e.preventDefault(); });
   bar.addEventListener('click', function (e) { var btn = e.target.closest('[data-sub],[data-cmd]'); if (!btn) return; ed.focus(); restoreRange(); if (btn.dataset.sub) { var p = btn.dataset.sub.split(':'); applyVar(p[0], p[1]); } else run(btn.dataset.cmd); });
-  Object.defineProperty(ta, 'value', { configurable: true, set: function (v) { descSet(v); if (ed.innerHTML !== (v || '')) { ed.innerHTML = v || ''; syncEmpty(); } }, get: function () { return proto.get.call(ta); } });
-  syncEmpty();
+  Object.defineProperty(ta, 'value', { configurable: true, set: function (v) { descSet(v); if (ed.innerHTML !== (v || '')) { ed.innerHTML = v || ''; syncEmpty(); } }, get: function () { return proto.get.call(ta); } }); syncEmpty();
   return {
     ed: ed,
     isEmpty: function () { return !ed.textContent.trim() && !ed.querySelector('img,li,blockquote,hr,a,table'); },
@@ -463,6 +534,9 @@ function makeRTE(ta, opts) {
 }
 
 /* ===== 启动 ===== */
+recoverLifeBackup();      /* ① 备份先并入本机显示池：断网也可见 */
+migrateBackupToCloud();   /* ② 备份按内容去重真正上传云端：所有设备正常显示，不重复 */
+injectExportBtn();        /* ③ 注入"导出全部随笔 JSON"按钮 */
 window.addEventListener('hashchange', route);
 renderCases(); renderCerts();
 primeLearningSync(); primeLifeSync();
@@ -495,182 +569,36 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mkBtn); else mkBtn();
   if (window.OFFLINE) setTimeout(toastOFF, 900);
 })();
-/* ===== 生活随笔 v4：终极修复版（数据找回 + 样式优化 + 全功能恢复） ===== */
+
+/* ===== 样式增强（纯 CSS：字体加大 / 删除键常驻 / 九宫格 / 导出按钮 / 暗色适配；并清掉旧补丁残留样式） ===== */
 (function () {
-    /* —— 1. 注入优化样式（字体加大、图片全显、删除键常驻） —— */
-    var css = [
-        /* 列表与详情页通用 */
-        '.post .ptxt { font-size: 16.5px !important; line-height: 1.8 !important; color: #333; }',
-        '.post .ptxt p { margin-bottom: 8px; }',
-        '.post .ptags { margin-top: 10px; font-size: 13px; color: #666; }',
-        
-        /* 九宫格图片 - 首页与列表页全部平铺，不再折叠 */
-        '.life-grid { display: grid; gap: 8px; margin: 12px 0; max-width: 100%; }',
-        '.life-grid.lg-c1 { grid-template-columns: 1fr; max-width: 80%; }',
-        '.life-grid.lg-c2 { grid-template-columns: repeat(2, 1fr); }',
-        '.life-grid.lg-c3 { grid-template-columns: repeat(3, 1fr); }',
-        '.lg-cell { position: relative; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px; background: #f0f0f0; cursor: pointer; }',
-        '.lg-cell img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }',
-        '.lg-cell:hover img { transform: scale(1.05); }',
-        
-        /* 首页卡片样式 - 保持圆润风格 */
-        '#homeLife { display: flex; flex-direction: column; gap: 16px; padding: 10px 0; }',
-        '#homeLife .post { 
-            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
-            border: 1px solid rgba(0,0,0,0.05);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            position: relative; /* 为删除按钮定位 */
-        }',
-        '#homeLife .post:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }',
-        
-        /* 头部信息区 */
-        '#homeLife .ph { display: flex; align-items: center; margin-bottom: 12px; position: relative; }',
-        '#homeLife .pav { width: 40px; height: 40px; border-radius: 12px; background: #eee; margin-right: 12px; object-fit: cover; }',
-        '#homeLife .pinfo { flex: 1; }',
-        '#homeLife .who { font-weight: bold; font-size: 15px; color: #222; }',
-        '#homeLife .when { font-size: 12px; color: #999; margin-top: 2px; }',
-        
-        /* 管理按钮（删除/编辑）- 常驻右上角，手机端可见 */
-        '.life-mgmt { 
-            position: absolute; top: 15px; right: 15px; 
-            display: flex; gap: 8px; z-index: 10;
-        }',
-        '.pc-m { 
-            background: rgba(255,255,255,0.8); border: 1px solid #eee; 
-            width: 32px; height: 32px; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; color: #666; transition: all 0.2s;
-            backdrop-filter: blur(4px);
-        }',
-        '.pc-m:hover { background: #fff; color: #d9534f; border-color: #d9534f; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }',
-        '.pc-m-del:hover { color: #d9534f; }',
-
-        /* 暗色模式适配 */
-        '[data-theme="dark"] #homeLife .post { background: rgba(30,30,30,0.9); border-color: rgba(255,255,255,0.1); color: #eee; }',
-        '[data-theme="dark"] .lg-cell { background: #333; }',
-        '[data-theme="dark"] .post .ptxt { color: #ddd; }'
-    ].join('');
-    
-    var st = document.createElement('style');
-    st.setAttribute('data-patch', 'life-grid-v4');
-    st.textContent = css;
-    document.head.appendChild(st);
-
-    /* —— 2. 核心逻辑：从备份中恢复数据并重写渲染 —— */
-    function initLifeGridV4() {
-        // 检查必要的函数是否存在
-        if (typeof window.postHTML === 'undefined' || typeof window.renderHomeLife === 'undefined') {
-            console.warn('v4 Patch: 等待主程序加载...');
-            setTimeout(initLifeGridV4, 500);
-            return;
-        }
-
-        // A. 数据救援：从 backup 读取那 6 条数据
-        var BACKUP_KEY = 'dg_life_migrated_backup';
-        var HIDE_KEY = 'chi_life_hide';
-        var rawData = localStorage.getItem(BACKUP_KEY);
-        
-        if (rawData) {
-            try {
-                var backupList = JSON.parse(rawData);
-                if (Array.isArray(backupList) && backupList.length > 0) {
-                    // 获取隐藏名单（内置种子 sl1, sl2）
-                    var hideList = [];
-                    try { hideList = JSON.parse(localStorage.getItem(HIDE_KEY) || '[]'); } catch(e){}
-                    
-                    // 过滤掉已隐藏的条目，合并到当前列表（如果当前列表为空）
-                    // 注意：这里我们假设如果当前 lifeList 为空，则完全使用备份数据
-                    // 如果有 lifeList 变量，我们尝试替换它或补充它
-                    if (typeof window.lifeList !== 'undefined') {
-                        // 简单的去重合并逻辑：以 ID 为准
-                        var currentIds = {};
-                        window.lifeList.forEach(function(item){ currentIds[item.id] = true; });
-                        
-                        backupList.forEach(function(item) {
-                            if (!currentIds[item.id] && hideList.indexOf(item.id) === -1) {
-                                window.lifeList.push(item);
-                            }
-                        });
-                        
-                        // 按时间倒序排序
-                        window.lifeList.sort(function(a, b) {
-                            return (b.ts || b.created_at || 0) - (a.ts || a.created_at || 0);
-                        });
-                        
-                        // 同步回本地存储（防止下次刷新又丢了）
-                        if (typeof window.saveLocal === 'function') {
-                            window.saveLocal(window.lifeList);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('v4 Patch: 数据恢复失败', e);
-            }
-        }
-
-        // B. 重写 postHTML：实现图片全显 + 删除键常驻
-        // 保存原始函数以防万一，但这里直接覆盖以实现需求
-        var _originalPostHTML = window.postHTML; 
-        
-        window.postHTML = function(p, mode) {
-            // 如果是内置种子且在隐藏名单里，直接不渲染（双重保险）
-            var hideList = [];
-            try { hideList = JSON.parse(localStorage.getItem(HIDE_KEY) || '[]'); } catch(e){}
-            if (hideList.indexOf(p.id) !== -1) return '';
-
-            var raw = (p && (p.content != null ? p.content : p.txt)) || '';
-            var isH = window.__isHTML && window.__isHTML(raw);
-            var txtHtml = isH ? raw : (typeof toRTEHTML === 'function' ? toRTEHTML(raw) : '<p>' + raw + '</p>');
-            var ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
-            
-            var ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
-            var tags = (p.tags || []).map(function(t) { return '<span>#' + (t||'') + '</span>'; }).join('');
-            
-            // 图片处理：不再限制数量，全部显示
-            var imgs = p.images || [];
-            var n = imgs.length;
-            var cols = n >= 3 ? 3 : (n === 2 ? 2 : 1); // 1张单列，2张双列，3张及以上三列
-            
-            var imgHtml = '';
-            if (n > 0) {
-                var cells = imgs.map(function(s) {
-                    return '<div class="lg-cell"><img class="limg" src="' + s + '" loading="lazy"></div>';
-                }).join('');
-                imgHtml = '<div class="life-grid lg-c' + cols + '">' + cells + '</div>';
-            }
-
-            // 管理按钮：始终显示，包含删除键
-            var mgmt = '<div class="life-mgmt">' +
-                       '<button class="pc-m" onclick="editPost(\'' + p.id + '\')" title="编辑"><i class="fas fa-pen"></i></button>' +
-                       '<button class="pc-m pc-m-del" onclick="deletePost(\'' + p.id + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
-                       '</div>';
-
-            return '<div class="post" id="post-' + p.id + '">' + mgmt +
-                   '<div class="ph">' +
-                     '<div class="pav">历</div>' +
-                     '<div class="pinfo"><div class="who">阿历</div><div class="when">' + (typeof relTime === 'function' ? relTime(ts) : '') + '</div></div>' +
-                   '</div>' +
-                   '<div class="' + ptxtCls + '">' + txtHtml + '</div>' +
-                   imgHtml +
-                   (tags ? '<div class="ptags">' + tags + '</div>' : '') +
-                   '</div>';
-        };
-
-        // C. 立即重绘首页
-        if (typeof window.renderHomeLife === 'function') {
-            window.renderHomeLife();
-        }
-        
-        // 如果当前在列表页，也重绘
-        if (location.hash.indexOf('life') !== -1 && typeof renderPosts === 'function' && typeof window.lifeList !== 'undefined') {
-             renderPosts(window.lifeList, false);
-        }
-    }
-
-    // 启动修复逻辑
-    initLifeGridV4();
-
+  try { document.querySelectorAll('style[data-patch="life-grid-v4"],style[data-patch="life-grid-v3"],style[data-patch="life-grid-v2"],style[data-patch="life-v5"],style[data-patch="life-enhance"]').forEach(function (s) { s.remove(); }); } catch (e) { }
+  var css = [
+    '.post{position:relative;}',
+    '.post .ptxt{font-size:16.5px !important;line-height:1.85 !important;}',
+    '.post .ptxt p{margin:0 0 8px;}',
+    '.post .ptags{margin-top:10px;font-size:13px;}',
+    /* 删除/编辑键始终可见可点（解决手机无 hover 点不到的问题） */
+    '.life-mgmt{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;position:absolute;top:14px;right:14px;gap:8px;z-index:10;}',
+    '.life-mgmt .pc-m{background:rgba(255,255,255,.85);border:1px solid #eee;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666;transition:all .2s;backdrop-filter:blur(4px);}',
+    '.life-mgmt .pc-m:hover{background:#fff;color:#d9534f;border-color:#d9534f;box-shadow:0 2px 8px rgba(0,0,0,.1);}',
+    /* 九宫格 */
+    '.life-grid{display:grid;gap:6px;margin:12px 0;}',
+    '.life-grid.lg-c1{grid-template-columns:1fr;max-width:78%;}',
+    '.life-grid.lg-c2{grid-template-columns:1fr 1fr;}',
+    '.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
+    '.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:10px;background:#f0f0f0;cursor:pointer;}',
+    '.lg-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;}',
+    '.lg-cell:hover img{transform:scale(1.05);}',
+    /* 导出按钮工具条 */
+    '.life-toolbar{display:flex;justify-content:flex-end;margin:18px 0 4px;}',
+    '#lifeExportBtn{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600;color:#2bb673;background:rgba(43,182,115,.08);border:1px solid rgba(43,182,115,.25);padding:8px 16px;border-radius:999px;transition:all .2s;cursor:pointer;}',
+    '#lifeExportBtn:hover{background:rgba(43,182,115,.16);transform:translateY(-1px);box-shadow:0 6px 16px rgba(43,182,115,.2);}',
+    /* 暗色适配 */
+    '[data-theme="dark"] .lg-cell{background:#333;}',
+    '[data-theme="dark"] .post .ptxt{color:#ddd;}',
+    '[data-theme="dark"] .life-mgmt .pc-m{background:rgba(40,40,40,.85);border-color:#444;color:#bbb;}',
+    '[data-theme="dark"] #lifeExportBtn{color:#34d089;background:rgba(52,208,137,.1);border-color:rgba(52,208,137,.3);}'
+  ].join('');
+  var st = document.createElement('style'); st.setAttribute('data-patch', 'life-enhance'); st.textContent = css; document.head.appendChild(st);
 })();
