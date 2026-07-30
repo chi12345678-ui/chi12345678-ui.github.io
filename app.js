@@ -1091,3 +1091,123 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   setTimeout(function(){ killScanner(); cleanFlashes(); }, 1600);
   console.log('%c[patchF] 已挂载：真·发布即刷新 / 无页面弹窗 / 扫描按钮已隐藏','color:#16a34a;font-weight:700');
 })();
+/* ===== 补丁 G：横幅零闪烁 + 扫描按钮几何清除 + 发布守护 + 可见即刷新 + 切页守卫（自包含·幂等·不改作者源码） =====
+   修1 横幅：CSS 直接 display:none!important，D/E 横幅一帧不显示（不再靠 JS 慢删）。
+   修2 扫描按钮：按"右下象限+近圆+定位祖先链"几何识别，不依赖 class（SVG 图标也杀）。
+   修3 刷新：setInterval 每500ms 检测——容器可见且列表数据签名变化→补 renderHome/renderLearning。
+        作者更新 lifeList/learningList 但漏 render 首页 / 时序错位，均被这"半秒一眼"兜住。
+   修4 切页闪烁：vis() 守卫——隐藏视图绝不调 render（杜绝 renderHome 的 display:flex 副作用泄露首页）。
+   发布守护：capture 阶段先于作者抓编辑器快照；8s 内每400ms 合并+渲染+检查 DOM 是否已含新内容。
+*/
+(function(){
+  'use strict';
+  if(window.__patchG){ return; }
+  window.__patchG=1;
+
+  var st=document.createElement('style'); st.setAttribute('data-patch','G');
+  st.textContent='#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}#homeLife>*{max-width:100%}'+
+    '#patchD-flash,#patchE-flash,#patchF-flash{display:none !important;visibility:hidden !important;opacity:0 !important;pointer-events:none !important}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function $(id){ return document.getElementById(id); }
+  function norm(s){ return (s||'').replace(/\s+/g,''); }
+  function vis(el){ return !!(el && el.offsetParent!==null && el.getBoundingClientRect().width>0); }
+
+  function Lget(){ try{ return learningList; }catch(e){ return null; } }
+  function Lset(a){ try{ learningList=a; return true; }catch(e){ return false; } }
+  function Fget(){ try{ return lifeList; }catch(e){ return null; } }
+  function Fset(a){ try{ lifeList=a; return true; }catch(e){ return false; } }
+  function pLR(){ try{ return getPostedLR(); }catch(e){ return []; } }
+  function dLR(){ try{ return getLR(); }catch(e){ return []; } }
+  function pLF(){ try{ return getPostedLife(); }catch(e){ return []; } }
+  function dLF(){ try{ return loadLocal(); }catch(e){ return []; } }
+
+  function merge(getL,setL,posted,drafts,fp,fl){
+    try{
+      var L=getL(); if(!L) return false;
+      var have={}; L.forEach(function(x){ if(x&&x.id!=null) have[String(x.id)]=1; });
+      var add=[];
+      (posted()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fp]=true; add.push(x); } });
+      (drafts()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fl]=true; add.push(x); } });
+      if(add.length){ var m=add.concat(L); try{ if(typeof sortPosts==='function') m=sortPosts(m); }catch(e){} setL(m); return true; }
+    }catch(e){}
+    return false;
+  }
+  function mergeL(){ return merge(Lget,Lset,pLR,dLR,'_posted','_local'); }
+  function mergeF(){ return merge(Fget,Fset,pLF,dLF,'_posted','_local'); }
+
+  function sig(getL){ var L=getL(); if(!L||!L.length) return '0_'; return L.length+'_'+(L[0].id||''); }
+  var lastSig={};
+  function renderIfVis(elId, renderFn, getL, mergeFn, sk){
+    var el=$(elId); if(!vis(el)) return;          /* 视图守卫：隐藏不画 → 修切页闪烁 */
+    var changed=mergeFn();
+    var s=sig(getL);
+    if(changed || s!==lastSig[sk]){ lastSig[sk]=s; try{ renderFn(); }catch(e){} }
+  }
+  function refreshVisible(){
+    renderIfVis('learningGrid', function(){ if(typeof renderLearningList==='function') renderLearningList(); }, Lget, mergeL, 'L');
+    renderIfVis('homeLatest',   function(){ if(typeof renderHomeLatest==='function')   renderHomeLatest();   }, Lget, mergeL, 'HL');
+    renderIfVis('homeLife',     function(){ if(typeof renderHomeLife==='function')     renderHomeLife();     }, Fget, mergeF, 'HF');
+  }
+  setInterval(refreshVisible, 500);               /* 半秒一眼：兜住作者漏画/时序错位/切回视图 */
+
+  function fixedish(el){ var n=el; for(var i=0;i<8&&n;i++){ var p=getComputedStyle(n).position; if(p==='fixed'||p==='absolute'||p==='sticky') return true; n=n.parentElement; } return false; }
+  function killScanner(){
+    var W=window.innerWidth, H=window.innerHeight, nodes=document.querySelectorAll('body *');
+    for(var i=0;i<nodes.length;i++){
+      var el=nodes[i]; if(el.getAttribute('data-patch-kill')) continue;
+      var r=el.getBoundingClientRect();
+      if(r.width<24||r.width>120||r.height<24||r.height>120) continue;
+      if(Math.abs(r.width-r.height)>18) continue;            /* 近圆/方 */
+      if(r.top<H*0.55) continue;                              /* 只要下半屏 */
+      if((W-r.right)>120||(H-r.bottom)>160) continue;         /* 右下象限 */
+      if(!fixedish(el)) continue;
+      el.style.setProperty('display','none','important'); el.setAttribute('data-patch-kill','1');
+    }
+  }
+  setInterval(killScanner, 700); setTimeout(killScanner, 400);
+
+  function rteText(rteObj, taId){
+    try{ if(rteObj&&rteObj.ed){ var h=rteObj.ed.innerHTML; if(h&&h!=='<br>'&&norm(h)) return h; } }catch(e){}
+    try{ var ta=$(taId); if(ta){ if(ta.value) return ta.value; if(ta.innerHTML&&norm(ta.innerHTML)) return ta.innerHTML; } }catch(e){}
+    return '';
+  }
+  function imgOf(name){ try{ return (window[name]||[]).slice(); }catch(e){ return []; } }
+  function snapLearn(){ return { kind:'learn', title:(($('lrTitle')||{}).value||''), content:rteText(window.__rte,'lrContent'), images:imgOf('lrImages'), links:imgOf('lrLinks') }; }
+  function snapLife(){ return { kind:'life', content:rteText(window.__rteLife,'postInput'), images:imgOf('lifeImages') }; }
+  function keyOf(s){ return s.kind==='learn' ? norm(s.title) : norm(s.content).slice(0,60); }
+
+  var pending=null, guard=null;
+  function domHas(kind, key){
+    var ids = kind==='learn' ? ['learningGrid','homeLatest'] : ['homeLife','postList'];
+    for(var i=0;i<ids.length;i++){ var el=$(ids[i]); if(el && norm(el.textContent).indexOf(key)>-1) return true; }
+    return false;
+  }
+  function startGuard(snap){
+    var key=keyOf(snap); if(!key) return;
+    pending={ kind:snap.kind, key:key, t0:Date.now() };
+    if(guard) clearInterval(guard);
+    var tick=0;
+    guard=setInterval(function(){
+      tick++;
+      if(Date.now()-pending.t0>8000){ clearInterval(guard); guard=null; pending=null; return; }
+      refreshVisible();
+      if(domHas(pending.kind, pending.key)){ clearInterval(guard); guard=null; pending=null; return; }
+      if(tick===1){ try{ if(typeof invalidateLearning==='function') invalidateLearning(); }catch(e){} try{ if(typeof loadLearning==='function') loadLearning(); }catch(e){} }
+    }, 400);
+  }
+
+  document.addEventListener('click', function(e){
+    var t=e.target, btn=null;
+    for(var i=0;i<6&&t;i++){ if(t.tagName==='BUTTON'||t.tagName==='A'){ btn=t; break; } t=t.parentElement; }
+    if(!btn) return;
+    var id=btn.id||'', txt=(btn.textContent||'').replace(/\s+/g,'');
+    var isPub=(id==='lrPub'||id==='postPub') || (txt==='发布') || (txt.indexOf('发布')===0 && txt.length<6 && txt.indexOf('保存')<0);
+    if(!isPub) return;
+    var kind=(id==='postPub')?'life' : (id==='lrPub')?'learn' : (vis($('lrTitle'))?'learn':'life');
+    startGuard(kind==='learn'?snapLearn():snapLife());
+  }, true);   /* capture：先于作者 handler 抓快照 */
+
+  setTimeout(refreshVisible, 600); setTimeout(killScanner, 600);
+  console.log('%c[patchG] 已挂载：横幅零闪烁 / 扫描按钮几何清除 / 发布守护+可见即刷新 / 切页守卫','color:#16a34a;font-weight:700');
+})();
