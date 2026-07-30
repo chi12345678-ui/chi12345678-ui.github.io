@@ -660,3 +660,107 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   ].join('');
   var st = document.createElement('style'); st.setAttribute('data-patch', 'life-enhance'); st.textContent = css; document.head.appendChild(st);
 })();
+/* ============ 补丁 B：编辑器加高 + 插入符号 + 图片尺寸强压 ============ */
+(function () {
+  'use strict';
+
+  /* ---------- 1) 注入样式：编辑框加高 / 符号面板 / 图片强压 ---------- */
+  var patchCss = [
+    /* 编辑框加高，写长文不再憋屈 */
+    '[contenteditable="true"]{min-height:300px !important;max-height:70vh;overflow:auto;}',
+    /* 插入符号按钮（贴在编辑框右上） */
+    '.sym-trigger{position:absolute;top:8px;right:10px;z-index:30;display:inline-flex;align-items:center;gap:5px;',
+    'padding:5px 11px;font-size:12px;font-weight:600;color:#e2620a;background:#fff7ef;border:1px solid #ffd9b3;',
+    'border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(226,98,10,.12);transition:transform .15s ease,box-shadow .15s ease,background .15s;user-select:none;}',
+    '.sym-trigger:hover{transform:translateY(-1px);background:#ffeede;box-shadow:0 5px 14px rgba(226,98,10,.2);}',
+    '.sym-trigger:active{transform:translateY(0) scale(.97);}',
+    /* 符号面板 */
+    '.sym-panel{position:absolute;top:42px;right:10px;z-index:40;width:268px;padding:10px;background:#fff;border:1px solid #eee;',
+    'border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.16);display:none;grid-template-columns:repeat(8,1fr);gap:5px;',
+    'transform-origin:top right;animation:symPop .16s ease;}',
+    '.sym-panel.open{display:grid;}',
+    '@keyframes symPop{from{opacity:0;transform:scale(.92) translateY(-4px);}to{opacity:1;transform:scale(1) translateY(0);}}',
+    '.sym-panel button{height:30px;border:0;border-radius:8px;background:#f5f5f5;color:#333;font-size:15px;line-height:1;cursor:pointer;',
+    'display:flex;align-items:center;justify-content:center;transition:transform .12s ease,background .12s,color .12s;}',
+    '.sym-panel button:hover{background:#e2620a;color:#fff;transform:scale(1.18);}',
+    '.sym-panel button:active{transform:scale(.9);}',
+    '.sym-panel button.flash{background:#2bb673 !important;color:#fff !important;}',
+    /* —— 图片尺寸强压（生活随笔九宫格 + 首页预览，广撒网 life/home 语义，不误伤文章详情） —— */
+    '.life-grid{max-width:min(330px,90%) !important;}',
+    '.life-grid.lg-c1{max-width:min(260px,80%) !important;}',
+    '.lg-cell{border-radius:8px !important;}',
+    '.ptxt img,.ptxt-html img{max-width:240px !important;max-height:240px !important;width:auto !important;height:auto !important;object-fit:cover;border-radius:8px;}',
+    '.life-card img,.home-life img,.life-item img,.life-preview img,.life-latest img,.life-wrap img,.post-life img{max-width:240px !important;max-height:240px !important;width:auto !important;height:auto !important;object-fit:cover;border-radius:8px;}',
+    /* 暗色适配 */
+    '[data-theme="dark"] .sym-trigger{background:#3a2a1c;color:#ffb877;border-color:#5a3d24;}',
+    '[data-theme="dark"] .sym-panel{background:#262626;border-color:#3a3a3a;box-shadow:0 12px 34px rgba(0,0,0,.5);}',
+    '[data-theme="dark"] .sym-panel button{background:#333;color:#ddd;}',
+    '[data-theme="dark"] [contenteditable="true"]{background:#1f1f1f;color:#e6e6e6;}'
+  ].join('');
+  var s = document.createElement('style');
+  s.setAttribute('data-patch', 'editor-sym-img');
+  s.textContent = patchCss;
+  document.head.appendChild(s);
+
+  /* ---------- 2) 插入符号：给每个富文本框装按钮 + 面板 ---------- */
+  var SYMBOLS = ['§','★','☆','●','○','◆','◇','▸','➤','➜','→','←','✓','✔','✗','✘',
+    '•','‣','','⚑','','☐','⚠','✦','','❷','','①','②','③','④','⑤','—','…','·','「」','【】','《》'];
+
+  function buildEditor(ed) {
+    if (ed.dataset.symDone) return;          // 防重复注入
+    ed.dataset.symDone = '1';
+    var host = ed.parentElement || ed;
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+
+    var savedRange = null;                    // 记住光标，点符号时不丢
+    function saveRange() {
+      var sel = window.getSelection();
+      if (sel && sel.rangeCount && ed.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0).cloneRange();
+    }
+    ed.addEventListener('keyup', saveRange);
+    ed.addEventListener('mouseup', saveRange);
+    ed.addEventListener('focus', saveRange);
+
+    var trig = document.createElement('span');
+    trig.className = 'sym-trigger';
+    trig.textContent = '∑ 符号';
+    host.appendChild(trig);
+
+    var panel = document.createElement('div');
+    panel.className = 'sym-panel';
+    SYMBOLS.forEach(function (sym) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = sym;
+      b.title = '插入 ' + sym;
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });   // 关键：阻止编辑框失焦
+      b.addEventListener('click', function () {
+        ed.focus();
+        var sel = window.getSelection();
+        if (savedRange) { sel.removeAllRanges(); sel.addRange(savedRange); }   // 恢复光标
+        try { document.execCommand('insertText', false, sym); } catch (err) {}
+        savedRange = null; saveRange();
+        b.classList.add('flash'); setTimeout(function () { b.classList.remove('flash'); }, 180);  // 点击反馈
+      });
+      panel.appendChild(b);
+    });
+    host.appendChild(panel);
+
+    trig.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    trig.addEventListener('click', function (e) {
+      e.stopPropagation();
+      saveRange();
+      panel.classList.toggle('open');
+    });
+    document.addEventListener('click', function (e) {
+      if (!panel.contains(e.target) && e.target !== trig) panel.classList.remove('open');
+    });
+  }
+
+  function mountAll() { document.querySelectorAll('[contenteditable="true"]').forEach(buildEditor); }
+  mountAll();
+  // 页面是动态渲染的，编辑框可能后出现，兜底再扫几次
+  setTimeout(mountAll, 600); setTimeout(mountAll, 1800);
+  var mo = new MutationObserver(function () { mountAll(); });
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
