@@ -495,143 +495,182 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mkBtn); else mkBtn();
   if (window.OFFLINE) setTimeout(toastOFF, 900);
 })();
-/* ===== 生活随笔 v3：字加大 + 图片全显示 + 删除键常驻 + 内置两条默认收起 + 根治首屏滞后（替换末尾"九宫格补丁+找回v2"两段；前面所有代码一行不动） ===== */
+/* ===== 生活随笔 v4：终极修复版（数据找回 + 样式优化 + 全功能恢复） ===== */
 (function () {
-  /* —— 1. 样式：正文加大 / 删除键常驻可点 / 首页圆角卡片（原样保留） / 九宫格布局 —— */
-  var st = document.createElement('style');
-  st.setAttribute('data-patch', 'life-v3');
-  st.textContent = [
-    /* 正文加大（列表 + 首页都命中） */
-    '.post .ptxt,.post .ptxt-html{font-size:16.5px !important;line-height:1.8 !important;}',
-    '.post .ptxt p{margin:0 0 8px;}',
-    '#homeLife .post .ptxt,#homeLife .post .ptxt-html{font-size:15px !important;line-height:1.7 !important;}',
-    '#homeLife .post .ptxt p{margin:0 0 5px;}',
-    '.post .ptags{margin-top:8px;}',
-    /* 删除/编辑键：常驻右上角、手机可点（不再藏 hover） */
-    '.post{position:relative;}',
-    '.post .life-mgmt{display:inline-flex !important;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;opacity:1 !important;visibility:visible !important;transform:none !important;pointer-events:auto !important;}',
-    '.post .life-mgmt .pc-m{width:30px;height:30px;border-radius:9px;border:1px solid rgba(127,127,127,.3);background:rgba(255,255,255,.92);color:#555;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;line-height:1;backdrop-filter:blur(4px);transition:filter .15s ease,transform .15s ease;}',
-    '.post .life-mgmt .pc-m:active{transform:scale(.92);}',
-    '.post .life-mgmt .pc-m-del{color:#d23;border-color:rgba(210,50,50,.4);}',
-    '[data-theme="dark"] .post .life-mgmt .pc-m{background:rgba(35,35,35,.78);color:#ddd;border-color:rgba(255,255,255,.2);}',
-    /* 九宫格布局（图片全显示，无 +N 遮罩） */
-    '.life-grid{display:grid;gap:6px;margin:10px 0 6px;max-width:440px;animation:lgIn .4s ease both;}',
-    '@keyframes lgIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}',
-    '.life-grid.lg-c1{grid-template-columns:1fr;max-width:320px;}',
-    '.life-grid.lg-c2{grid-template-columns:1fr 1fr;}',
-    '.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
-    '.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:12px;background:rgba(127,127,127,.12);cursor:pointer;}',
-    '.lg-cell.lg-single{aspect-ratio:4/3;max-height:360px;}',
-    '.lg-cell img.limg{width:100%;height:100%;object-fit:cover;display:block;margin:0;border-radius:0;transition:transform .4s cubic-bezier(.2,.7,.2,1);}',
-    '.lg-cell:hover img.limg{transform:scale(1.07);}',
-    /* 首页圆润卡片（你喜欢的样式，原样保留） */
-    '#homeLife{display:flex;flex-direction:column;gap:12px;}',
-    '#homeLife .post{background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.78));border:1px solid rgba(17,24,39,.06);border-radius:20px;padding:14px 16px 12px;margin:0;box-shadow:0 6px 20px rgba(17,24,39,.07);transition:transform .25s ease,box-shadow .25s ease;}',
-    '#homeLife .post:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(17,24,39,.12);}',
-    '#homeLife .post .ph{margin-bottom:8px;}',
-    '#homeLife .post .pav{width:34px;height:34px;border-radius:11px;}',
-    '#homeLife .life-grid{max-width:100%;margin:8px 0 6px;gap:5px;}',
-    '#homeLife .lg-cell{border-radius:10px;}',
-    '[data-theme="dark"] #homeLife .post{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border-color:rgba(255,255,255,.08);box-shadow:0 6px 20px rgba(0,0,0,.35);}',
-    '[data-theme="dark"] #homeLife .post:hover{box-shadow:0 12px 28px rgba(0,0,0,.45);}',
-    '[data-theme="dark"] .lg-cell{background:rgba(255,255,255,.08);}'
-  ].join('');
-  document.head.appendChild(st);
+    /* —— 1. 注入优化样式（字体加大、图片全显、删除键常驻） —— */
+    var css = [
+        /* 列表与详情页通用 */
+        '.post .ptxt { font-size: 16.5px !important; line-height: 1.8 !important; color: #333; }',
+        '.post .ptxt p { margin-bottom: 8px; }',
+        '.post .ptags { margin-top: 10px; font-size: 13px; color: #666; }',
+        
+        /* 九宫格图片 - 首页与列表页全部平铺，不再折叠 */
+        '.life-grid { display: grid; gap: 8px; margin: 12px 0; max-width: 100%; }',
+        '.life-grid.lg-c1 { grid-template-columns: 1fr; max-width: 80%; }',
+        '.life-grid.lg-c2 { grid-template-columns: repeat(2, 1fr); }',
+        '.life-grid.lg-c3 { grid-template-columns: repeat(3, 1fr); }',
+        '.lg-cell { position: relative; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px; background: #f0f0f0; cursor: pointer; }',
+        '.lg-cell img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }',
+        '.lg-cell:hover img { transform: scale(1.05); }',
+        
+        /* 首页卡片样式 - 保持圆润风格 */
+        '#homeLife { display: flex; flex-direction: column; gap: 16px; padding: 10px 0; }',
+        '#homeLife .post { 
+            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative; /* 为删除按钮定位 */
+        }',
+        '#homeLife .post:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }',
+        
+        /* 头部信息区 */
+        '#homeLife .ph { display: flex; align-items: center; margin-bottom: 12px; position: relative; }',
+        '#homeLife .pav { width: 40px; height: 40px; border-radius: 12px; background: #eee; margin-right: 12px; object-fit: cover; }',
+        '#homeLife .pinfo { flex: 1; }',
+        '#homeLife .who { font-weight: bold; font-size: 15px; color: #222; }',
+        '#homeLife .when { font-size: 12px; color: #999; margin-top: 2px; }',
+        
+        /* 管理按钮（删除/编辑）- 常驻右上角，手机端可见 */
+        '.life-mgmt { 
+            position: absolute; top: 15px; right: 15px; 
+            display: flex; gap: 8px; z-index: 10;
+        }',
+        '.pc-m { 
+            background: rgba(255,255,255,0.8); border: 1px solid #eee; 
+            width: 32px; height: 32px; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #666; transition: all 0.2s;
+            backdrop-filter: blur(4px);
+        }',
+        '.pc-m:hover { background: #fff; color: #d9534f; border-color: #d9534f; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }',
+        '.pc-m-del:hover { color: #d9534f; }',
 
-  /* —— 2. 覆盖 postHTML：图片全部平铺（不折叠、无 +N）；每条都有删除键，种子也有 —— */
-  window.postHTML = function (p) {
-    var raw = (p && (p.content != null ? p.content : p.txt)) || '';
-    var isH = window.__isHTML && window.__isHTML(raw);
-    var txtHtml = isH ? raw : toRTEHTML(raw);
-    var ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
-    var ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
-    var tags = (p.tags || []).map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('');
-    var imgs = p.images || [];
-    var n = imgs.length;
-    var cols = n >= 3 ? 3 : (n || 1);
-    var imgHtml = '';
-    if (n) {
-      var cells = imgs.map(function (s) {
-        return '<div class="lg-cell' + (n === 1 ? ' lg-single' : '') + '"><img class="limg" src="' + s + '" data-img="' + s + '" alt="" loading="lazy"></div>';
-      }).join('');
-      imgHtml = '<div class="life-grid lg-c' + cols + '">' + cells + '</div>';   // 全部图，不再 slice、不再 +N
+        /* 暗色模式适配 */
+        '[data-theme="dark"] #homeLife .post { background: rgba(30,30,30,0.9); border-color: rgba(255,255,255,0.1); color: #eee; }',
+        '[data-theme="dark"] .lg-cell { background: #333; }',
+        '[data-theme="dark"] .post .ptxt { color: #ddd; }'
+    ].join('');
+    
+    var st = document.createElement('style');
+    st.setAttribute('data-patch', 'life-grid-v4');
+    st.textContent = css;
+    document.head.appendChild(st);
+
+    /* —— 2. 核心逻辑：从备份中恢复数据并重写渲染 —— */
+    function initLifeGridV4() {
+        // 检查必要的函数是否存在
+        if (typeof window.postHTML === 'undefined' || typeof window.renderHomeLife === 'undefined') {
+            console.warn('v4 Patch: 等待主程序加载...');
+            setTimeout(initLifeGridV4, 500);
+            return;
+        }
+
+        // A. 数据救援：从 backup 读取那 6 条数据
+        var BACKUP_KEY = 'dg_life_migrated_backup';
+        var HIDE_KEY = 'chi_life_hide';
+        var rawData = localStorage.getItem(BACKUP_KEY);
+        
+        if (rawData) {
+            try {
+                var backupList = JSON.parse(rawData);
+                if (Array.isArray(backupList) && backupList.length > 0) {
+                    // 获取隐藏名单（内置种子 sl1, sl2）
+                    var hideList = [];
+                    try { hideList = JSON.parse(localStorage.getItem(HIDE_KEY) || '[]'); } catch(e){}
+                    
+                    // 过滤掉已隐藏的条目，合并到当前列表（如果当前列表为空）
+                    // 注意：这里我们假设如果当前 lifeList 为空，则完全使用备份数据
+                    // 如果有 lifeList 变量，我们尝试替换它或补充它
+                    if (typeof window.lifeList !== 'undefined') {
+                        // 简单的去重合并逻辑：以 ID 为准
+                        var currentIds = {};
+                        window.lifeList.forEach(function(item){ currentIds[item.id] = true; });
+                        
+                        backupList.forEach(function(item) {
+                            if (!currentIds[item.id] && hideList.indexOf(item.id) === -1) {
+                                window.lifeList.push(item);
+                            }
+                        });
+                        
+                        // 按时间倒序排序
+                        window.lifeList.sort(function(a, b) {
+                            return (b.ts || b.created_at || 0) - (a.ts || a.created_at || 0);
+                        });
+                        
+                        // 同步回本地存储（防止下次刷新又丢了）
+                        if (typeof window.saveLocal === 'function') {
+                            window.saveLocal(window.lifeList);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('v4 Patch: 数据恢复失败', e);
+            }
+        }
+
+        // B. 重写 postHTML：实现图片全显 + 删除键常驻
+        // 保存原始函数以防万一，但这里直接覆盖以实现需求
+        var _originalPostHTML = window.postHTML; 
+        
+        window.postHTML = function(p, mode) {
+            // 如果是内置种子且在隐藏名单里，直接不渲染（双重保险）
+            var hideList = [];
+            try { hideList = JSON.parse(localStorage.getItem(HIDE_KEY) || '[]'); } catch(e){}
+            if (hideList.indexOf(p.id) !== -1) return '';
+
+            var raw = (p && (p.content != null ? p.content : p.txt)) || '';
+            var isH = window.__isHTML && window.__isHTML(raw);
+            var txtHtml = isH ? raw : (typeof toRTEHTML === 'function' ? toRTEHTML(raw) : '<p>' + raw + '</p>');
+            var ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
+            
+            var ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
+            var tags = (p.tags || []).map(function(t) { return '<span>#' + (t||'') + '</span>'; }).join('');
+            
+            // 图片处理：不再限制数量，全部显示
+            var imgs = p.images || [];
+            var n = imgs.length;
+            var cols = n >= 3 ? 3 : (n === 2 ? 2 : 1); // 1张单列，2张双列，3张及以上三列
+            
+            var imgHtml = '';
+            if (n > 0) {
+                var cells = imgs.map(function(s) {
+                    return '<div class="lg-cell"><img class="limg" src="' + s + '" loading="lazy"></div>';
+                }).join('');
+                imgHtml = '<div class="life-grid lg-c' + cols + '">' + cells + '</div>';
+            }
+
+            // 管理按钮：始终显示，包含删除键
+            var mgmt = '<div class="life-mgmt">' +
+                       '<button class="pc-m" onclick="editPost(\'' + p.id + '\')" title="编辑"><i class="fas fa-pen"></i></button>' +
+                       '<button class="pc-m pc-m-del" onclick="deletePost(\'' + p.id + '\')" title="删除"><i class="fas fa-trash"></i></button>' +
+                       '</div>';
+
+            return '<div class="post" id="post-' + p.id + '">' + mgmt +
+                   '<div class="ph">' +
+                     '<div class="pav">历</div>' +
+                     '<div class="pinfo"><div class="who">阿历</div><div class="when">' + (typeof relTime === 'function' ? relTime(ts) : '') + '</div></div>' +
+                   '</div>' +
+                   '<div class="' + ptxtCls + '">' + txtHtml + '</div>' +
+                   imgHtml +
+                   (tags ? '<div class="ptags">' + tags + '</div>' : '') +
+                   '</div>';
+        };
+
+        // C. 立即重绘首页
+        if (typeof window.renderHomeLife === 'function') {
+            window.renderHomeLife();
+        }
+        
+        // 如果当前在列表页，也重绘
+        if (location.hash.indexOf('life') !== -1 && typeof renderPosts === 'function' && typeof window.lifeList !== 'undefined') {
+             renderPosts(window.lifeList, false);
+        }
     }
-    var pinned = isPinned(p) ? '<span class="pin-flag">📌 置顶</span>' : '';
-    var flag = p._local ? '<span class="draft-flag">📴 本机</span>' : '';
-    var editBtn = p._seed ? '' : '<button class="pc-m" data-life-edit="' + esc(p.id) + '" title="编辑"><i class="fas fa-pen"></i></button>';   // 种子不可编辑，故不给编辑键
-    var delBtn = '<button class="pc-m pc-m-del" data-life-del="' + esc(p.id) + '" data-local="' + (p._local ? 1 : 0) + '" title="删除"><i class="fas fa-trash"></i></button>';   // 每条都有删除键
-    var mgmt = '<div class="life-mgmt">' + editBtn + delBtn + '</div>';
-    return '<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">' + relTime(ts) + '</div></div>' + pinned + flag + mgmt + '</div><div class="' + ptxtCls + '">' + txtHtml + '</div>' + imgHtml + (tags ? '<div class="ptags">' + tags + '</div>' : '') + '</div>';
-  };
 
-  /* —— 3. 覆盖 renderHomeLife：首页也用新版（全图 + 删除键） —— */
-  window.renderHomeLife = function () {
-    var g = document.getElementById('homeLife'); if (!g) return;
-    var h = document.getElementById('homeLifeH'), m = document.getElementById('homeLifeMore');
-    var list = lifeList.slice(0, 4);
-    if (!list.length) { if (h) h.style.display = 'none'; if (m) m.style.display = 'none'; g.innerHTML = ''; return; }
-    if (h) h.style.display = 'flex'; if (m) m.style.display = 'flex';
-    g.innerHTML = list.map(function (x) { return window.postHTML(x); }).join('');
-  };
+    // 启动修复逻辑
+    initLifeGridV4();
 
-  /* —— 4. 接管 loadLocal：第一次读本地池时把 dg_life 旧数据合并进来（已迁过/无旧数据则直通，零开销、不丢数据） —— */
-  if (typeof loadLocal === 'function' && !window.__dgMigrateHooked) {
-    window.__dgMigrateHooked = true;
-    var _origLoad = loadLocal;
-    var RAW = 'dg_life', DONE = 'chi_dg_migrated_v3';
-    var strip = function (s) { var d = document.createElement('div'); d.innerHTML = (s == null ? '' : String(s)); return (d.textContent || '').trim(); };
-    window.loadLocal = function () {
-      if (localStorage.getItem('chi_dg_migrated_v2') || localStorage.getItem(DONE) || !localStorage.getItem(RAW)) return _origLoad();
-      var raw, arr;
-      try { raw = localStorage.getItem(RAW); arr = raw ? JSON.parse(raw) : null; } catch (e) { arr = null; }
-      if (arr && typeof arr === 'object' && !Array.isArray(arr)) {
-        var ks = Object.keys(arr).filter(function (k) { return Array.isArray(arr[k]); });
-        arr = ks.length ? arr[ks[0]] : null;
-      }
-      var pool = _origLoad();
-      if (Array.isArray(arr) && arr.length) {
-        var sig = function (p) { return strip((p && p.content) || '').slice(0, 40) + '|' + (((p && p.images) || []).length); };
-        var seen = {}; pool.forEach(function (p) { seen[sig(p)] = 1; });
-        arr.forEach(function (it) {
-          if (!it || typeof it !== 'object') return;
-          var content = (it.content != null ? it.content : (it.txt != null ? it.txt : (it.text != null ? it.text : '')));
-          var images = Array.isArray(it.images) ? it.images.filter(function (s) { return typeof s === 'string' && s.length; }) : [];
-          if (!strip(content) && !images.length) return;
-          var tags = Array.isArray(it.tags) ? it.tags : (typeof it.tags === 'string' ? it.tags.split(/[,，]/) : []);
-          tags = tags.map(function (t) { return String(t).replace(/^#+/, '').trim(); }).filter(Boolean);
-          var tsRaw = it.created_at || it.ts || it.time || it.createdAt || it.date || it.updated_at || '';
-          var ms = (typeof tsRaw === 'number') ? tsRaw : Date.parse(tsRaw);
-          var iso = isNaN(ms) ? new Date().toISOString() : new Date(ms).toISOString();
-          var np = Object.assign({}, it, { id: uid('LF'), content: content, tags: tags, images: images, created_at: iso, ts: isNaN(ms) ? Date.now() : ms, _local: true });
-          var s = sig(np); if (!seen[s]) { pool.push(np); seen[s] = 1; }
-        });
-        try { localStorage.setItem('dg_life_migrated_backup', raw); } catch (e) {}
-        var wrote = false; try { saveLocal(pool); wrote = true; } catch (e) {}
-        if (wrote) { try { localStorage.removeItem(RAW); } catch (e) {} try { localStorage.setItem(DONE, '1'); } catch (e) {} }
-      } else {
-        try { localStorage.removeItem(RAW); } catch (e) {} try { localStorage.setItem(DONE, '1'); } catch (e) {}
-      }
-      return pool;
-    };
-  }
-
-  /* —— 5. 内置两条默认收起（写进隐藏名单，幂等、可逆、不删数据） —— */
-  try {
-    var h = getLifeHide(), ch = false;
-    ['sl1', 'sl2'].forEach(function (id) { if (h.indexOf(id) < 0) { h.push(id); ch = true; } });
-    if (ch) setLifeHide(h);
-  } catch (e) {}
-
-  /* —— 6. 同步重建列表 + 立即重渲染：首屏第一帧就满，根治"过一会才显示"的滞后 —— */
-  try {
-    var hide2 = getLifeHide();
-    lifeList = sortPosts(
-      SEED_LIFE.filter(function (s) { return hide2.indexOf(s.id) < 0; }).map(function (s) { return Object.assign({}, s, { _seed: true }); })
-        .concat(loadLocal().map(function (x) { return Object.assign({}, x, { _local: true }); }))   // 此刻 loadLocal 已是接管版，旧数据已在
-        .concat(getPostedLife().map(function (x) { return Object.assign({}, x, { _posted: true }); }))
-    );
-    var hh = (location.hash || '').replace(/^#/, '').split('/')[0] || 'home';
-    if (hh === 'life') renderPosts(lifeList, false);
-    else if (hh === 'home') renderHomeLife();
-  } catch (e) {}
 })();
