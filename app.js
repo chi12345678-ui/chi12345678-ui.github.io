@@ -634,19 +634,20 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     '.post .ptxt p{margin:0 0 8px;}',
     '.post .ptags{margin-top:10px;font-size:13px;}',
     /* 正文内嵌图兜底：万一没进九宫格，也绝不撑爆，且有圆角、可点 */
-    '.ptxt img,.ptxt-html img{max-width:100%;height:auto;border-radius:12px;display:block;margin:10px 0;cursor:pointer;}',
+    '.ptxt img,.ptxt-html img{max-width:min(420px,82%);max-height:340px;width:auto;height:auto;object-fit:contain;border-radius:12px;display:block;margin:10px 0;cursor:pointer;}',
     /* 删除/编辑键始终可见可点 */
     '.life-mgmt{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;position:absolute;top:14px;right:14px;gap:8px;z-index:10;}',
     '.life-mgmt .pc-m{background:rgba(255,255,255,.85);border:1px solid #eee;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666;transition:all .2s;backdrop-filter:blur(4px);}',
     '.life-mgmt .pc-m:hover{background:#fff;color:#d9534f;border-color:#d9534f;box-shadow:0 2px 8px rgba(0,0,0,.1);}',
     /* 九宫格 */
     '.life-grid{display:grid;gap:6px;margin:12px 0;}',
-    '.life-grid.lg-c1{grid-template-columns:1fr;max-width:78%;}',
-    '.life-grid.lg-c2{grid-template-columns:1fr 1fr;}',
-    '.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
-    '.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:10px;background:#f0f0f0;cursor:pointer;}',
-    '.lg-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;}',
-    '.lg-cell:hover img{transform:scale(1.05);}',
+'.life-grid.lg-c1{grid-template-columns:1fr;max-width:min(420px,72%);}',
+'.life-grid.lg-c2{grid-template-columns:1fr 1fr;max-width:min(560px,92%);}',
+'.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
+'.life-grid.lg-c1 .lg-cell{aspect-ratio:4/3;}',
+'.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:10px;background:#f0f0f0;cursor:pointer;}',
+'.lg-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;}',
+'.lg-cell:hover img{transform:scale(1.05);}',
     /* 导出按钮工具条 */
     '.life-toolbar{display:flex;justify-content:flex-end;margin:18px 0 4px;}',
     '#lifeExportBtn{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600;color:#2bb673;background:rgba(43,182,115,.08);border:1px solid rgba(43,182,115,.25);padding:8px 16px;border-radius:999px;transition:all .2s;cursor:pointer;}',
