@@ -798,3 +798,96 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   apply();setTimeout(apply,400);setTimeout(apply,1200);
   var mo=new MutationObserver(apply);mo.observe(document.body,{childList:true,subtree:true});
 })();
+/* ===== 补丁 D：学习成长"发布即上屏 + 刷新不丢"（外挂·不改作者源码·全场景） =====
+   原理：app.js 顶层未用 IIFE 包裹，其 let/const/function 都在全局词法环境，
+   本补丁粘在 app.js 末尾、晚于作者代码执行，可直接读写 learningList、
+   调用 getPostedLR/setPostedLR/getLR/gatherPost/uid/sortPosts 等。
+   堵暗道1：渲染前把"乐观池+草稿池"里列表还没有的条目补回列表（刷新也补→持久化）。
+   兜底：新发布态若内容没进池，补写一次池并刷新列表（带横幅反馈）。
+   编辑态不抢：避免把 seed 改乱+冒重复卡，编辑态走作者原 overlay 逻辑。
+*/
+(function(){
+  'use strict';
+  function safe(fn){ try{ return fn(); }catch(e){ return undefined; } }
+  function getPool(){ return safe(function(){ return (typeof getPostedLR==='function')?getPostedLR():[]; }) || []; }
+  function setPool(a){ safe(function(){ if(typeof setPostedLR==='function') setPostedLR(a); }); }
+  function getDrafts(){ return safe(function(){ return (typeof getLR==='function')?getLR():[]; }) || []; }
+  function norm(s){ return (s||'').replace(/\s+/g,''); }
+  function newId(){ try{ if(typeof uid==='function') return uid('LR'); }catch(e){} return 'LR'+Date.now()+Math.floor(Math.random()*1e6); }
+  function listRef(){ try{ return (typeof learningList!=='undefined')?learningList:null; }catch(e){ return null; } }
+  function setListRef(a){ try{ if(typeof learningList!=='undefined'){ learningList=a; return true; } }catch(e){} return false; }
+
+  function mergePoolsIntoList(){
+    var L=listRef(); if(!L) return;
+    var have={}; L.forEach(function(x){ have[String(x.id)]=1; });
+    var add=[];
+    getPool().forEach(function(x){ if(x && !have[String(x.id)]){ have[String(x.id)]=1; x._posted=true; add.push(x); } });
+    getDrafts().forEach(function(x){ if(x && !have[String(x.id)]){ have[String(x.id)]=1; x._local=true; add.push(x); } });
+    if(add.length){
+      var merged=add.concat(L);
+      try{ if(typeof sortPosts==='function') merged=sortPosts(merged); }catch(e){}
+      setListRef(merged);
+    }
+  }
+
+  function wrap(name, before){
+    var orig=window[name]; if(typeof orig!=='function') return;
+    window[name]=function(){
+      try{ before(); }catch(e){ console.warn('[patchD] '+name+' before err', e); }
+      return orig.apply(this, arguments);
+    };
+  }
+  wrap('renderLearningList', mergePoolsIntoList);
+  wrap('renderHomeLatest', mergePoolsIntoList);
+
+  (function(){
+    var orig=window.publishLearning; if(typeof orig!=='function') return;
+    window.publishLearning=function(){
+      var snapTitle='', snap=null, wasEditing=false;
+      try{ if(typeof gatherPost==='function'){ snap=gatherPost(); snapTitle=norm(snap && snap.title); } }catch(e){}
+      try{ wasEditing=(typeof editingId!=='undefined' && !!editingId); }catch(e){}
+      var ret;
+      try{ ret=orig.apply(this, arguments); }catch(e){ console.warn('[patchD] publishLearning err', e); return; }
+      Promise.resolve(ret).then(function(){
+        setTimeout(function(){
+          try{
+            if(!snapTitle){
+              var tEl=document.getElementById('lrTitle');
+              if(tEl && !norm(tEl.value)) flash('⚠️ 没发布成功：标题是空的。请先在标题框填几个字，再点发布。');
+              return;
+            }
+            if(wasEditing) return; // 编辑态：作者 overlay 覆盖原篇=正确语义，不抢
+            var inPool=getPool().some(function(x){ return norm(x && x.title)===snapTitle; });
+            var inDraft=getDrafts().some(function(x){ return norm(x && x.title)===snapTitle; });
+            if(!inPool && !inDraft && snap){
+              var pool=getPool();
+              pool.unshift({ id:newId(), title:snap.title, content:snap.content, images:snap.images||[], links:snap.links||[], tags:snap.tags||[], emoji:'📝', created_at:new Date().toISOString() });
+              setPool(pool);
+              mergePoolsIntoList();
+              try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){}
+              try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){}
+              flash('✅ 已兜底写入并显示：'+snap.title);
+            }
+          }catch(e){ console.warn('[patchD] fallback err', e); }
+        }, 300);
+      });
+      return ret;
+    };
+  })();
+
+  function flash(msg){
+    try{
+      var old=document.getElementById('patchD-flash'); if(old) old.remove();
+      var d=document.createElement('div'); d.id='patchD-flash'; d.textContent=msg;
+      d.style.cssText='position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 22px;border-radius:14px;font:600 14px/1.5 system-ui,-apple-system;box-shadow:0 10px 34px rgba(0,0,0,.28);z-index:2147483647;max-width:88vw;opacity:0;transition:opacity .3s,transform .3s';
+      if(msg.indexOf('⚠️')===0) d.style.background='#dc2626';
+      document.body.appendChild(d);
+      requestAnimationFrame(function(){ d.style.opacity='1'; d.style.transform='translateX(-50%) translateY(4px)'; });
+      setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.remove(); },400); }, 4200);
+    }catch(e){}
+  }
+
+  setTimeout(mergePoolsIntoList, 600);
+  setTimeout(function(){ mergePoolsIntoList(); try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){} }, 1500);
+  console.log('%c[patchD] 学习成长发布兜底已挂载','color:#16a34a;font-weight:700');
+})();
