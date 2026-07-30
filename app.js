@@ -798,416 +798,76 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   apply();setTimeout(apply,400);setTimeout(apply,1200);
   var mo=new MutationObserver(apply);mo.observe(document.body,{childList:true,subtree:true});
 })();
-/* ===== 补丁 D：学习成长"发布即上屏 + 刷新不丢"（外挂·不改作者源码·全场景） =====
-   原理：app.js 顶层未用 IIFE 包裹，其 let/const/function 都在全局词法环境，
-   本补丁粘在 app.js 末尾、晚于作者代码执行，可直接读写 learningList、
-   调用 getPostedLR/setPostedLR/getLR/gatherPost/uid/sortPosts 等。
-   堵暗道1：渲染前把"乐观池+草稿池"里列表还没有的条目补回列表（刷新也补→持久化）。
-   兜底：新发布态若内容没进池，补写一次池并刷新列表（带横幅反馈）。
-   编辑态不抢：避免把 seed 改乱+冒重复卡，编辑态走作者原 overlay 逻辑。
+/* ===== 补丁 H：干净根治版（删 D/E/F/G 后粘贴·自包含·幂等·不弹任何提示·无轮询） =====
+   根治"生活随笔发布后首页不更新"：作者 publishLife 漏调 renderHomeLife()，
+   且发布按钮加载时已 addEventListener 绑死原始函数引用→外部 wrap window.publishLife 无效。
+   故给 postPub / lrPub 各"再加一个"点击监听（作者原监听照跑），点击后等作者存完，
+   用 loadPosts().then(renderHomeLife) / loadLearning().then(renderHomeLatest) 补画首页。
+   不 wrap 任何函数、不拦 setItem、不用 setInterval→无监听失效/无死循环/无切页闪烁/无空白。
+   不创建任何横幅；CSS 压死 D/E 残留 flash；扫描按钮几何隐藏+CSS 兜底；首页随笔窄化沿用已验证规则。
 */
 (function(){
   'use strict';
-  function safe(fn){ try{ return fn(); }catch(e){ return undefined; } }
-  function getPool(){ return safe(function(){ return (typeof getPostedLR==='function')?getPostedLR():[]; }) || []; }
-  function setPool(a){ safe(function(){ if(typeof setPostedLR==='function') setPostedLR(a); }); }
-  function getDrafts(){ return safe(function(){ return (typeof getLR==='function')?getLR():[]; }) || []; }
-  function norm(s){ return (s||'').replace(/\s+/g,''); }
-  function newId(){ try{ if(typeof uid==='function') return uid('LR'); }catch(e){} return 'LR'+Date.now()+Math.floor(Math.random()*1e6); }
-  function listRef(){ try{ return (typeof learningList!=='undefined')?learningList:null; }catch(e){ return null; } }
-  function setListRef(a){ try{ if(typeof learningList!=='undefined'){ learningList=a; return true; } }catch(e){} return false; }
+  if(window.__patchH){ return; }
+  window.__patchH=1;
 
-  function mergePoolsIntoList(){
-    var L=listRef(); if(!L) return;
-    var have={}; L.forEach(function(x){ have[String(x.id)]=1; });
-    var add=[];
-    getPool().forEach(function(x){ if(x && !have[String(x.id)]){ have[String(x.id)]=1; x._posted=true; add.push(x); } });
-    getDrafts().forEach(function(x){ if(x && !have[String(x.id)]){ have[String(x.id)]=1; x._local=true; add.push(x); } });
-    if(add.length){
-      var merged=add.concat(L);
-      try{ if(typeof sortPosts==='function') merged=sortPosts(merged); }catch(e){}
-      setListRef(merged);
-    }
-  }
-
-  function wrap(name, before){
-    var orig=window[name]; if(typeof orig!=='function') return;
-    window[name]=function(){
-      try{ before(); }catch(e){ console.warn('[patchD] '+name+' before err', e); }
-      return orig.apply(this, arguments);
-    };
-  }
-  wrap('renderLearningList', mergePoolsIntoList);
-  wrap('renderHomeLatest', mergePoolsIntoList);
-
-  (function(){
-    var orig=window.publishLearning; if(typeof orig!=='function') return;
-    window.publishLearning=function(){
-      var snapTitle='', snap=null, wasEditing=false;
-      try{ if(typeof gatherPost==='function'){ snap=gatherPost(); snapTitle=norm(snap && snap.title); } }catch(e){}
-      try{ wasEditing=(typeof editingId!=='undefined' && !!editingId); }catch(e){}
-      var ret;
-      try{ ret=orig.apply(this, arguments); }catch(e){ console.warn('[patchD] publishLearning err', e); return; }
-      Promise.resolve(ret).then(function(){
-        setTimeout(function(){
-          try{
-            if(!snapTitle){
-              var tEl=document.getElementById('lrTitle');
-              if(tEl && !norm(tEl.value)) flash('⚠️ 没发布成功：标题是空的。请先在标题框填几个字，再点发布。');
-              return;
-            }
-            if(wasEditing) return; // 编辑态：作者 overlay 覆盖原篇=正确语义，不抢
-            var inPool=getPool().some(function(x){ return norm(x && x.title)===snapTitle; });
-            var inDraft=getDrafts().some(function(x){ return norm(x && x.title)===snapTitle; });
-            if(!inPool && !inDraft && snap){
-              var pool=getPool();
-              pool.unshift({ id:newId(), title:snap.title, content:snap.content, images:snap.images||[], links:snap.links||[], tags:snap.tags||[], emoji:'📝', created_at:new Date().toISOString() });
-              setPool(pool);
-              mergePoolsIntoList();
-              try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){}
-              try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){}
-              flash('✅ 已兜底写入并显示：'+snap.title);
-            }
-          }catch(e){ console.warn('[patchD] fallback err', e); }
-        }, 300);
-      });
-      return ret;
-    };
-  })();
-
-  function flash(msg){
-    try{
-      var old=document.getElementById('patchD-flash'); if(old) old.remove();
-      var d=document.createElement('div'); d.id='patchD-flash'; d.textContent=msg;
-      d.style.cssText='position:fixed;left:50%;top:24px;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 22px;border-radius:14px;font:600 14px/1.5 system-ui,-apple-system;box-shadow:0 10px 34px rgba(0,0,0,.28);z-index:2147483647;max-width:88vw;opacity:0;transition:opacity .3s,transform .3s';
-      if(msg.indexOf('⚠️')===0) d.style.background='#dc2626';
-      document.body.appendChild(d);
-      requestAnimationFrame(function(){ d.style.opacity='1'; d.style.transform='translateX(-50%) translateY(4px)'; });
-      setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.remove(); },400); }, 4200);
-    }catch(e){}
-  }
-
-  setTimeout(mergePoolsIntoList, 600);
-  setTimeout(function(){ mergePoolsIntoList(); try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){} }, 1500);
-  console.log('%c[patchD] 学习成长发布兜底已挂载','color:#16a34a;font-weight:700');
-})();
-/* ===== 补丁 E：首页随笔捏窄 + 首页"最新"发布即刷新（学习成长&生活随笔双兜底·幂等·不改作者源码） =====
-   洞①：CSS 捏窄 #homeLife（首页"生活随笔·最新"容器），消除右侧空米色。
-   洞②：wrap 四个渲染/发布函数——渲染前把"乐观池+本机草稿"合并进列表（防 loadX 冲掉新条目）；
-        发布后强制重画首页 homeLatest/homeLife（作者 publishLife 漏了重画首页）。
-   与补丁 D 幂等兼容：函数级 __patchE 标记防双重 wrap；merge 用 id 去重，跑多次结果不变。
-*/
-(function(){
-  'use strict';
-  if(window.__patchE){ console.log('[patchE] 已安装，跳过重复安装'); return; }
-  window.__patchE=1;
-
-  /* 1) 捏窄首页"生活随笔·最新"。左对齐、右留页面背景，与独立页同族视觉。
-        若"学习成长·最新"首页那块也出现右空米色，把下面 #homeLife 改成 #homeLife,#homeLatest 即可。 */
-  var st=document.createElement('style');
-  st.setAttribute('data-patch','E');
-  st.textContent='#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}#homeLife>*{max-width:100%}';
+  /* 1) 样式：窄化首页随笔 + 压死旧横幅 + 扫描按钮 CSS 兜底 */
+  var st=document.createElement('style'); st.setAttribute('data-patch','H');
+  st.textContent=[
+    '#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}',
+    '#homeLife>*{max-width:100%}',
+    '#patchD-flash,#patchE-flash,#patchF-flash,#patchG-flash{display:none !important;visibility:hidden !important;opacity:0 !important;pointer-events:none !important}',
+    '[id*="scanBtn"],[id*="diagBtn"],[id*="checkBtn"],[id*="healthBtn"],[id*="doctorBtn"],[id*="stethoscope"],[class*="scan-fab"],[class*="diag-fab"],[class*="health-fab"]{display:none !important}'
+  ].join('');
   (document.head||document.documentElement).appendChild(st);
 
-  function safe(fn){ try{ return fn(); }catch(e){ return undefined; } }
-  function getLearningList(){ try{ return learningList; }catch(e){ return null; } }
-  function setLearningList(a){ try{ learningList=a; return true; }catch(e){ return false; } }
-  function getLifeList(){ try{ return lifeList; }catch(e){ return null; } }
-  function setLifeList(a){ try{ lifeList=a; return true; }catch(e){ return false; } }
+  /* 2) 清掉 D/E 可能已弹出的 flash */
+  function cleanFlash(){ try{ document.querySelectorAll('[id^="patchD-flash"],[id^="patchE-flash"],[id^="patchF-flash"],[id^="patchG-flash"]').forEach(function(n){n.remove();}); }catch(e){} }
+  cleanFlash();
 
-  function mergeInto(getList,setList,postedFn,draftFn,flagPosted,flagLocal){
-    try{
-      var L=getList(); if(!L) return;
-      var have={}; L.forEach(function(x){ if(x&&x.id!=null) have[String(x.id)]=1; });
-      var add=[];
-      try{ (postedFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[flagPosted]=true; add.push(x); } }); }catch(e){}
-      try{ (draftFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[flagLocal]=true; add.push(x); } }); }catch(e){}
-      if(add.length){
-        var m=add.concat(L);
-        try{ if(typeof sortPosts==='function') m=sortPosts(m); }catch(e){}
-        setList(m);
-      }
-    }catch(e){}
-  }
-  function mergeLearning(){ mergeInto(getLearningList,setLearningList,function(){return getPostedLR();},function(){return getLR();},'_posted','_local'); }
-  function mergeLife(){ mergeInto(getLifeList,setLifeList,function(){return getPostedLife();},function(){return loadLocal();},'_posted','_local'); }
-
-  function wrap(name,before,after){
-    var orig=window[name];
-    if(typeof orig!=='function') return;
-    if(orig.__patchE) return;            // 防 E 自身重复 wrap
-    var nw=function(){
-      if(before){ try{ before(); }catch(e){ console.warn('[patchE] '+name+' before',e); } }
-      var ret;
-      try{ ret=orig.apply(this,arguments); }catch(e){ if(after){ try{after();}catch(_){} } throw e; }
-      if(after){
-        Promise.resolve(ret).then(function(){ try{after();}catch(e){} },function(){ try{after();}catch(e){} });
-      }
-      return ret;
-    };
-    nw.__patchE=1;
-    window[name]=nw;
-  }
-
-  /* 渲染前合并：保证列表/首页永远含"池+草稿"里的条目（loadX 冲不掉） */
-  wrap('renderLearningList', mergeLearning, null);
-  wrap('renderHomeLatest',   mergeLearning, null);
-  wrap('renderHomeLife',     mergeLife,     null);
-  wrap('renderPosts',        mergeLife,     null);
-
-  /* 发布后强制重画首页"最新"（补作者 publishLife 漏掉的首页刷新） */
+  /* 3) 补画首页：等作者存完再画，时序天然正确 */
   function refreshHome(){
-    setTimeout(function(){
-      try{ mergeLearning(); }catch(e){}
-      try{ mergeLife(); }catch(e){}
-      try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){}
-      try{ if(typeof renderHomeLatest==='function')   renderHomeLatest(); }catch(e){}
-      try{ if(typeof renderHomeLife==='function')     renderHomeLife(); }catch(e){}
-    },350);
+    try{ if(typeof loadPosts==='function'){ Promise.resolve(loadPosts()).then(function(){ try{ if(typeof renderHomeLife==='function') renderHomeLife(); }catch(e){} }); } }catch(e){}
+    try{ if(typeof loadLearning==='function'){ Promise.resolve(loadLearning()).then(function(){ try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){} }); } }catch(e){}
   }
-  wrap('publishLearning', null, refreshHome);
-  wrap('publishLife',     null, refreshHome);
-
-  /* 安装即跑一次：页面一加载就把首页"最新"合并+重画 */
-  setTimeout(refreshHome, 800);
-
-  function flash(msg,bg){
-    try{
-      var old=document.getElementById('patchE-flash'); if(old) old.remove();
-      var d=document.createElement('div'); d.id='patchE-flash'; d.textContent=msg;
-      d.style.cssText='position:fixed;left:50%;top:24px;transform:translateX(-50%);background:'+(bg||'#16a34a')+';color:#fff;padding:12px 22px;border-radius:14px;font:600 14px/1.5 system-ui,-apple-system;box-shadow:0 10px 34px rgba(0,0,0,.28);z-index:2147483647;max-width:88vw;opacity:0;transition:opacity .3s,transform .3s';
-      document.body.appendChild(d);
-      requestAnimationFrame(function(){ d.style.opacity='1'; d.style.transform='translateX(-50%) translateY(4px)'; });
-      setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.remove(); },400); }, 4200);
-    }catch(e){}
+  /* 给发布按钮"再加一个"监听：作者原监听照跑，这个只补画，不阻止任何东西 */
+  function bindPub(id){
+    var b=document.getElementById(id); if(!b || b.getAttribute('data-patch-h')) return;
+    b.setAttribute('data-patch-h','1');
+    b.addEventListener('click', function(){ setTimeout(refreshHome,1200); setTimeout(refreshHome,2600); });
   }
-  setTimeout(function(){ flash('✅ 补丁E v1 已挂载：首页随笔已捏窄 + 首页"最新"已接管','#16a34a'); }, 1100);
-  console.log('%c[patchE] v1 已挂载（首页捏窄 + 双最新兜底）','color:#16a34a;font-weight:700');
-})();
-/* ===== 补丁 F：真·发布即刷新 + 去弹窗 + 去扫描按钮（自包含·幂等·不改作者源码） =====
-   机制铁律：闭包函数引用拦不到（故不 wrap publishX/renderX），但
-   (1) localStorage.setItem 是全局对象方法→可拦截→当作"发布事件"信号，强制重画首页+列表；
-   (2) 列表容器 DOM 用 MutationObserver 监听→作者 render 完补合并"乐观池+本机草稿"→防 loadX 冲掉新条目；
-   两套配合：force 重画只由 setItem 触发一次，observer 用"合并有新增才重画"作闸门→不会死循环。
-   主动调用的 renderX / 读写的 learningList·lifeList / 池函数 均为全局→主动调用有效。
-   附带：捏窄 #homeLife（幂等）；秒删 D/E 横幅；隐藏右下"扫描/体检"悬浮按钮。
-*/
-(function(){
-  'use strict';
-  if(window.__patchF){ return; }
-  window.__patchF=1;
+  function bindAll(){ bindPub('postPub'); bindPub('lrPub'); }
+  bindAll(); setTimeout(bindAll,600); setTimeout(bindAll,1500);
 
-  /* 捏窄首页"生活随笔·最新"（与 E 同值，幂等；若学习成长首页也右空，把 #homeLife 后加 ,#homeLatest） */
-  var st=document.createElement('style'); st.setAttribute('data-patch','F');
-  st.textContent='#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}#homeLife>*{max-width:100%}';
-  (document.head||document.documentElement).appendChild(st);
-
-  function safe(fn){ try{ return fn(); }catch(e){ return undefined; } }
-  function L_get(){ try{ return learningList; }catch(e){ return null; } }
-  function L_set(a){ try{ learningList=a; return true; }catch(e){ return false; } }
-  function F_get(){ try{ return lifeList; }catch(e){ return null; } }
-  function F_set(a){ try{ lifeList=a; return true; }catch(e){ return false; } }
-
-  function merge(getL,setL,postedFn,draftFn,fp,fl){
-    try{
-      var L=getL(); if(!L) return false;
-      var have={}; L.forEach(function(x){ if(x&&x.id!=null) have[String(x.id)]=1; });
-      var add=[];
-      try{ (postedFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fp]=true; add.push(x); } }); }catch(e){}
-      try{ (draftFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fl]=true; add.push(x); } }); }catch(e){}
-      if(add.length){ var m=add.concat(L); try{ if(typeof sortPosts==='function') m=sortPosts(m); }catch(e){} setL(m); return true; }
-    }catch(e){}
-    return false;
-  }
-  function mergeL(){ return merge(L_get,L_set,function(){return getPostedLR();},function(){return getLR();},'_posted','_local'); }
-  function mergeF(){ return merge(F_get,F_set,function(){return getPostedLife();},function(){return loadLocal();},'_posted','_local'); }
-
-  function rLearn(){ try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){} }
-  function rHomeL(){ try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){} }
-  function rHomeF(){ try{ if(typeof renderHomeLife==='function') renderHomeLife(); }catch(e){} }
-
-  /* force：setItem 触发，无条件重画一次（首页+学习），靠 observer 闸门防循环 */
-  function forceRender(){ mergeL(); mergeF(); rLearn(); rHomeL(); rHomeF(); }
-  /* gated：observer 触发，合并有新增才重画（作者 render 完补刀，且自身收敛） */
-  function gatedRender(){ var a=mergeL(), b=mergeF(); if(a){ rLearn(); rHomeL(); } if(b){ rHomeF(); } }
-
-  /* (1) 拦截 localStorage.setItem —— 这是拦得到的"发布事件" */
-  try{
-    var origSet=localStorage.setItem.bind(localStorage);
-    var fT=0;
-    localStorage.setItem=function(k,v){
-      var ret; try{ ret=origSet(k,v); }catch(e){ throw e; }
-      if(!fT){ fT=setTimeout(function(){ fT=0; forceRender(); }, 220); }
-      return ret;
-    };
-  }catch(e){ console.warn('[patchF] setItem wrap fail', e); }
-
-  /* (2) 监听列表容器 DOM —— 作者 render 完补合并，堵 loadX 冲条目 */
-  function observeContainers(){
-    var ids=['learningGrid','homeLatest','homeLife','postList'], seen={};
-    ids.forEach(function(id){
-      var el=document.getElementById(id);
-      if(el && !seen[id]){ seen[id]=1;
-        new MutationObserver(function(){ if(!gT){ gT=setTimeout(function(){ gT=0; gatedRender(); }, 120); } })
-          .observe(el, {childList:true, subtree:true});
-      }
-    });
-    if(Object.keys(seen).length<ids.length){ setTimeout(observeContainers, 500); }
-  }
-  var gT=0;
-  observeContainers();
-
-  /* 隐藏右下"扫描/体检"悬浮按钮 + 秒删 D/E 横幅 */
+  /* 4) 扫描/体检按钮：几何隐藏（只动右下小圆，绝不误伤首页内容） */
+  function fixedish(el){ var n=el; for(var i=0;i<8&&n&&n!==document.body;i++){ var p=getComputedStyle(n).position; if(p==='fixed'||p==='sticky') return true; n=n.parentElement; } return false; }
   function killScanner(){
-    var done=document.querySelector('[data-patch-kill="1"]');
-    if(done && getComputedStyle(done).display==='none'){ /* 已杀且仍隐藏，仅校验，不全扫 */ }
-    else{
-      var W=window.innerWidth, H=window.innerHeight;
-      var nodes=document.querySelectorAll('body *');
-      for(var i=0;i<nodes.length;i++){
-        var el=nodes[i]; if(el.getAttribute('data-patch-kill')) continue;
-        var cs=getComputedStyle(el); if(cs.position!=='fixed') continue;
-        var r=el.getBoundingClientRect();
-        if(r.width<30||r.width>90||r.height<30||r.height>90) continue;
-        if(Math.abs(r.width-r.height)>14) continue;
-        if(r.top < H*0.5) continue;                 /* 只要下半屏，排除右上按钮组 */
-        if((W-r.right)>70 || (H-r.bottom)>140) continue;  /* 必须贴右下角 */
-        var html=(el.innerHTML||'').toLowerCase();
-        var hit=/stethoscope|scan|听诊|扫描|检测|pulse|wave|diag|activity|heartbeat/.test(html) || (el.textContent||'').trim().length===0;
-        if(hit){ el.style.setProperty('display','none','important'); el.setAttribute('data-patch-kill','1'); }
-      }
-    }
-  }
-  function cleanFlashes(){
-    var s=document.querySelectorAll('[id^="patchE-flash"],[id^="patchD-flash"],[id="patchD-flash"],[id="patchE-flash"]');
-    for(var i=0;i<s.length;i++){ try{ s[i].remove(); }catch(e){} }
-  }
-  var bT=0;
-  new MutationObserver(function(){ if(!bT){ bT=setTimeout(function(){ bT=0; killScanner(); cleanFlashes(); }, 200); } })
-    .observe(document.body, {childList:true, subtree:true});
-
-  /* 安装即跑一次 */
-  setTimeout(function(){ forceRender(); killScanner(); cleanFlashes(); }, 800);
-  setTimeout(function(){ killScanner(); cleanFlashes(); }, 1600);
-  console.log('%c[patchF] 已挂载：真·发布即刷新 / 无页面弹窗 / 扫描按钮已隐藏','color:#16a34a;font-weight:700');
-})();
-/* ===== 补丁 G：横幅零闪烁 + 扫描按钮几何清除 + 发布守护 + 可见即刷新 + 切页守卫（自包含·幂等·不改作者源码） =====
-   修1 横幅：CSS 直接 display:none!important，D/E 横幅一帧不显示（不再靠 JS 慢删）。
-   修2 扫描按钮：按"右下象限+近圆+定位祖先链"几何识别，不依赖 class（SVG 图标也杀）。
-   修3 刷新：setInterval 每500ms 检测——容器可见且列表数据签名变化→补 renderHome/renderLearning。
-        作者更新 lifeList/learningList 但漏 render 首页 / 时序错位，均被这"半秒一眼"兜住。
-   修4 切页闪烁：vis() 守卫——隐藏视图绝不调 render（杜绝 renderHome 的 display:flex 副作用泄露首页）。
-   发布守护：capture 阶段先于作者抓编辑器快照；8s 内每400ms 合并+渲染+检查 DOM 是否已含新内容。
-*/
-(function(){
-  'use strict';
-  if(window.__patchG){ return; }
-  window.__patchG=1;
-
-  var st=document.createElement('style'); st.setAttribute('data-patch','G');
-  st.textContent='#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}#homeLife>*{max-width:100%}'+
-    '#patchD-flash,#patchE-flash,#patchF-flash{display:none !important;visibility:hidden !important;opacity:0 !important;pointer-events:none !important}';
-  (document.head||document.documentElement).appendChild(st);
-
-  function $(id){ return document.getElementById(id); }
-  function norm(s){ return (s||'').replace(/\s+/g,''); }
-  function vis(el){ return !!(el && el.offsetParent!==null && el.getBoundingClientRect().width>0); }
-
-  function Lget(){ try{ return learningList; }catch(e){ return null; } }
-  function Lset(a){ try{ learningList=a; return true; }catch(e){ return false; } }
-  function Fget(){ try{ return lifeList; }catch(e){ return null; } }
-  function Fset(a){ try{ lifeList=a; return true; }catch(e){ return false; } }
-  function pLR(){ try{ return getPostedLR(); }catch(e){ return []; } }
-  function dLR(){ try{ return getLR(); }catch(e){ return []; } }
-  function pLF(){ try{ return getPostedLife(); }catch(e){ return []; } }
-  function dLF(){ try{ return loadLocal(); }catch(e){ return []; } }
-
-  function merge(getL,setL,posted,drafts,fp,fl){
-    try{
-      var L=getL(); if(!L) return false;
-      var have={}; L.forEach(function(x){ if(x&&x.id!=null) have[String(x.id)]=1; });
-      var add=[];
-      (posted()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fp]=true; add.push(x); } });
-      (drafts()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[fl]=true; add.push(x); } });
-      if(add.length){ var m=add.concat(L); try{ if(typeof sortPosts==='function') m=sortPosts(m); }catch(e){} setL(m); return true; }
-    }catch(e){}
-    return false;
-  }
-  function mergeL(){ return merge(Lget,Lset,pLR,dLR,'_posted','_local'); }
-  function mergeF(){ return merge(Fget,Fset,pLF,dLF,'_posted','_local'); }
-
-  function sig(getL){ var L=getL(); if(!L||!L.length) return '0_'; return L.length+'_'+(L[0].id||''); }
-  var lastSig={};
-  function renderIfVis(elId, renderFn, getL, mergeFn, sk){
-    var el=$(elId); if(!vis(el)) return;          /* 视图守卫：隐藏不画 → 修切页闪烁 */
-    var changed=mergeFn();
-    var s=sig(getL);
-    if(changed || s!==lastSig[sk]){ lastSig[sk]=s; try{ renderFn(); }catch(e){} }
-  }
-  function refreshVisible(){
-    renderIfVis('learningGrid', function(){ if(typeof renderLearningList==='function') renderLearningList(); }, Lget, mergeL, 'L');
-    renderIfVis('homeLatest',   function(){ if(typeof renderHomeLatest==='function')   renderHomeLatest();   }, Lget, mergeL, 'HL');
-    renderIfVis('homeLife',     function(){ if(typeof renderHomeLife==='function')     renderHomeLife();     }, Fget, mergeF, 'HF');
-  }
-  setInterval(refreshVisible, 500);               /* 半秒一眼：兜住作者漏画/时序错位/切回视图 */
-
-  function fixedish(el){ var n=el; for(var i=0;i<8&&n;i++){ var p=getComputedStyle(n).position; if(p==='fixed'||p==='absolute'||p==='sticky') return true; n=n.parentElement; } return false; }
-  function killScanner(){
-    var W=window.innerWidth, H=window.innerHeight, nodes=document.querySelectorAll('body *');
+    var W=window.innerWidth, Hh=window.innerHeight, nodes=document.querySelectorAll('body *');
     for(var i=0;i<nodes.length;i++){
       var el=nodes[i]; if(el.getAttribute('data-patch-kill')) continue;
       var r=el.getBoundingClientRect();
-      if(r.width<24||r.width>120||r.height<24||r.height>120) continue;
-      if(Math.abs(r.width-r.height)>18) continue;            /* 近圆/方 */
-      if(r.top<H*0.55) continue;                              /* 只要下半屏 */
-      if((W-r.right)>120||(H-r.bottom)>160) continue;         /* 右下象限 */
-      if(!fixedish(el)) continue;
-      el.style.setProperty('display','none','important'); el.setAttribute('data-patch-kill','1');
+      if(r.width<20||r.width>90||r.height<20||r.height>90) continue;   /* 小圆尺寸 */
+      if(Math.abs(r.width-r.height)>16) continue;                      /* 近圆/方 */
+      if(r.top < Hh*0.5) continue;                                     /* 只要下半屏 */
+      if((W-r.right)>90 || (Hh-r.bottom)>140) continue;                /* 贴右下角 */
+      if(!fixedish(el)) continue;                                      /* 自身或祖先 fixed */
+      var html=(el.innerHTML||'').toLowerCase();
+      var hasIcon=/<svg|<i\b|stethoscope|kit-medical|scan|听诊|扫描|检测|诊断|体检/.test(html);
+      var empty=(el.textContent||'').replace(/\s+/g,'').length===0;
+      if(hasIcon||empty){ el.style.setProperty('display','none','important'); el.setAttribute('data-patch-kill','1'); }
     }
   }
-  setInterval(killScanner, 700); setTimeout(killScanner, 400);
+  function schedKill(){ setTimeout(killScanner,300); setTimeout(killScanner,900); setTimeout(killScanner,1800); }
+  schedKill();
+  try{ new MutationObserver(function(){ killScanner(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  window.addEventListener('hashchange', schedKill);
 
-  function rteText(rteObj, taId){
-    try{ if(rteObj&&rteObj.ed){ var h=rteObj.ed.innerHTML; if(h&&h!=='<br>'&&norm(h)) return h; } }catch(e){}
-    try{ var ta=$(taId); if(ta){ if(ta.value) return ta.value; if(ta.innerHTML&&norm(ta.innerHTML)) return ta.innerHTML; } }catch(e){}
-    return '';
-  }
-  function imgOf(name){ try{ return (window[name]||[]).slice(); }catch(e){ return []; } }
-  function snapLearn(){ return { kind:'learn', title:(($('lrTitle')||{}).value||''), content:rteText(window.__rte,'lrContent'), images:imgOf('lrImages'), links:imgOf('lrLinks') }; }
-  function snapLife(){ return { kind:'life', content:rteText(window.__rteLife,'postInput'), images:imgOf('lifeImages') }; }
-  function keyOf(s){ return s.kind==='learn' ? norm(s.title) : norm(s.content).slice(0,60); }
+  /* 5) 打开即补画一次首页 + 收尾 */
+  setTimeout(function(){
+    try{ if(typeof renderHomeLife==='function') renderHomeLife(); }catch(e){}
+    try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){}
+    killScanner(); cleanFlash();
+  }, 700);
 
-  var pending=null, guard=null;
-  function domHas(kind, key){
-    var ids = kind==='learn' ? ['learningGrid','homeLatest'] : ['homeLife','postList'];
-    for(var i=0;i<ids.length;i++){ var el=$(ids[i]); if(el && norm(el.textContent).indexOf(key)>-1) return true; }
-    return false;
-  }
-  function startGuard(snap){
-    var key=keyOf(snap); if(!key) return;
-    pending={ kind:snap.kind, key:key, t0:Date.now() };
-    if(guard) clearInterval(guard);
-    var tick=0;
-    guard=setInterval(function(){
-      tick++;
-      if(Date.now()-pending.t0>8000){ clearInterval(guard); guard=null; pending=null; return; }
-      refreshVisible();
-      if(domHas(pending.kind, pending.key)){ clearInterval(guard); guard=null; pending=null; return; }
-      if(tick===1){ try{ if(typeof invalidateLearning==='function') invalidateLearning(); }catch(e){} try{ if(typeof loadLearning==='function') loadLearning(); }catch(e){} }
-    }, 400);
-  }
-
-  document.addEventListener('click', function(e){
-    var t=e.target, btn=null;
-    for(var i=0;i<6&&t;i++){ if(t.tagName==='BUTTON'||t.tagName==='A'){ btn=t; break; } t=t.parentElement; }
-    if(!btn) return;
-    var id=btn.id||'', txt=(btn.textContent||'').replace(/\s+/g,'');
-    var isPub=(id==='lrPub'||id==='postPub') || (txt==='发布') || (txt.indexOf('发布')===0 && txt.length<6 && txt.indexOf('保存')<0);
-    if(!isPub) return;
-    var kind=(id==='postPub')?'life' : (id==='lrPub')?'learn' : (vis($('lrTitle'))?'learn':'life');
-    startGuard(kind==='learn'?snapLearn():snapLife());
-  }, true);   /* capture：先于作者 handler 抓快照 */
-
-  setTimeout(refreshVisible, 600); setTimeout(killScanner, 600);
-  console.log('%c[patchG] 已挂载：横幅零闪烁 / 扫描按钮几何清除 / 发布守护+可见即刷新 / 切页守卫','color:#16a34a;font-weight:700');
+  console.log('%c[patchH] 干净根治版已挂载：发布即刷首页 / 无横幅 / 扫描按钮已隐藏 / 无轮询','color:#16a34a;font-weight:700');
 })();
