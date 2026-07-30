@@ -634,7 +634,7 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     '.post .ptxt p{margin:0 0 8px;}',
     '.post .ptags{margin-top:10px;font-size:13px;}',
     /* 正文内嵌图兜底：万一没进九宫格，也绝不撑爆，且有圆角、可点 */
-    '.ptxt img,.ptxt-html img{max-width:min(320px,82%);max-height:340px;width:auto;height:auto;object-fit:contain;border-radius:12px;display:block;margin:10px 0;cursor:pointer;}',
+    '.ptxt img,.ptxt-html img{max-width:min(420px,82%);max-height:340px;width:auto;height:auto;object-fit:contain;border-radius:12px;display:block;margin:10px 0;cursor:pointer;}',
     /* 删除/编辑键始终可见可点 */
     '.life-mgmt{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;position:absolute;top:14px;right:14px;gap:8px;z-index:10;}',
     '.life-mgmt .pc-m{background:rgba(255,255,255,.85);border:1px solid #eee;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666;transition:all .2s;backdrop-filter:blur(4px);}',
