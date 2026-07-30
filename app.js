@@ -764,171 +764,45 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   var mo = new MutationObserver(function () { mountAll(); });
   mo.observe(document.body, { childList: true, subtree: true });
 })();
-/* ===== 补丁 C′：只窄首页"生活随笔·最新"，案例/学习保持满宽 ===== */
-(function(){
-  'use strict';
-  document.querySelectorAll('[data-narrow]').forEach(function(el){el.removeAttribute('data-narrow')});
-  var old=document.querySelector('style[data-patch="home-life-narrow"]');if(old)old.remove();
-  var st=document.createElement('style');
-  st.setAttribute('data-patch','home-life-narrow');
-  st.textContent='[data-narrow="home-life"]{width:70%!important;max-width:1180px!important;margin-left:0!important;margin-right:auto!important}';
-  document.head.appendChild(st);
-  function txt(el){return (el.textContent||'').replace(/\s+/g,'')}
-  function isLifeTitle(el){var t=txt(el);return t.indexOf('生活随笔')>-1&&t.indexOf('最新')>-1&&t.length<16}
-  function findTitle(){var hit=null;document.querySelectorAll('h1,h2,h3,h4,[class*="title"],[class*="head"],[class*="sec"],div,span').forEach(function(el){if(!hit&&isLifeTitle(el))hit=el});return hit}
-  function containerOf(el){
-    var p=el.parentElement;
-    while(p&&p!==document.body&&p!==document.documentElement){
-      var pt=txt(p);
-      var safe=pt.indexOf('生活随笔')>-1&&pt.indexOf('学习成长')===-1&&pt.indexOf('项目案例')===-1;
-      if(safe&&p.offsetWidth>=300&&p.querySelector('img'))return p;   // 命中即停，不继续往上爬
-      if(!safe&&pt.indexOf('生活随笔')>-1)return null;               // 爬到公共祖先=越界，放弃
-      p=p.parentElement;
-    }
-    return null;
-  }
-  function apply(){
-    var t=findTitle();if(!t)return;
-    var sec=containerOf(t);
-    if(!sec){console.warn('[narrow] 未定位到安全容器，已放弃窄化——若首页随笔仍满宽，请截首页图');return}
-    if(sec.dataset.narrow)return;
-    sec.setAttribute('data-narrow','home-life');
-    console.log('%c[narrow] 仅首页随笔 →','color:#ea580c;font-weight:700',sec.tagName,sec.className||'(none)','w=',sec.offsetWidth);
-  }
-  apply();setTimeout(apply,400);setTimeout(apply,1200);
-  var mo=new MutationObserver(apply);mo.observe(document.body,{childList:true,subtree:true});
-})();
-/* ===== 补丁 H：干净根治版（删 D/E/F/G 后粘贴·自包含·幂等·不弹任何提示·无轮询） =====
-   根治"生活随笔发布后首页不更新"：作者 publishLife 漏调 renderHomeLife()，
-   且发布按钮加载时已 addEventListener 绑死原始函数引用→外部 wrap window.publishLife 无效。
-   故给 postPub / lrPub 各"再加一个"点击监听（作者原监听照跑），点击后等作者存完，
-   用 loadPosts().then(renderHomeLife) / loadLearning().then(renderHomeLatest) 补画首页。
-   不 wrap 任何函数、不拦 setItem、不用 setInterval→无监听失效/无死循环/无切页闪烁/无空白。
-   不创建任何横幅；CSS 压死 D/E 残留 flash；扫描按钮几何隐藏+CSS 兜底；首页随笔窄化沿用已验证规则。
+/* ===== 补丁 K（终版·清理式）：删 C′/H/J 后追加 · 自包含 · 幂等 · 无轮询 · 无刷屏 =====
+   修① 首页同步：包装全局 renderPosts，画完独立页顺手 renderHomeLife()
+        （loadPosts 末尾会调 renderPosts，时序天然正确，覆盖发布/删除/同步全路径）。
+   修② 编辑器调大：!important 撑满版心 + 加高正文框 + 加大标题（顶回 v6 的 840 限宽）。
+   修③ 移除右下角🩺体检按钮：#syncFab / #syncCard 直接 display:none（精确 id，零误伤）。
+   不含任何 MutationObserver 全页监听 / setInterval / setTimeout 轮询 → 不再刷屏、不再卡顿。
 */
 (function(){
   'use strict';
-  if(window.__patchH){ return; }
-  window.__patchH=1;
+  if(window.__patchK) return;
+  window.__patchK = 1;
 
-  /* 1) 样式：窄化首页随笔 + 压死旧横幅 + 扫描按钮 CSS 兜底 */
-  var st=document.createElement('style'); st.setAttribute('data-patch','H');
-  st.textContent=[
-    '#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}',
-    '#homeLife>*{max-width:100%}',
-    '#patchD-flash,#patchE-flash,#patchF-flash,#patchG-flash{display:none !important;visibility:hidden !important;opacity:0 !important;pointer-events:none !important}',
-    '[id*="scanBtn"],[id*="diagBtn"],[id*="checkBtn"],[id*="healthBtn"],[id*="doctorBtn"],[id*="stethoscope"],[class*="scan-fab"],[class*="diag-fab"],[class*="health-fab"]{display:none !important}'
-  ].join('');
-  (document.head||document.documentElement).appendChild(st);
-
-  /* 2) 清掉 D/E 可能已弹出的 flash */
-  function cleanFlash(){ try{ document.querySelectorAll('[id^="patchD-flash"],[id^="patchE-flash"],[id^="patchF-flash"],[id^="patchG-flash"]').forEach(function(n){n.remove();}); }catch(e){} }
-  cleanFlash();
-
-  /* 3) 补画首页：等作者存完再画，时序天然正确 */
-  function refreshHome(){
-    try{ if(typeof loadPosts==='function'){ Promise.resolve(loadPosts()).then(function(){ try{ if(typeof renderHomeLife==='function') renderHomeLife(); }catch(e){} }); } }catch(e){}
-    try{ if(typeof loadLearning==='function'){ Promise.resolve(loadLearning()).then(function(){ try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){} }); } }catch(e){}
-  }
-  /* 给发布按钮"再加一个"监听：作者原监听照跑，这个只补画，不阻止任何东西 */
-  function bindPub(id){
-    var b=document.getElementById(id); if(!b || b.getAttribute('data-patch-h')) return;
-    b.setAttribute('data-patch-h','1');
-    b.addEventListener('click', function(){ setTimeout(refreshHome,1200); setTimeout(refreshHome,2600); });
-  }
-  function bindAll(){ bindPub('postPub'); bindPub('lrPub'); }
-  bindAll(); setTimeout(bindAll,600); setTimeout(bindAll,1500);
-
-  /* 4) 扫描/体检按钮：几何隐藏（只动右下小圆，绝不误伤首页内容） */
-  function fixedish(el){ var n=el; for(var i=0;i<8&&n&&n!==document.body;i++){ var p=getComputedStyle(n).position; if(p==='fixed'||p==='sticky') return true; n=n.parentElement; } return false; }
-  function killScanner(){
-    var W=window.innerWidth, Hh=window.innerHeight, nodes=document.querySelectorAll('body *');
-    for(var i=0;i<nodes.length;i++){
-      var el=nodes[i]; if(el.getAttribute('data-patch-kill')) continue;
-      var r=el.getBoundingClientRect();
-      if(r.width<20||r.width>90||r.height<20||r.height>90) continue;   /* 小圆尺寸 */
-      if(Math.abs(r.width-r.height)>16) continue;                      /* 近圆/方 */
-      if(r.top < Hh*0.5) continue;                                     /* 只要下半屏 */
-      if((W-r.right)>90 || (Hh-r.bottom)>140) continue;                /* 贴右下角 */
-      if(!fixedish(el)) continue;                                      /* 自身或祖先 fixed */
-      var html=(el.innerHTML||'').toLowerCase();
-      var hasIcon=/<svg|<i\b|stethoscope|kit-medical|scan|听诊|扫描|检测|诊断|体检/.test(html);
-      var empty=(el.textContent||'').replace(/\s+/g,'').length===0;
-      if(hasIcon||empty){ el.style.setProperty('display','none','important'); el.setAttribute('data-patch-kill','1'); }
-    }
-  }
-  function schedKill(){ setTimeout(killScanner,300); setTimeout(killScanner,900); setTimeout(killScanner,1800); }
-  schedKill();
-  try{ new MutationObserver(function(){ killScanner(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
-  window.addEventListener('hashchange', schedKill);
-
-  /* 5) 打开即补画一次首页 + 收尾 */
-  setTimeout(function(){
-    try{ if(typeof renderHomeLife==='function') renderHomeLife(); }catch(e){}
-    try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){}
-    killScanner(); cleanFlash();
-  }, 700);
-
-  console.log('%c[patchH] 干净根治版已挂载：发布即刷首页 / 无横幅 / 扫描按钮已隐藏 / 无轮询','color:#16a34a;font-weight:700');
-})();
-/* ===== 补丁 J：编辑器调大 + 首页同步根治 + 数据诊断（只追加·不删任何东西·自包含·幂等） =====
-   修1 首页同步：包装 renderPosts——作者各路径画独立页后顺手 renderHomeLife()，
-        时序天然正确（调用时 lifeList 已是最新），无延时抢跑、无死循环、不改作者源码。
-   修2 编辑器调大：!important 顶回 v5/v6/v7/补丁B 的压缩；仅放宽 learning/life 两页版心，
-        首页/关于/案例的 .sec 保持不动。
-   修3 只读诊断：把随笔数据现状打到 Console，便于核对"旧随笔在不在池子里"。
-   不删 H：H 继续负责隐藏右下角体检按钮 + 清旧横幅，留着无妨。
-*/
-(function(){
-  'use strict';
-  if(window.__patchJ){ return; }
-  window.__patchJ=1;
-
-  /* 1) 编辑器调大 + 写作页版心放宽（纯 CSS，!important 覆盖历史压缩规则） */
-  var st=document.createElement('style'); st.setAttribute('data-patch','J');
-  st.textContent=[
-    /* 仅学习成长 / 生活随笔两页放宽版心，其余页保持原样 */
-    '.view[data-view="learning"].active .sec,.view[data-view="life"].active .sec{max-width:1180px !important}',
-    /* 编辑器撑满版心，不再缩在中间一小条 */
+  /* —— 样式：体检按钮移除 + 编辑器调大 —— */
+  var st = document.createElement('style');
+  st.setAttribute('data-patch','K');
+  st.textContent = [
+    '#syncFab,#syncCard{display:none !important}',
     '.editor,.post-box{max-width:100% !important;width:100% !important;margin-left:0 !important;margin-right:0 !important}',
-    /* 学习成长正文区：加高 + 字号行距放大，写长文不憋屈 */
-    '.editor .rte{min-height:420px !important;max-height:80vh !important;font-size:17px !important;line-height:1.9 !important}',
-    /* 生活随笔输入区：也加高 */
-    '.post-box .rte{min-height:200px !important;max-height:72vh !important;font-size:16.5px !important;line-height:1.85 !important}',
-    /* 标题输入加大 */
+    '.editor .rte{min-height:440px !important;max-height:78vh !important;font-size:17px !important;line-height:1.9 !important}',
     '.editor input.ti{font-size:22px !important;padding:15px 16px !important}',
-    /* 工具栏按钮略放大，点得更准 */
-    '.editor .rte-bar,.post-box .rte-bar{padding:10px 12px !important}',
-    '.editor .rte-b,.post-box .rte-b{min-width:34px !important;height:34px !important;font-size:14px !important}'
+    '.editor .rte-bar{padding:10px 12px !important}',
+    '.editor .rte-b{min-width:34px !important;height:34px !important;font-size:14px !important}',
+    '.post-box .rte{min-height:200px !important;max-height:70vh !important;font-size:16.5px !important;line-height:1.85 !important}',
+    '.post-box .rte-bar{padding:9px 11px !important}'
   ].join('');
   (document.head||document.documentElement).appendChild(st);
 
-  /* 2) 根治首页同步：包装 renderPosts（闭包直接改顶层绑定，module/普通脚本通吃） */
-  if(typeof renderPosts==='function' && typeof renderHomeLife==='function' && !window.__rpWrapped){
-    var _origRP=renderPosts; window.__rpWrapped=1;
-    renderPosts=function(posts, off){
-      try{ _origRP(posts, off); }catch(e){}      /* 作者原逻辑：画独立页 */
-      try{ renderHomeLife(); }catch(e){}          /* 补一刀：画首页（用同一份最新 lifeList） */
+  /* —— 修① 包装全局 renderPosts：独立页画完顺手刷首页 —— */
+  if(typeof window.renderPosts === 'function' && typeof window.renderHomeLife === 'function' && !window.__rpWrappedK){
+    var _orig = window.renderPosts;
+    window.__rpWrappedK = 1;
+    window.renderPosts = function(posts, off){
+      try{ _orig(posts, off); }catch(e){}      /* 作者原逻辑：画随笔独立页 */
+      try{ window.renderHomeLife(); }catch(e){} /* 补一刀：画首页随笔块（同一份最新 lifeList） */
     };
-    console.log('%c[patchJ] renderPosts 已包装 → 发布/保存后首页将随独立页一起刷新','color:#16a34a;font-weight:700');
+    console.log('%c[patchK] renderPosts 已包装 → 发布/删除/同步后首页随笔将随之刷新','color:#16a34a;font-weight:700');
   } else {
-    console.warn('[patchJ] 未能包装 renderPosts（若首页仍不刷新，请把此行截图发我）');
+    console.warn('[patchK] 未包装 renderPosts → 说明最新 app.js 没加载，请确认第1步改了版本号并硬刷');
   }
 
-  /* 3) 只读诊断：核对"旧随笔到底在不在"，只读不写，零风险 */
-  function diag(){
-    try{
-      var ll=0; try{ ll=(typeof lifeList!=='undefined' && lifeList)?lifeList.length:0; }catch(e){}
-      var posted=0,local=0,hid=0,hidc=0;
-      try{ posted=(JSON.parse(localStorage.getItem('chi_posts_posted_v1'))||[]).length; }catch(e){}
-      try{ local =(JSON.parse(localStorage.getItem('chi_posts_local_v1')) ||[]).length; }catch(e){}
-      try{ hid   =(JSON.parse(localStorage.getItem('chi_life_hide'))       ||[]).length; }catch(e){}
-      try{ hidc  =(JSON.parse(localStorage.getItem('chi_life_hide_content'))||[]).length; }catch(e){}
-      console.log('%c[patchJ 诊断] 随笔数据现状 →','color:#16a34a;font-weight:700',
-        '当前显示池lifeList='+ll+' | 乐观池posted='+posted+' | 本机local='+local+' | 隐藏id='+hid+' | 隐藏内容指纹='+hidc);
-    }catch(e){}
-  }
-  setTimeout(diag,1500); setTimeout(diag,4500);
-
-  console.log('%c[patchJ] 已挂载：编辑器调大 + 首页同步根治 + 数据诊断','color:#16a34a;font-weight:700');
+  console.log('%c[patchK] 终版已挂载：首页同步 + 编辑器调大 + 🩺体检按钮已移除（无轮询/无刷屏）','color:#16a34a;font-weight:700');
 })();
