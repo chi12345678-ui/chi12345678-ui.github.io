@@ -29,6 +29,7 @@ function sortPosts(arr) { return arr.slice().sort((a, b) => { const pa = isPinne
 window.__isHTML = function (s) { return /<[a-z][\s\S]*>/i.test(s || ''); };
 function toRTEHTML(raw) { raw = raw == null ? '' : String(raw); if (window.__isHTML(raw)) return raw; return raw.split('\n').map(l => { const e = esc(l); return '<p>' + (e || '<br>') + '</p>'; }).join(''); }
 function normTxt(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
+function contentOf(p) { return p && (p.content != null ? p.content : (p.txt != null ? p.txt : '')); }
 
 /* ===== 乐观发布池：自己发的立刻可见、刷新不丢 ===== */
 const POSTED_LIFE_KEY = 'chi_posts_posted_v1', POSTED_LR_KEY = 'chi_lr_posted_v1';
@@ -39,86 +40,116 @@ const setPostedLR = a => localStorage.setItem(POSTED_LR_KEY, JSON.stringify(a));
 function dedupePostedArr(arr, key) { return arr.filter(p => { if (!p._posted) return true; const pt = new Date(p.created_at).getTime(); return !arr.some(o => !o._posted && !o._local && (o[key] || '') === (p[key] || '') && Math.abs(new Date(o.created_at).getTime() - pt) < 120000); }); }
 function confirmPostedArr(pool, data, key, setFn) { if (!pool.length) return; const remain = pool.filter(p => { const pt = new Date(p.created_at).getTime(); return !data.some(o => (o[key] || '') === (p[key] || '') && Math.abs(new Date(o.created_at).getTime() - pt) < 120000); }); if (remain.length !== pool.length) setFn(remain); }
 
-/* ===== 数据找回①：把备份并入"乐观显示池"（断网也可见、自动去重） ===== */
-function recoverLifeBackup() {
-  try {
-    const BACKUP = 'dg_life_migrated_backup';
-    const raw = localStorage.getItem(BACKUP);
-    if (!raw) return;
-    const backup = JSON.parse(raw);
-    if (!Array.isArray(backup) || !backup.length) return;
-    const hide = (() => { try { const r = JSON.parse(localStorage.getItem('chi_life_hide')); return Array.isArray(r) ? r : []; } catch (e) { return []; } })();
-    let posted = getPostedLife();
-    const have = {};
-    posted.forEach(p => { have['c:' + ((p && p.content) != null ? p.content : '')] = 1; });
-    let added = 0;
-    backup.forEach(p => {
-      if (!p) return;
-      if (p.id && hide.indexOf(p.id) >= 0) return;
-      const content = (p.content != null ? p.content : (p.txt || ''));
-      const key = 'c:' + content;
-      if (have[key]) return;
-      have[key] = 1;
+/* ===== 隐藏名单（id 黑名单 + 内容指纹黑名单，双保险） ===== */
+const LIFE_HIDE_KEY = 'chi_life_hide', LIFE_HIDE_C_KEY = 'chi_life_hide_content';
+const getLifeHide = () => { try { const r = JSON.parse(localStorage.getItem(LIFE_HIDE_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
+const setLifeHide = a => localStorage.setItem(LIFE_HIDE_KEY, JSON.stringify(a));
+function addLifeHideC(k) { if (!k) return; let hc = []; try { const r = JSON.parse(localStorage.getItem(LIFE_HIDE_C_KEY)); if (Array.isArray(r)) hc = r; } catch (e) { } if (!hc.includes(k)) { hc.push(k); localStorage.setItem(LIFE_HIDE_C_KEY, JSON.stringify(hc)); } }
+function lifeHideSets() {
+  let hid = [], hidc = [];
+  try { const r = JSON.parse(localStorage.getItem(LIFE_HIDE_KEY)); if (Array.isArray(r)) hid = r; } catch (e) { }
+  try { const r = JSON.parse(localStorage.getItem(LIFE_HIDE_C_KEY)); if (Array.isArray(r)) hidc = r; } catch (e) { }
+  return { hidSet: new Set(hid.map(String)), hidCSet: new Set(hidc) };
+}
+function lifeIsHiddenObj(p, sets) {
+  if (sets.hidSet.has(String(p && p.id))) return true;
+  const k = normTxt(contentOf(p));
+  return k ? sets.hidCSet.has(k) : false;
+}
+
+/* ===== 数据找回：从全部本地存储扫描随笔候选（按内容去重、排除已删/学习成长） ===== */
+function collectAllBackupCandidates() {
+  const sets = lifeHideSets();
+  const SKIP_KEY = /^chi_lr|^chi_theme$|^chi_offline$/;
+  const cands = [], seen = new Set();
+  function pushArr(arr) {
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function (p) {
+      if (!p || typeof p !== 'object') return;
+      if ('title' in p) return;                       // 排除学习成长文章
+      const content = contentOf(p);
+      const imgs = Array.isArray(p.images) ? p.images : [];
+      if (!String(content).trim() && !imgs.length) return;
+      if (lifeIsHiddenObj({ id: p.id, content: content, txt: p.txt }, sets)) return;  // 排除已删内容
+      const key = normTxt(content) + '||' + imgs.join(',');
+      if (seen.has(key)) return;
+      seen.add(key);
       let ca = p.created_at || null;
       if (!ca && p.ts) { try { ca = new Date(p.ts).toISOString(); } catch (e) { ca = null; } }
-      if (!ca) ca = new Date().toISOString();
-      posted.push({ id: p.id || uid('LF'), content: content, tags: p.tags || [], images: p.images || [], created_at: ca });
+      cands.push({ id: p.id || null, content: content, tags: Array.isArray(p.tags) ? p.tags : [], images: imgs, created_at: ca });
+    });
+  }
+  try { const raw = localStorage.getItem('dg_life_migrated_backup'); if (raw) pushArr(JSON.parse(raw)); } catch (e) { }
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || SKIP_KEY.test(k)) continue;
+      let v; try { v = localStorage.getItem(k); } catch (e) { continue; }
+      if (!v || v.charAt(0) !== '[') continue;
+      let arr; try { arr = JSON.parse(v); } catch (e) { continue; }
+      pushArr(arr);
+    }
+  } catch (e) { }
+  return cands;
+}
+
+/* ===== 找回①：候选并入"乐观显示池"（断网也可见、自动去重） ===== */
+function recoverLifeBackup(cands) {
+  try {
+    if (!cands || !cands.length) return;
+    const sets = lifeHideSets();
+    let posted = getPostedLife();
+    const have = {};
+    posted.forEach(p => { have['c:' + normTxt(contentOf(p))] = 1; });
+    let added = 0;
+    cands.forEach(p => {
+      if (lifeIsHiddenObj(p, sets)) return;
+      const key = 'c:' + normTxt(p.content);
+      if (have[key]) return;
+      have[key] = 1;
+      posted.push({ id: p.id || uid('LF'), content: p.content, tags: p.tags || [], images: p.images || [], created_at: p.created_at || new Date().toISOString() });
       added++;
     });
-    if (added) { setPostedLife(posted); console.log('[recover] 备份已并入本机显示池 ' + added + ' 条（稍后自动上云）。'); }
+    if (added) { setPostedLife(posted); console.log('[recover] 已从各存储源找回 ' + added + ' 条随笔并入显示池。'); }
   } catch (e) { console.warn('[recover] 跳过：', e); }
 }
 
-/* ===== 数据找回②：把备份真正同步到云端（一次性、按内容去重、尽量保留原时间） ===== */
-async function migrateBackupToCloud() {
-  if (!sb) return;
-  if (localStorage.getItem('dg_life_migrated_done') === '1') return;
-  let backup = [];
-  try { const raw = localStorage.getItem('dg_life_migrated_backup'); if (raw) backup = JSON.parse(raw); } catch (e) { return; }
-  if (!Array.isArray(backup) || !backup.length) { localStorage.setItem('dg_life_migrated_done', '1'); return; }
-  const have = new Set();
+/* ===== 找回②：候选真正同步到云端（增量记忆、按内容去重、尽量保留原时间） ===== */
+async function migrateBackupToCloud(cands) {
+  if (!sb || !cands || !cands.length) return;
+  const sets = lifeHideSets();
+  const cloudHave = new Set();
   try {
     const res = await withTimeout(sb.from('posts').select('content').limit(1000), 8000);
     if (res.error || !res.data) return;
-    res.data.forEach(p => have.add(normTxt(p.content)));
+    res.data.forEach(p => cloudHave.add(normTxt(p.content)));
   } catch (e) { return; }
+  let doneSet = new Set();
+  try { const r = JSON.parse(localStorage.getItem('dg_migrated_contents')); if (Array.isArray(r)) doneSet = new Set(r); } catch (e) { }
   let uploaded = 0, skipped = 0, failed = 0;
-  for (const p of backup) {
-    if (!p) continue;
-    const content = (p.content != null ? p.content : (p.txt || ''));
-    if (!normTxt(content) && !(p.images || []).length) continue;
-    const key = normTxt(content);
-    if (key && have.has(key)) { skipped++; continue; }
-    let ca = p.created_at || null;
-    if (!ca && p.ts) { try { ca = new Date(p.ts).toISOString(); } catch (e) { ca = null; } }
-    const payload = { content, tags: p.tags || [], images: p.images || [] };
+  for (const p of cands) {
+    if (lifeIsHiddenObj(p, sets)) continue;
+    const key = normTxt(p.content);
+    if (!key && !(p.images || []).length) continue;
+    if ((key && cloudHave.has(key)) || (key && doneSet.has(key))) { skipped++; continue; }
+    const payload = { content: p.content, tags: p.tags || [], images: p.images || [] };
     let ok = false;
     try {
       let r;
-      if (ca) { r = await withTimeout(sb.from('posts').insert({ ...payload, created_at: ca }), 15000); if (r.error) r = await withTimeout(sb.from('posts').insert(payload), 15000); }
+      if (p.created_at) { r = await withTimeout(sb.from('posts').insert({ ...payload, created_at: p.created_at }), 15000); if (r.error) r = await withTimeout(sb.from('posts').insert(payload), 15000); }
       else { r = await withTimeout(sb.from('posts').insert(payload), 15000); }
       ok = !r.error;
     } catch (e) { try { const r2 = await withTimeout(sb.from('posts').insert(payload), 15000); ok = !r2.error; } catch (e2) { ok = false; } }
-    if (ok) { uploaded++; if (key) have.add(key); } else failed++;
+    if (ok) { uploaded++; if (key) { cloudHave.add(key); doneSet.add(key); } } else failed++;
   }
-  if (failed === 0) {
-    localStorage.setItem('dg_life_migrated_done', '1');
-    if (uploaded > 0) { showToast(`备份已同步到云端：新上传 ${uploaded} 条，已存在跳过 ${skipped} 条 ✓`, 5000); loadPosts().then(() => renderHomeLife()); }
-    else if (skipped > 0) { console.log('[migrate] 备份均已在云端，无需重复上传。'); }
-  } else {
-    showToast(`备份同步：成功 ${uploaded}、跳过 ${skipped}、失败 ${failed}（刷新后自动重试）`, 6000);
-  }
+  if (doneSet.size) localStorage.setItem('dg_migrated_contents', JSON.stringify([...doneSet]));
+  if (uploaded > 0) { showToast(`已找回并同步到云端：新上传 ${uploaded} 条${skipped ? '，跳过已存在 ' + skipped + ' 条' : ''} ✓`, 5500); loadPosts().then(() => renderHomeLife()); }
+  else if (failed > 0) { showToast(`同步部分失败：成功 ${uploaded}、失败 ${failed}（刷新自动重试；反复失败请点🩺检查 INSERT 权限）`, 6500); }
 }
 
 /* ===== 一键导出全部随笔为 JSON ===== */
 function exportLifeJSON() {
-  const data = lifeList.map(p => ({
-    id: p.id,
-    content: p.content != null ? p.content : (p.txt || ''),
-    tags: p.tags || [],
-    images: p.images || [],
-    created_at: p.created_at || (p.ts ? new Date(p.ts).toISOString() : null)
-  }));
+  const data = lifeList.map(p => ({ id: p.id, content: contentOf(p), tags: p.tags || [], images: p.images || [], created_at: p.created_at || (p.ts ? new Date(p.ts).toISOString() : null) }));
   if (!data.length) { showToast('暂无随笔可导出'); return; }
   const payload = { exported_at: new Date().toISOString(), count: data.length, posts: data };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -148,7 +179,7 @@ function setNav(n) { navLinks.forEach(a => a.classList.toggle('active', a.datase
 function go(target) { const cur = location.hash.replace(/^#/, ''); if (cur === target) { route(); } else { location.hash = target; } }
 function curHash() { return location.hash.replace(/^#/, '') || 'home'; }
 function primeLearningSync() { if (learningList.length) return; learningList = sortPosts([...SEED_LEARNING, ...getLR().map(x => ({ ...x, _local: true })), ...getPostedLR().map(x => ({ ...x, _posted: true }))]); learningList = applyLocalOverlay(learningList); }
-function primeLifeSync() { if (lifeList.length) return; const hide = getLifeHide(); lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]); }
+function primeLifeSync() { if (lifeList.length) return; const hide = getLifeHide(); lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]); const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets)); }
 async function route() {
   const h = curHash(); const [view, param] = h.split('/');
   if (view === 'read') {
@@ -281,8 +312,11 @@ function applyLocalOverlay(arr) { const hide = getHide(); const ov = getEdit(); 
 async function deleteLearning(id, isLocal) {
   if (!confirm('确定删除这篇文章？此操作不可撤销。')) return;
   const sid = String(id); const isSeed = sid.indexOf('seed-') === 0;
-  const ppLR = getPostedLR(); if (ppLR.some(a => String(a.id) === sid)) setPostedLR(ppLR.filter(a => String(a.id) !== sid));
-  if (isLocal) { setLR(getLR().filter(a => String(a.id) !== sid)); }
+  const targetL = learningList.find(a => String(a.id) === sid);
+  const delKeyL = normTxt(targetL ? targetL.title : '');
+  const matchLR = x => String(x.id) === sid || (delKeyL !== '' && normTxt(x.title) === delKeyL);
+  const ppLR = getPostedLR(); if (ppLR.some(matchLR)) setPostedLR(ppLR.filter(x => !matchLR(x)));
+  if (isLocal) { setLR(getLR().filter(x => !matchLR(x))); }
   else if (isSeed) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); }
   else if (sb) {
     let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } } if (!ok) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); if (curHash().startsWith('read/')) go('learning'); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); return; }
@@ -338,22 +372,33 @@ const postList = document.getElementById('postList'), postInput = document.getEl
 const PUB_HTML = postPub.innerHTML, SAVE_HTML = '<i class="fas fa-floppy-disk"></i> 保存修改', seenIds = new Set(), LKEY = 'chi_posts_local_v1'; let cloudOK = true, lifeImages = [], lifeList = [];
 let lifeEditId = null, lifeEditLocal = false;
 const SEED_LIFE = [{ id: 'sl1', content: '今天把进销存看板的"该补货吗"挪到了第一屏。看板的第一屏只该回答一个问题。', tags: ['复盘'], images: [], created_at: '2026-07-20T21:30:00Z' }, { id: 'sl2', content: '周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾', tags: ['生活'], images: [], created_at: '2026-07-13T18:00:00Z' }];
-const LIFE_HIDE_KEY = 'chi_life_hide';
-const getLifeHide = () => { try { const r = JSON.parse(localStorage.getItem(LIFE_HIDE_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
-const setLifeHide = a => localStorage.setItem(LIFE_HIDE_KEY, JSON.stringify(a));
 function loadLocal() { try { const r = JSON.parse(localStorage.getItem(LKEY)); if (Array.isArray(r)) return r; } catch (e) { } return []; }
 function saveLocal(p) { localStorage.setItem(LKEY, JSON.stringify(p)); }
 function setLiveBadge(on) { const el = document.getElementById('postModeBadge'); if (on) { el.className = 'post-mode live'; el.innerHTML = '<i class="fas fa-tower-broadcast"></i> 实时同步'; } else { el.className = 'post-mode'; el.innerHTML = '<i class="fas fa-hard-drive"></i> 本机暂存'; } }
 function setSubText(on) { document.getElementById('postSubText').innerHTML = on ? '分析之外的日常碎片。<b>已连接云端数据库</b>：发布后所有设备<b>实时同步</b>，访客也能即时看到。' : '分析之外的日常碎片。<b>云端暂时连不上</b>，已自动切到<b>本机暂存</b>（仅本机可见；恢复后自动补传并实时同步）。'; }
 function postHTML(p) {
-  const raw = p.content ?? p.txt ?? '';
+  let raw = contentOf(p);
   const isH = window.__isHTML && window.__isHTML(raw);
-  const txtHtml = isH ? raw : toRTEHTML(raw);
-  const ptxtCls = isH ? 'ptxt ptxt-html' : 'ptxt';
+  let imgs = (p.images || []).slice();
+  let txtHtml, ptxtCls;
+  /* —— 关键修复：正文里内嵌的 <img> 也抽出来并入九宫格，不再以原始大图撑爆卡片 —— */
+  if (isH) {
+    ptxtCls = 'ptxt ptxt-html';
+    try {
+      const doc = new DOMParser().parseFromString('<div class="__rtx">' + raw + '</div>', 'text/html');
+      const root = doc.querySelector('.__rtx');
+      if (root) {
+        root.querySelectorAll('img').forEach(im => { const s = im.getAttribute('src') || im.getAttribute('data-src'); if (s) imgs.push(s); im.remove(); });
+        txtHtml = root.innerHTML;
+      } else txtHtml = raw;
+    } catch (e) { txtHtml = raw; }
+  } else {
+    ptxtCls = 'ptxt';
+    txtHtml = toRTEHTML(raw);
+  }
+  imgs = imgs.filter((s, i) => s && imgs.indexOf(s) === i);   // 去重
   const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
   const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join('');
-  /* —— 九宫格图片：全部平铺，1/2/3 列自适应，保留 .limg 以支持点击放大 —— */
-  const imgs = p.images || [];
   let imgHtml = '';
   if (imgs.length) {
     const cols = imgs.length >= 3 ? 3 : imgs.length;
@@ -362,7 +407,6 @@ function postHTML(p) {
   }
   const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : '';
   const flag = p._local ? `<span class="draft-flag">📴 本机</span>` : '';
-  /* —— 删除/编辑沿用原版事件委托属性（data-life-edit / data-life-del），绝不改成 onclick —— */
   const mgmt = p._seed ? '' : `<div class="life-mgmt"><button class="pc-m" data-life-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-life-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button></div>`;
   return `<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div>${pinned}${flag}${mgmt}</div><div class="${ptxtCls}">${txtHtml}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`;
 }
@@ -380,6 +424,7 @@ async function loadPosts() {
   const hide = getLifeHide();
   if (err || data === null) {
     cloudOK = false; setLiveBadge(false); setSubText(false); lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+    const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
     renderPosts(lifeList, true); return;
   }
   cloudOK = true; setLiveBadge(true); setSubText(true);
@@ -389,7 +434,9 @@ async function loadPosts() {
   const postedLife = getPostedLife().map(x => ({ ...x, _posted: true }));
   lifeList = sortPosts([...lifeList, ...postedLife]);
   lifeList = dedupePostedArr(lifeList, 'content');
-  confirmPostedArr(getPostedLife(), data || [], 'content', setPostedLife); renderPosts(lifeList, false);
+  confirmPostedArr(getPostedLife(), data || [], 'content', setPostedLife);
+  const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
+  renderPosts(lifeList, false);
 }
 function subscribeRT() { if (!sb) return; try { sb.channel('posts-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, pl => { if (!cloudOK) return; const p = pl.new; if (!p || seenIds.has(p.id)) return; seenIds.add(p.id); const e = postList.querySelector('.no-result'); if (e) e.remove(); postList.insertAdjacentHTML('afterbegin', postHTML(p)); }).subscribe(); } catch (e) { } }
 function setLifeEditorMode(on) { postPub.innerHTML = on ? SAVE_HTML : PUB_HTML; let cb = document.getElementById('lifeCancel'); if (on && !cb) { postPub.insertAdjacentHTML('afterend', '<button class="btn btn-ghost" id="lifeCancel" style="margin-left:8px"><i class="fas fa-xmark"></i> 取消编辑</button>'); document.getElementById('lifeCancel').onclick = clearLifeEditor; } else if (!on && cb) cb.remove(); }
@@ -400,13 +447,18 @@ async function deleteLife(id, isLocal) {
   const sid = String(id);
   const target = lifeList.find(p => String(p.id) === sid);
   const isSeed = !!(target && target._seed);
-  const pp = getPostedLife(); if (pp.some(a => String(a.id) === sid)) setPostedLife(pp.filter(a => String(a.id) !== sid)); if (isLocal) { saveLocal(loadLocal().filter(a => String(a.id) !== sid)); }
+  const delKey = normTxt(target ? contentOf(target) : '');
+  /* —— 关键修复：按 id 或 内容指纹 清理所有池子，杜绝"幽灵副本" —— */
+  const matchLife = x => String(x.id) === sid || (delKey !== '' && normTxt(contentOf(x)) === delKey);
+  const pp = getPostedLife(); if (pp.some(matchLife)) setPostedLife(pp.filter(x => !matchLife(x)));
+  if (isLocal) { saveLocal(loadLocal().filter(x => !matchLife(x))); }
   else if (isSeed) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
   else if (sb) {
     let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
-    if (!ok) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); if (lifeEditId === sid) clearLifeEditor(); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); loadPosts(); return; }
+    if (!ok) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); if (lifeEditId === sid) clearLifeEditor(); if (delKey) addLifeHideC(delKey); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); loadPosts(); renderHomeLife(); return; }
   } else { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
-  if (lifeEditId === sid) clearLifeEditor(); showToast('已删除 ✓'); loadPosts();
+  if (delKey && !isSeed) addLifeHideC(delKey);   /* 记内容指纹黑名单：渲染/救援/上云全路径都会排除它，永不再复活 */
+  if (lifeEditId === sid) clearLifeEditor(); showToast('已删除 ✓'); loadPosts(); renderHomeLife();
 }
 async function publishLife() {
   if (lifeEditId) {
@@ -434,6 +486,7 @@ async function publishLife() {
   cloudOK = false; setLiveBadge(false); setSubText(false);
   const hide = getLifeHide();
   lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...l.map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+  const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
   renderPosts(lifeList, true);
   showToast('已保存到本机 ✓ 联网后自动补传', 6000);
 }
@@ -444,7 +497,8 @@ document.getElementById('lifeThumbs').addEventListener('click', e => { const b =
 
 /* ===== 联系方式 ===== */
 const CONTACT = { wechat: { l: '微信号', v: 'chieee_ya', h: '打开微信「添加朋友」粘贴' }, qq: { l: 'QQ 号', v: '954567763', h: '打开 QQ 添加好友' }, phone: { l: '电话', v: '18271645570', h: '可直接拨打' }, email: { l: '邮箱', v: 'chift0707@gmail.com', h: '粘贴到收件人写信' } };
-document.querySelector('.contact-row').addEventListener('click', async e => { const b = e.target.closest('[data-contact]'); if (!b) return; const c = CONTACT[b.dataset.contact]; if (!c) return; const ok = await copyText(c.v); showToast(`<b>${c.l}：${c.v}</b><br>${ok ? '✓ 已复制 · ' : '请手动复制 · '}${c.h}`); });
+const _contactRow = document.querySelector('.contact-row');
+if (_contactRow) _contactRow.addEventListener('click', async e => { const b = e.target.closest('[data-contact]'); if (!b) return; const c = CONTACT[b.dataset.contact]; if (!c) return; const ok = await copyText(c.v); showToast(`<b>${c.l}：${c.v}</b><br>${ok ? '✓ 已复制 · ' : '请手动复制 · '}${c.h}`); });
 
 /* ===== lightbox ===== */
 document.getElementById('lightbox').addEventListener('click', e => { if (e.target.id === 'lightbox' || e.target.closest('[data-close]')) { document.getElementById('lightbox').classList.remove('on'); lockScroll(false); setTimeout(() => document.getElementById('lbImg').src = '', 300); } });
@@ -534,9 +588,10 @@ function makeRTE(ta, opts) {
 }
 
 /* ===== 启动 ===== */
-recoverLifeBackup();      /* ① 备份先并入本机显示池：断网也可见 */
-migrateBackupToCloud();   /* ② 备份按内容去重真正上传云端：所有设备正常显示，不重复 */
-injectExportBtn();        /* ③ 注入"导出全部随笔 JSON"按钮 */
+const _lifeCands = collectAllBackupCandidates();   /* 全量扫描本地存储，捞出所有随笔候选 */
+recoverLifeBackup(_lifeCands);                     /* ① 并入显示池：断网也可见 */
+migrateBackupToCloud(_lifeCands);                  /* ② 按内容去重真正上云：所有设备正常显示 */
+injectExportBtn();                                 /* ③ 注入"导出全部随笔 JSON"按钮 */
 window.addEventListener('hashchange', route);
 renderCases(); renderCerts();
 primeLearningSync(); primeLifeSync();
@@ -570,7 +625,7 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (window.OFFLINE) setTimeout(toastOFF, 900);
 })();
 
-/* ===== 样式增强（纯 CSS：字体加大 / 删除键常驻 / 九宫格 / 导出按钮 / 暗色适配；并清掉旧补丁残留样式） ===== */
+/* ===== 样式增强（纯 CSS：正文图兜底 / 删除键常驻 / 九宫格 / 导出按钮 / 暗色适配；并清掉旧补丁残留样式） ===== */
 (function () {
   try { document.querySelectorAll('style[data-patch="life-grid-v4"],style[data-patch="life-grid-v3"],style[data-patch="life-grid-v2"],style[data-patch="life-v5"],style[data-patch="life-enhance"]').forEach(function (s) { s.remove(); }); } catch (e) { }
   var css = [
@@ -578,7 +633,9 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     '.post .ptxt{font-size:16.5px !important;line-height:1.85 !important;}',
     '.post .ptxt p{margin:0 0 8px;}',
     '.post .ptags{margin-top:10px;font-size:13px;}',
-    /* 删除/编辑键始终可见可点（解决手机无 hover 点不到的问题） */
+    /* 正文内嵌图兜底：万一没进九宫格，也绝不撑爆，且有圆角、可点 */
+    '.ptxt img,.ptxt-html img{max-width:100%;height:auto;border-radius:12px;display:block;margin:10px 0;cursor:pointer;}',
+    /* 删除/编辑键始终可见可点 */
     '.life-mgmt{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;position:absolute;top:14px;right:14px;gap:8px;z-index:10;}',
     '.life-mgmt .pc-m{background:rgba(255,255,255,.85);border:1px solid #eee;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666;transition:all .2s;backdrop-filter:blur(4px);}',
     '.life-mgmt .pc-m:hover{background:#fff;color:#d9534f;border-color:#d9534f;box-shadow:0 2px 8px rgba(0,0,0,.1);}',
