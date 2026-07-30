@@ -580,3 +580,60 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     }
   } catch (e) {}
 })();
+/* ===== 旧数据找回补丁：把早期 dg_life 里的随笔迁回列表并补传云端（追加在末尾，不改任何原代码） ===== */
+(function () {
+  var RAW = 'dg_life';
+  var raw; try { raw = localStorage.getItem(RAW); } catch (e) { raw = null; }
+  if (!raw) return; // 没有旧数据就直接退出，绝不影响现有功能
+  var arr; try { arr = JSON.parse(raw); } catch (e) { return; }
+  if (arr && typeof arr === 'object' && !Array.isArray(arr)) {
+    var ks = Object.keys(arr).filter(function (k) { return Array.isArray(arr[k]); });
+    arr = ks.length ? arr[ks[0]] : null;
+  }
+  if (!Array.isArray(arr) || !arr.length) return;
+
+  var strip = function (s) { var d = document.createElement('div'); d.innerHTML = (s == null ? '' : String(s)); return (d.textContent || '').trim(); };
+  var norm = [];
+  arr.forEach(function (it) {
+    if (!it || typeof it !== 'object') return;
+    var content = (it.content != null ? it.content : (it.txt != null ? it.txt : (it.text != null ? it.text : '')));
+    if (!strip(content) && !(Array.isArray(it.images) && it.images.length)) return; // 空条目跳过
+    var tags = Array.isArray(it.tags) ? it.tags : (typeof it.tags === 'string' ? it.tags.split(/[,，]/) : []);
+    tags = tags.map(function (t) { return String(t).replace(/^#+/, '').trim(); }).filter(Boolean);
+    var images = Array.isArray(it.images) ? it.images.filter(function (s) { return typeof s === 'string' && s.length > 0; }) : [];
+    var tsRaw = it.created_at || it.ts || it.time || it.createdAt || it.date || it.updated_at || '';
+    var ms = (typeof tsRaw === 'number') ? tsRaw : Date.parse(tsRaw);
+    var iso = isNaN(ms) ? new Date().toISOString() : new Date(ms).toISOString();
+    norm.push({ id: uid('LF'), content: content, tags: tags, images: images, created_at: iso, ts: isNaN(ms) ? Date.now() : ms, _local: true });
+  });
+  if (!norm.length) return;
+
+  // 1) 备份旧键 + 清空，防止重复迁移
+  try { localStorage.setItem('dg_life_migrated_backup', raw); } catch (e) {}
+  try { localStorage.removeItem(RAW); } catch (e) {}
+
+  // 2) 合并进本机池（按"正文前40字+图片数"去重，避免重复）
+  var pool = loadLocal();
+  var sig = function (p) { return strip(p.content || '').slice(0, 40) + '|' + ((p.images || []).length); };
+  var seen = {}; pool.forEach(function (p) { seen[sig(p)] = 1; });
+  var added = 0;
+  norm.forEach(function (p) { var s = sig(p); if (!seen[s]) { pool.push(p); seen[s] = 1; added++; } });
+  saveLocal(pool);
+
+  // 3) 立刻重算列表并重渲染当前页 —— 刷新后马上就能看见，带📴本机 + 当初的日期
+  try {
+    var hide = getLifeHide();
+    lifeList = sortPosts(
+      SEED_LIFE.filter(function (s) { return !hide.includes(s.id); }).map(function (s) { return Object.assign({}, s, { _seed: true }); }).concat(
+        loadLocal().map(function (x) { return Object.assign({}, x, { _local: true }); }),
+        getPostedLife().map(function (x) { return Object.assign({}, x, { _posted: true }); })
+      )
+    );
+    var h = (location.hash || '').replace(/^#/, '').split('/')[0] || 'home';
+    if (h === 'life') { renderPosts(lifeList, false); }
+    else if (h === 'home') { try { renderHomeLife(); } catch (e) {} }
+  } catch (e) {}
+
+  // 4) 补传云端交给页面路由自动完成：它会读取本机池逐条上传，成功后📴标记自动消失（这里不再重复调用，避免并发重复上传）
+  try { showToast('已找回 ' + added + ' 条旧随笔 ✓ 正在自动补传云端…', 7000); } catch (e) {}
+})();
