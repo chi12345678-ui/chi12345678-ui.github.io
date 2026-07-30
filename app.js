@@ -891,3 +891,96 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   setTimeout(function(){ mergePoolsIntoList(); try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){} }, 1500);
   console.log('%c[patchD] 学习成长发布兜底已挂载','color:#16a34a;font-weight:700');
 })();
+/* ===== 补丁 E：首页随笔捏窄 + 首页"最新"发布即刷新（学习成长&生活随笔双兜底·幂等·不改作者源码） =====
+   洞①：CSS 捏窄 #homeLife（首页"生活随笔·最新"容器），消除右侧空米色。
+   洞②：wrap 四个渲染/发布函数——渲染前把"乐观池+本机草稿"合并进列表（防 loadX 冲掉新条目）；
+        发布后强制重画首页 homeLatest/homeLife（作者 publishLife 漏了重画首页）。
+   与补丁 D 幂等兼容：函数级 __patchE 标记防双重 wrap；merge 用 id 去重，跑多次结果不变。
+*/
+(function(){
+  'use strict';
+  if(window.__patchE){ console.log('[patchE] 已安装，跳过重复安装'); return; }
+  window.__patchE=1;
+
+  /* 1) 捏窄首页"生活随笔·最新"。左对齐、右留页面背景，与独立页同族视觉。
+        若"学习成长·最新"首页那块也出现右空米色，把下面 #homeLife 改成 #homeLife,#homeLatest 即可。 */
+  var st=document.createElement('style');
+  st.setAttribute('data-patch','E');
+  st.textContent='#homeLife{max-width:760px !important;width:100%;margin-left:0;margin-right:auto}#homeLife>*{max-width:100%}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function safe(fn){ try{ return fn(); }catch(e){ return undefined; } }
+  function getLearningList(){ try{ return learningList; }catch(e){ return null; } }
+  function setLearningList(a){ try{ learningList=a; return true; }catch(e){ return false; } }
+  function getLifeList(){ try{ return lifeList; }catch(e){ return null; } }
+  function setLifeList(a){ try{ lifeList=a; return true; }catch(e){ return false; } }
+
+  function mergeInto(getList,setList,postedFn,draftFn,flagPosted,flagLocal){
+    try{
+      var L=getList(); if(!L) return;
+      var have={}; L.forEach(function(x){ if(x&&x.id!=null) have[String(x.id)]=1; });
+      var add=[];
+      try{ (postedFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[flagPosted]=true; add.push(x); } }); }catch(e){}
+      try{ (draftFn()||[]).forEach(function(x){ if(x&&x.id!=null&&!have[String(x.id)]){ have[String(x.id)]=1; x[flagLocal]=true; add.push(x); } }); }catch(e){}
+      if(add.length){
+        var m=add.concat(L);
+        try{ if(typeof sortPosts==='function') m=sortPosts(m); }catch(e){}
+        setList(m);
+      }
+    }catch(e){}
+  }
+  function mergeLearning(){ mergeInto(getLearningList,setLearningList,function(){return getPostedLR();},function(){return getLR();},'_posted','_local'); }
+  function mergeLife(){ mergeInto(getLifeList,setLifeList,function(){return getPostedLife();},function(){return loadLocal();},'_posted','_local'); }
+
+  function wrap(name,before,after){
+    var orig=window[name];
+    if(typeof orig!=='function') return;
+    if(orig.__patchE) return;            // 防 E 自身重复 wrap
+    var nw=function(){
+      if(before){ try{ before(); }catch(e){ console.warn('[patchE] '+name+' before',e); } }
+      var ret;
+      try{ ret=orig.apply(this,arguments); }catch(e){ if(after){ try{after();}catch(_){} } throw e; }
+      if(after){
+        Promise.resolve(ret).then(function(){ try{after();}catch(e){} },function(){ try{after();}catch(e){} });
+      }
+      return ret;
+    };
+    nw.__patchE=1;
+    window[name]=nw;
+  }
+
+  /* 渲染前合并：保证列表/首页永远含"池+草稿"里的条目（loadX 冲不掉） */
+  wrap('renderLearningList', mergeLearning, null);
+  wrap('renderHomeLatest',   mergeLearning, null);
+  wrap('renderHomeLife',     mergeLife,     null);
+  wrap('renderPosts',        mergeLife,     null);
+
+  /* 发布后强制重画首页"最新"（补作者 publishLife 漏掉的首页刷新） */
+  function refreshHome(){
+    setTimeout(function(){
+      try{ mergeLearning(); }catch(e){}
+      try{ mergeLife(); }catch(e){}
+      try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){}
+      try{ if(typeof renderHomeLatest==='function')   renderHomeLatest(); }catch(e){}
+      try{ if(typeof renderHomeLife==='function')     renderHomeLife(); }catch(e){}
+    },350);
+  }
+  wrap('publishLearning', null, refreshHome);
+  wrap('publishLife',     null, refreshHome);
+
+  /* 安装即跑一次：页面一加载就把首页"最新"合并+重画 */
+  setTimeout(refreshHome, 800);
+
+  function flash(msg,bg){
+    try{
+      var old=document.getElementById('patchE-flash'); if(old) old.remove();
+      var d=document.createElement('div'); d.id='patchE-flash'; d.textContent=msg;
+      d.style.cssText='position:fixed;left:50%;top:24px;transform:translateX(-50%);background:'+(bg||'#16a34a')+';color:#fff;padding:12px 22px;border-radius:14px;font:600 14px/1.5 system-ui,-apple-system;box-shadow:0 10px 34px rgba(0,0,0,.28);z-index:2147483647;max-width:88vw;opacity:0;transition:opacity .3s,transform .3s';
+      document.body.appendChild(d);
+      requestAnimationFrame(function(){ d.style.opacity='1'; d.style.transform='translateX(-50%) translateY(4px)'; });
+      setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){ d.remove(); },400); }, 4200);
+    }catch(e){}
+  }
+  setTimeout(function(){ flash('✅ 补丁E v1 已挂载：首页随笔已捏窄 + 首页"最新"已接管','#16a34a'); }, 1100);
+  console.log('%c[patchE] v1 已挂载（首页捏窄 + 双最新兜底）','color:#16a34a;font-weight:700');
+})();
