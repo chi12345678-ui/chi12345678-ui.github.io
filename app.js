@@ -922,3 +922,30 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+/* ===== learning 保险：专治 _lp 缓存钉死 / 启动期离线假空 ===== */
+(function(){
+  var URL='https://bqdhqnviozvqljjigzys.supabase.co';
+  var KEY='sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
+  function nativeFetch(){ try{ var f=document.createElement('iframe'); f.style.display='none'; document.documentElement.appendChild(f); if(f.contentWindow&&f.contentWindow.fetch) return f.contentWindow.fetch.bind(f.contentWindow); }catch(e){} return window.fetch.bind(window); }
+  async function refreshLearning(){
+    try{
+      var nf=nativeFetch(); var c=new AbortController(); var t=setTimeout(function(){try{c.abort();}catch(e){}},15000);
+      var r=await nf(URL+'/rest/v1/learning?select=id,title,content,images,links,tags,emoji,created_at&order=created_at.desc&limit=100',{headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Accept':'application/json'},signal:c.signal});
+      clearTimeout(t); if(r.status!==200) return;
+      var cloud=JSON.parse(await r.text())||[]; if(!cloud.length) return;            // 云端空就不动，保留 seed 兜底
+      if(typeof learningList==='undefined') return;
+      var local=(learningList||[]).filter(function(p){return String(p&&p.id||'').indexOf('seed-')!==0 && !(p&&p._local);});
+      learningList = cloud.concat(local);                                            // 云端优先 + 本机未上传的
+      if(typeof window.renderLearningList==='function') window.renderLearningList();
+      if(typeof window.renderHomeLatest==='function') window.renderHomeLatest();
+    }catch(e){ /* 静默：保险失败不影响主流程 */ }
+  }
+  window.__refreshLearning = refreshLearning;                                        // 控制台也能敲：__refreshLearning()
+  window.addEventListener('load', function(){ setTimeout(refreshLearning, 600); });  // 页面加载完兜底刷一次
+  document.addEventListener('click', function(e){                                   // 点导航时再刷一次
+    var a=e.target&&e.target.closest&&e.target.closest('a,[data-page],.nav-item'); if(!a) return;
+    setTimeout(refreshLearning, 300);
+  }, true);
+})();
+window.renderLearningList = renderLearningList;
+window.renderHomeLatest   = renderHomeLatest;
