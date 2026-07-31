@@ -922,30 +922,46 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
-/* ===== learning 保险：专治 _lp 缓存钉死 / 启动期离线假空 ===== */
+/* ===== learning 保险 v2：补首页学习预览重画 + 加载自检灯 ===== */
 (function(){
+  console.log('%c[LR保险]已加载 v2','color:#16a34a;font-weight:700');
   var URL='https://bqdhqnviozvqljjigzys.supabase.co';
   var KEY='sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
+  function isSeed(p){ return String(p&&p.id||'').indexOf('seed-')===0; }
   function nativeFetch(){ try{ var f=document.createElement('iframe'); f.style.display='none'; document.documentElement.appendChild(f); if(f.contentWindow&&f.contentWindow.fetch) return f.contentWindow.fetch.bind(f.contentWindow); }catch(e){} return window.fetch.bind(window); }
+  function seedCount(){ try{ return (learningList||[]).filter(isSeed).length; }catch(e){ return -1; } }
   async function refreshLearning(){
     try{
       var nf=nativeFetch(); var c=new AbortController(); var t=setTimeout(function(){try{c.abort();}catch(e){}},15000);
       var r=await nf(URL+'/rest/v1/learning?select=id,title,content,images,links,tags,emoji,created_at&order=created_at.desc&limit=100',{headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Accept':'application/json'},signal:c.signal});
-      clearTimeout(t); if(r.status!==200) return;
-      var cloud=JSON.parse(await r.text())||[]; if(!cloud.length) return;            // 云端空就不动，保留 seed 兜底
-      if(typeof learningList==='undefined') return;
-      var local=(learningList||[]).filter(function(p){return String(p&&p.id||'').indexOf('seed-')!==0 && !(p&&p._local);});
-      learningList = cloud.concat(local);                                            // 云端优先 + 本机未上传的
-      if(typeof window.renderLearningList==='function') window.renderLearningList();
-      if(typeof window.renderHomeLatest==='function') window.renderHomeLatest();
-    }catch(e){ /* 静默：保险失败不影响主流程 */ }
+      clearTimeout(t);
+      if(r.status!==200){ console.log('%c[LR保险]云端status='+r.status+'，跳过','color:#d97706'); return; }
+      var cloud=JSON.parse(await r.text())||[];
+      console.log('%c[LR保险]云端learning='+cloud.length+'条','color:#0ea5e9');
+      if(!cloud.length){ console.log('%c[LR保险]云端空，保留seed兜底','color:#d97706'); return; }
+      try{ if(typeof invalidateLearning==='function') invalidateLearning(); }catch(e){}   // 清 _lp 钉死
+      try{ if(typeof loadLearning==='function') await loadLearning(); }catch(e){}        // 走作者全套逻辑重读
+      if(typeof learningList!=='undefined' && (learningList||[]).length>0 && (learningList||[]).every(isSeed)){
+        learningList = cloud.concat((learningList||[]).filter(function(p){return p&&p._local;}));  // 仍卡seed则硬覆盖
+        console.log('%c[LR保险]作者逻辑仍seed→已硬覆盖为云端数据','color:#d97706');
+      }
+      console.log('%c[LR保险]重读后 样例数='+seedCount()+' 总数='+(learningList||[]).length,'color:#0ea5e9');
+      var hit='(无)';
+      try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){}
+      try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){}
+      // 盲补：首页"学习成长·最新"预览的渲染函数，命中哪个调哪个（typeof 对不存在的名字安全，不会报错）
+      try{ if(typeof renderHomeLearning==='function'){ renderHomeLearning(); hit='renderHomeLearning'; } }catch(e){}
+      try{ if(typeof renderLearningLatest==='function'){ renderLearningLatest(); hit='renderLearningLatest'; } }catch(e){}
+      try{ if(typeof renderLatestLearning==='function'){ renderLatestLearning(); hit='renderLatestLearning'; } }catch(e){}
+      try{ if(typeof renderHomeLearn==='function'){ renderHomeLearn(); hit='renderHomeLearn'; } }catch(e){}
+      try{ if(typeof renderLearningPreview==='function'){ renderLearningPreview(); hit='renderLearningPreview'; } }catch(e){}
+      try{ if(typeof renderLearningHome==='function'){ renderLearningHome(); hit='renderLearningHome'; } }catch(e){}
+      try{ if(typeof renderLearnHome==='function'){ renderLearnHome(); hit='renderLearnHome'; } }catch(e){}
+      try{ if(typeof renderHomeLearnList==='function'){ renderHomeLearnList(); hit='renderHomeLearnList'; } }catch(e){}
+      console.log('%c[LR保险]首页预览重画命中: '+hit+(hit==='(无)'?'  ← 首页若仍seed，把代码搜“学习成长·最新”那行上下15行截图发我':''),'color:'+(hit==='(无)'?'#d97706':'#16a34a')+';font-weight:700');
+    }catch(e){ console.log('%c[LR保险-ERR] '+(e&&e.message||e),'color:#dc2626'); }
   }
-  window.__refreshLearning = refreshLearning;                                        // 控制台也能敲：__refreshLearning()
-  window.addEventListener('load', function(){ setTimeout(refreshLearning, 600); });  // 页面加载完兜底刷一次
-  document.addEventListener('click', function(e){                                   // 点导航时再刷一次
-    var a=e.target&&e.target.closest&&e.target.closest('a,[data-page],.nav-item'); if(!a) return;
-    setTimeout(refreshLearning, 300);
-  }, true);
+  window.__refreshLearning = refreshLearning;
+  window.addEventListener('load', function(){ setTimeout(refreshLearning, 700); });
+  document.addEventListener('click', function(e){ var a=e.target&&e.target.closest&&e.target.closest('a,[data-page],.nav-item,.menu-item'); if(!a) return; setTimeout(refreshLearning, 300); }, true);
 })();
-window.renderLearningList = renderLearningList;
-window.renderHomeLatest   = renderHomeLatest;
