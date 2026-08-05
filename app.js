@@ -264,22 +264,34 @@ function cardHTML(p, i) {
   const imgs = p.images || []; const cover = imgs[0] ? `background-image:url('${imgs[0]}')` : `background:${GRADS[i % GRADS.length]}`;
   const tags = (p.tags || []).slice(0, 4).map(t => `<span>${esc(t)}</span>`).join(''); const ex = (p.content || '').replace(/<[^>]+>/g, '').replace(/https?:\/\/\S+/g, '').replace(/\n+/g, ' ').trim().slice(0, 120);
   const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : ''; const localFlag = p._local ? `<span class="draft-flag">📴 本机</span>` : '';
+    const hasFiles = (p.attachments || []).length ? `<span class="file-flag"><i class="fas fa-paperclip"></i> ${p.attachments.length}</span>` : '';
   const mgmt = `<div class="pc-mgmt"><button class="pc-m" data-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button>${p._local ? `<button class="pc-m sync-btn" data-sync="${esc(p.id)}" title="同步云端"><i class="fas fa-rotate"></i></button>` : ''}</div>`;
-  return `<article class="postcard postcard--row" data-id="${esc(p.id)}"><div class="pc-thumb" style="${cover}"><span class="pc-emoji">${p.emoji || '📝'}</span></div><div class="pc-main"><div class="pc-top"><span class="pc-date">${fmtDate(p.created_at || new Date().toISOString())}</span>${pinned}${localFlag}</div><h3 class="pc-title">${esc(p.title || '无标题')}</h3><p class="pc-ex">${esc(ex)}</p><div class="pc-tags">${tags}</div></div>${mgmt}</article>`;
+  return `<article class="postcard postcard--row" data-id="${esc(p.id)}"><div class="pc-thumb" style="${cover}"><span class="pc-emoji">${p.emoji || '📝'}</span></div><div class="pc-main"><div class="pc-top"><span class="pc-date">${fmtDate(p.created_at || new Date().toISOString())}</span>${pinned}${localFlag}${hasFiles}</div><h3 class="pc-title">${esc(p.title || '无标题')}</h3><p class="pc-ex">${esc(ex)}</p><div class="pc-tags">${tags}</div></div>${mgmt}</article>`;
 }
 function renderLearningList() { const g = document.getElementById('learningGrid'); if (!learningList.length) { g.innerHTML = '<div class="no-result">还没有学习记录，写第一篇吧 ✍️</div>'; return; } g.innerHTML = learningList.map(cardHTML).join(''); }
+let _lrQuery = '';
+document.getElementById('lrSearch').addEventListener('input', e => {
+  _lrQuery = e.target.value.trim().toLowerCase();
+  renderLearningList();
+});
 function renderHomeLatest() {
   const list = learningList.slice(0, 4);
   const h = document.getElementById('homeLatestH'), g = document.getElementById('homeLatest'), m = document.getElementById('homeLatestMore');
   if (!list.length) { h.style.display = 'none'; g.innerHTML = ''; if (m) m.style.display = 'none'; return; }
   h.style.display = 'flex'; if (m) m.style.display = 'flex'; g.innerHTML = list.map(cardHTML).join('');
 }
-async function resyncOne(id) { const d = getLR(); const x = d.find(a => a.id === id); if (!x || !sb) return; let ok = false; try { const migrated = await migrateImagesToStorage(x.images); const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: migrated, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (ok) { setLR(d.filter(a => a.id !== id)); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已同步到云端 ✓'); } else showToast('同步失败，稍后再试（内容仍安全存在本机）'); }
+async function resyncOne(id) { const d = getLR(); const x = d.find(a => a.id === id); if (!x || !sb) return; let ok = false; try { const migrated = await migrateImagesToStorage(x.images); const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: migrated, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (ok) { setLR(d.filter(a => a.id !== id)); invalidateLearning(); await loadLearning(); function renderLearningList() {   const g = document.getElementById('learningGrid');   let list = learningList;   if (_lrQuery) {     list = list.filter(p => {       const hay = (p.title + ' ' + (p.content || '').replace(/<[^>]+>/g, '') + ' ' + (p.tags || []).join(' ')).toLowerCase();       return hay.includes(_lrQuery);     });   }   if (!list.length) { g.innerHTML = '<div class="no-result">还没有学习记录，写第一篇吧 ✍️</div>'; return; }   g.innerHTML = list.map(cardHTML).join(''); }; renderHomeLatest(); showToast('已同步到云端 ✓'); } else showToast('同步失败，稍后再试（内容仍安全存在本机）'); }
 function renderRead(p, preview) {
   const tags = (p.tags || []).map(t => `<span class="mtag">${esc(t)}</span>`).join('');
   const imgs = p.images || [];
   const gallery = imgs.length ? `<div class="article-gallery">${imgs.map(s => `<div class="gal-item" data-img="${s}"><img src="${s}" alt=""></div>`).join('')}</div>` : ''; const links = p.links || [];
   const refs = links.length ? `<div class="article-refs"><h4><i class="fas fa-link"></i> 参考链接</h4>${links.map(l => `<a class="ref-card" href="${esc(l.url)}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i><span><b>${esc(l.text || l.url)}</b><small>${esc(l.url)}</small></span><i class="fas fa-external-link-alt"></i></a>`).join('')}</div>` : '';
+    const attachments = p.attachments || [];
+  const attHtml = attachments.length ? `<div class="article-attachments"><h4><i class="fas fa-paperclip"></i> 附件</h4>${attachments.map(f => {
+    const icon = fileIcon(f.type, f.name || '');
+    const size = fmtSize(f.size);
+    return `<a class="att-card" href="${esc(f.url || '#')}" target="_blank" rel="noopener"><i class="fas ${icon}"></i><span><b>${esc(f.name || '未命名')}</b><small>${size}${f.type ? ' · ' + esc(f.type) : ''}</small></span><i class="fas fa-download"></i></a>`;
+  }).join('')}</div>` : '';
   let nav = '';
   if (!preview) {
     const idx = learningList.findIndex(a => String(a.id) === String(p.id));
@@ -287,7 +299,7 @@ function renderRead(p, preview) {
     nav = `<div class="article-nav">${card(older, 'left', '')}${card(newer, 'right', 'next')}</div>`;
   }
   const localBar = p._local ? `<div class="preview-bar"><i class="fas fa-hard-drive"></i> 这篇还在本机，联网后会自动同步。<button class="btn btn-ghost" id="syncNow" style="padding:7px 14px"><i class="fas fa-rotate"></i> 立即同步</button></div>` : ''; const bar = preview ? `<div class="preview-bar"><i class="fas fa-eye"></i> 这是预览，尚未发布。<span class="back-link" id="backEdit" style="margin:0"><i class="fas fa-pen"></i> 返回编辑</span></div>` : `<div class="read-bar"><span class="back-link" id="backList"><i class="fas fa-arrow-left"></i> 返回学习成长</span><span class="rb-spacer"></span><button class="btn btn-ghost rb-btn" id="editCur"><i class="fas fa-pen"></i> 编辑</button><button class="btn btn-ghost rb-btn rb-del" id="delCur"><i class="fas fa-trash"></i> 删除</button></div>`;
-  document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML && window.__isHTML(p.content)) ? p.content : toRTEHTML(p.content || '')}</div>${gallery}${refs}${nav}</article>`; document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
+  document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML && window.__isHTML(p.content)) ? p.content : toRTEHTML(p.content || '')}</div>${gallery}${refs}${attHtml}${nav}</article>`; document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
   const bl = document.getElementById('backList'); if (bl) bl.onclick = () => go('learning');
   const be = document.getElementById('backEdit'); if (be) be.onclick = () => go('learning'); const sn = document.getElementById('syncNow'); if (sn) sn.onclick = () => resyncOne(p.id);
   const ec = document.getElementById('editCur'); if (ec) ec.onclick = () => editLearning(p.id);
@@ -296,11 +308,11 @@ function renderRead(p, preview) {
 }
 
 /* ===== 学习成长：编辑器 ===== */
-let lrImages = [], lrLinks = [];
+let lrImages = [], lrLinks = [], lrFiles = [];
 let editingId = null, editingLocal = false;
 function setEditorMode(on) { const pub = document.getElementById('lrPub'); pub.innerHTML = on ? '<i class="fas fa-floppy-disk"></i> 保存修改' : '<i class="fas fa-paper-plane"></i> 发布'; let cb = document.getElementById('lrCancel'); if (on && !cb) { pub.insertAdjacentHTML('afterend', '<button class="btn btn-ghost" id="lrCancel" style="margin-left:8px"><i class="fas fa-xmark"></i> 取消编辑</button>'); document.getElementById('lrCancel').onclick = clearEditor; } else if (!on && cb) cb.remove(); }
-function clearEditor() { editingId = null; editingLocal = false; document.getElementById('lrTitle').value = ''; if (window.__rte) window.__rte.clear(); else document.getElementById('lrContent').value = ''; document.getElementById('lrTags').value = ''; lrImages = []; lrLinks = []; renderThumbs(); renderLinkList(); setEditorMode(false); }
-function editLearning(id) { const p = learningList.find(a => String(a.id) === String(id)); if (!p) return; editingId = String(id); editingLocal = !!p._local; document.getElementById('lrTitle').value = p.title || ''; if (window.__rte) window.__rte.ed.innerHTML = toRTEHTML(p.content || ''); else document.getElementById('lrContent').value = p.content || ''; document.getElementById('lrTags').value = (p.tags || []).join(', '); lrImages = (p.images || []).slice(); renderThumbs(); lrLinks = (p.links || []).map(l => ({ text: l.text, url: l.url })); renderLinkList(); setEditorMode(true); showView('learning'); setNav('learning'); setTimeout(() => document.getElementById('lrTitle').scrollIntoView({ behavior: 'smooth', block: 'center' }), 80); showToast('已进入编辑模式 · 改完点「保存修改」'); }
+function clearEditor() { editingId = null; editingLocal = false; document.getElementById('lrTitle').value = ''; if (window.__rte) window.__rte.clear(); else document.getElementById('lrContent').value = ''; document.getElementById('lrTags').value = ''; lrImages = []; lrLinks = []; lrFiles = []; renderThumbs(); renderLinkList();renderFileList(); setEditorMode(false); }
+function editLearning(id) { const p = learningList.find(a => String(a.id) === String(id)); if (!p) return; editingId = String(id); editingLocal = !!p._local; document.getElementById('lrTitle').value = p.title || ''; if (window.__rte) window.__rte.ed.innerHTML = toRTEHTML(p.content || ''); else document.getElementById('lrContent').value = p.content || ''; document.getElementById('lrTags').value = (p.tags || []).join(', '); lrImages = (p.images || []).slice(); renderThumbs(); lrLinks = (p.links || []).map(l => ({ text: l.text, url: l.url })); renderLinkList(); lrFiles = (p.attachments || []).slice(); renderFileList();setEditorMode(true); showView('learning'); setNav('learning'); setTimeout(() => document.getElementById('lrTitle').scrollIntoView({ behavior: 'smooth', block: 'center' }), 80); showToast('已进入编辑模式 · 改完点「保存修改」'); }
 
 /* ===== 本机小账本：示例文的隐藏/覆盖 ===== */
 const HIDE_KEY = 'chi_lr_hide', EDIT_KEY = 'chi_lr_edit';
@@ -327,11 +339,43 @@ async function deleteLearning(id, isLocal) {
 }
 function renderThumbs() { document.getElementById('lrThumbs').innerHTML = lrImages.map((s, i) => { if (s && typeof s === 'object' && s._uploading) return `<div class="lr-thumb uploading"><div class="up-spin"><i class="fas fa-spinner fa-spin"></i></div><span class="up-hint">上传中</span></div>`; return `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmimg="${i}">&times;</button></div>`; }).join(''); }
 function renderLinkList() { document.getElementById('lrLinkList').innerHTML = lrLinks.map((l, i) => `<div class="lr-linkitem"><i class="lk fas fa-link"></i><span class="lt">${esc(l.text || l.url)}<small>${esc(l.url)}</small></span><button data-rmlink="${i}"><i class="fas fa-times"></i></button></div>`).join(''); }
+/* ===== 附件与图片上传状态 ===== */
+.lr-thumb.uploading { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg,#f6f7f9); border:2px dashed rgba(255,122,26,.25); border-radius:12px; min-height:80px; }
+.lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
+.lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
+.lr-files { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
+.lr-fileitem { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:12px; font-size:.88rem; }
+.lr-fileitem i { font-size:1.1rem; color:var(--brand,#ff7a1a); width:22px; text-align:center; }
+.lr-fileitem .lf-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lr-fileitem .lf-name small { display:block; color:var(--muted,#8b92a3); font-size:.75rem; margin-top:1px; }
+.lr-fileitem .lf-view { color:var(--brand,#ff7a1a); font-size:.85rem; padding:4px 8px; border-radius:6px; transition:background .15s; }
+.lr-fileitem .lf-view:hover { background:rgba(255,122,26,.10); }
+.lr-fileitem button { width:26px; height:26px; border-radius:6px; border:none; background:rgba(0,0,0,.06); color:#555; cursor:pointer; display:grid; place-items:center; transition:background .15s; }
+.lr-fileitem button:hover { background:rgba(255,0,0,.12); color:#c00; }
+.article-attachments { margin-top:28px; padding-top:22px; border-top:1px solid rgba(0,0,0,.08); }
+.article-attachments h4 { font-size:.95rem; color:var(--ink,#1f2430); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+.article-attachments h4 i { color:var(--brand,#ff7a1a); }
+.att-card { display:flex; align-items:center; gap:12px; padding:14px 16px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:14px; margin-bottom:10px; text-decoration:none; transition:transform .15s, box-shadow .15s, border-color .15s; }
+.att-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(20,24,33,.10); border-color:rgba(255,122,26,.25); }
+.att-card > i:first-child { font-size:1.5rem; color:var(--brand,#ff7a1a); width:28px; text-align:center; }
+.att-card span { flex:1; min-width:0; }
+.att-card span b { display:block; font-size:.92rem; color:var(--ink,#1f2430); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.att-card span small { display:block; font-size:.78rem; color:var(--muted,#8b92a3); margin-top:2px; }
+.att-card > i:last-child { font-size:.9rem; color:var(--muted,#8b92a3); }
+.file-flag { display:inline-flex; align-items:center; gap:4px; background:rgba(255,122,26,.10); color:#e56a00; font-size:.72rem; padding:3px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }
+[data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
+[data-theme="dark"] .lr-fileitem { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .lr-fileitem button { background:rgba(255,255,255,.08); color:#aaa; }
+[data-theme="dark"] .lr-fileitem button:hover { background:rgba(255,0,0,.20); color:#ff6b6b; }
+[data-theme="dark"] .article-attachments { border-top-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card span b { color:#e8ecf2; }
+[data-theme="dark"] .att-card span small { color:#8b92a3; }
 document.getElementById('lrFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; await processImageUpload(f, lrImages, renderThumbs); } e.target.value = ''; });
 document.getElementById('lrThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rmimg]'); if (b) { lrImages.splice(+b.dataset.rmimg, 1); renderThumbs(); } });
 document.getElementById('lrAddLink').addEventListener('click', () => { const t = document.getElementById('lrLinkText'), u = document.getElementById('lrLinkUrl'); const url = u.value.trim(); if (!url) { u.focus(); return; } lrLinks.push({ text: t.value.trim() || url, url }); t.value = ''; u.value = ''; renderLinkList(); });
 document.getElementById('lrLinkList').addEventListener('click', e => { const b = e.target.closest('[data-rmlink]'); if (b) { lrLinks.splice(+b.dataset.rmlink, 1); renderLinkList(); } });
-function gatherPost() { return { title: document.getElementById('lrTitle').value.trim(), content: document.getElementById('lrContent').value.trim(), images: lrImages.slice(), links: lrLinks.slice(), tags: document.getElementById('lrTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean) }; }
+function gatherPost() { return { title: document.getElementById('lrTitle').value.trim(), content: document.getElementById('lrContent').value.trim(), images: lrImages.slice(), links: lrLinks.slice(), tags: document.getElementById('lrTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean), attachments: lrFiles.map(f => ({ name: f.name, size: f.size, type: f.type, url: f.url || f.dataUrl || '' })).filter(f => f.url) }; }
 document.getElementById('lrPreview').addEventListener('click', () => { const p = gatherPost(); if (!p.title && !p.content) { showToast('先写点标题或正文再预览'); return; } renderRead({ ...p, created_at: new Date().toISOString(), emoji: '👀' }, true); showView('read'); setNav('learning'); });
 document.getElementById('lrPub').addEventListener('click', publishLearning);
 async function publishLearning() {
@@ -342,13 +386,13 @@ async function publishLearning() {
     const sid = String(editingId); const isSeed = sid.indexOf('seed-') === 0;
     let ok = false;
     const ppLR = getPostedLR(); const piLR = ppLR.findIndex(a => String(a.id) === sid);
-    if (piLR >= 0) { ppLR[piLR] = Object.assign({}, ppLR[piLR], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }); setPostedLR(ppLR); ok = true; } if (typeof editingLocal !== 'undefined' && editingLocal) {
+    if (piLR >= 0) { ppLR[piLR] = Object.assign({}, ppLR[piLR], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, attachments: p.attachments  }); setPostedLR(ppLR); ok = true; } if (typeof editingLocal !== 'undefined' && editingLocal) {
       const d = getLR(); const idx = d.findIndex(a => String(a.id) === sid);
-      if (idx >= 0) { d[idx] = Object.assign({}, d[idx], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }); setLR(d); ok = true; }
+      if (idx >= 0) { d[idx] = Object.assign({}, d[idx], { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags,attachments: p.attachments }); setLR(d); ok = true; }
     } else if (isSeed) {
-      const ov = getEdit(); ov[sid] = { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags }; setEdit(ov); ok = true;
+      const ov = getEdit(); ov[sid] = { title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags,attachments: p.attachments }; setEdit(ov); ok = true;
     } else if (sb) {
-      for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').update({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, emoji: '📝' }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } }
+      for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').update({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags,attachments: p.attachments, emoji: '📝' }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } }
     }
     btn.disabled = false;
     if (ok) { if (typeof clearEditor === 'function') clearEditor(); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已保存修改 ✓'); return; }
@@ -356,13 +400,13 @@ async function publishLearning() {
   }
   const p = gatherPost(); if (!p.title) { document.getElementById('lrTitle').focus(); showToast('请填写标题'); return; }
   const btn = document.getElementById('lrPub'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发布中…';
-  let ok = false; if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('learning').insert({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, emoji: '📝' }), 20000); ok = !res.error; } catch (e) { } } }
+  let ok = false; if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('learning').insert({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags,  attachments: p.attachments,emoji: '📝' }), 20000); ok = !res.error; } catch (e) { } } }
   btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> 发布';
   document.getElementById('lrTitle').value = ''; if (window.__rte) window.__rte.clear(); else document.getElementById('lrContent').value = ''; document.getElementById('lrTags').value = ''; lrImages = []; lrLinks = []; renderThumbs(); renderLinkList();
   if (ok) {
-    const pool = getPostedLR(); pool.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString() }); setPostedLR(pool); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已发布 ✓ 同步到云端'); return;
+    const pool = getPostedLR(); pool.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString(),attachments: p.attachments }); setPostedLR(pool); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已发布 ✓ 同步到云端'); return;
   }
-  const d = getLR(); d.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString(), _local: true }); setLR(d);
+  const d = getLR(); d.unshift({ id: uid('LR'), ...p, emoji: '📝', created_at: new Date().toISOString(), _local: true,attachments: p.attachments }); setLR(d);
   invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest();
   showToast('已保存到本机 ✓ 联网后自动同步，内容不会丢', 6000);
 }
