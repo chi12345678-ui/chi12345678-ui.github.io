@@ -246,7 +246,7 @@ async function loadLearning() {
     if (sb) {
       try { const res = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!res.error && res.data) cloud = res.data; } catch (e) { }
       if (cloud !== null) {
-        const drafts = getLR(); if (drafts.length) { const remain = []; for (const x of drafts) { let ok = false; try { const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: x.images, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } setLR(remain); if (remain.length !== drafts.length) { try { const r2 = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) cloud = r2.data; } catch (e) { } } }
+        const drafts = getLR(); if (drafts.length) { const remain = []; for (const x of drafts) { let ok = false; try { const migrated = await migrateImagesToStorage(x.images); const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: migrated, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } setLR(remain); if (remain.length !== drafts.length) { try { const r2 = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) cloud = r2.data; } catch (e) { } } }
       }
     }
     const cloudArr = cloud ? cloud.map(p => ({ ...p, emoji: p.emoji || '📝' })) : null;
@@ -274,7 +274,7 @@ function renderHomeLatest() {
   if (!list.length) { h.style.display = 'none'; g.innerHTML = ''; if (m) m.style.display = 'none'; return; }
   h.style.display = 'flex'; if (m) m.style.display = 'flex'; g.innerHTML = list.map(cardHTML).join('');
 }
-async function resyncOne(id) { const d = getLR(); const x = d.find(a => a.id === id); if (!x || !sb) return; let ok = false; try { const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: x.images, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (ok) { setLR(d.filter(a => a.id !== id)); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已同步到云端 ✓'); } else showToast('同步失败，稍后再试（内容仍安全存在本机）'); }
+async function resyncOne(id) { const d = getLR(); const x = d.find(a => a.id === id); if (!x || !sb) return; let ok = false; try { const migrated = await migrateImagesToStorage(x.images); const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: migrated, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (ok) { setLR(d.filter(a => a.id !== id)); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已同步到云端 ✓'); } else showToast('同步失败，稍后再试（内容仍安全存在本机）'); }
 function renderRead(p, preview) {
   const tags = (p.tags || []).map(t => `<span class="mtag">${esc(t)}</span>`).join('');
   const imgs = p.images || [];
@@ -325,9 +325,9 @@ async function deleteLearning(id, isLocal) {
   if (curHash().startsWith('read/')) go('learning');
   showToast('已删除 ✓');
 }
-function renderThumbs() { document.getElementById('lrThumbs').innerHTML = lrImages.map((s, i) => `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmimg="${i}">&times;</button></div>`).join(''); }
+function renderThumbs() { document.getElementById('lrThumbs').innerHTML = lrImages.map((s, i) => { if (s && typeof s === 'object' && s._uploading) return `<div class="lr-thumb uploading"><div class="up-spin"><i class="fas fa-spinner fa-spin"></i></div><span class="up-hint">上传中</span></div>`; return `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmimg="${i}">&times;</button></div>`; }).join(''); }
 function renderLinkList() { document.getElementById('lrLinkList').innerHTML = lrLinks.map((l, i) => `<div class="lr-linkitem"><i class="lk fas fa-link"></i><span class="lt">${esc(l.text || l.url)}<small>${esc(l.url)}</small></span><button data-rmlink="${i}"><i class="fas fa-times"></i></button></div>`).join(''); }
-document.getElementById('lrFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; lrImages.push(await compress(f)); } renderThumbs(); e.target.value = ''; });
+document.getElementById('lrFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; await processImageUpload(f, lrImages, renderThumbs); } e.target.value = ''; });
 document.getElementById('lrThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rmimg]'); if (b) { lrImages.splice(+b.dataset.rmimg, 1); renderThumbs(); } });
 document.getElementById('lrAddLink').addEventListener('click', () => { const t = document.getElementById('lrLinkText'), u = document.getElementById('lrLinkUrl'); const url = u.value.trim(); if (!url) { u.focus(); return; } lrLinks.push({ text: t.value.trim() || url, url }); t.value = ''; u.value = ''; renderLinkList(); });
 document.getElementById('lrLinkList').addEventListener('click', e => { const b = e.target.closest('[data-rmlink]'); if (b) { lrLinks.splice(+b.dataset.rmlink, 1); renderLinkList(); } });
@@ -491,8 +491,8 @@ async function publishLife() {
   showToast('已保存到本机 ✓ 联网后自动补传', 6000);
 }
 postPub.addEventListener('click', publishLife);
-function renderLifeThumbs() { document.getElementById('lifeThumbs').innerHTML = lifeImages.map((s, i) => `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmlife="${i}">&times;</button></div>`).join(''); }
-document.getElementById('lifeFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; lifeImages.push(await compress(f)); } renderLifeThumbs(); e.target.value = ''; });
+function renderLifeThumbs() { document.getElementById('lifeThumbs').innerHTML = lifeImages.map((s, i) => { if (s && typeof s === 'object' && s._uploading) return `<div class="lr-thumb uploading"><div class="up-spin"><i class="fas fa-spinner fa-spin"></i></div><span class="up-hint">上传中</span></div>`; return `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmlife="${i}">&times;</button></div>`; }).join(''); }
+document.getElementById('lifeFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; await processImageUpload(f, lifeImages, renderLifeThumbs); } e.target.value = ''; });
 document.getElementById('lifeThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rmlife]'); if (b) { lifeImages.splice(+b.dataset.rmlife, 1); renderLifeThumbs(); } });
 
 /* ===== 联系方式 ===== */
