@@ -197,6 +197,11 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 [data-theme="dark"] .sc-verdict{ background:#2a2118; border-color:rgba(255,122,26,.3); color:#f0c79a; }
 [data-theme="dark"] .sc-verdict.bad{ background:#2a1818; border-color:rgba(220,38,38,.3); color:#f3b4b4; }
 [data-theme="dark"] .sc-verdict.good{ background:#13241a; border-color:rgba(22,163,74,.3); color:#a7e8c0; }
+/* ===== 图片上传状态 ===== */
+.lr-thumb.uploading { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg,#f6f7f9); border:2px dashed rgba(255,122,26,.25); border-radius:12px; min-height:80px; }
+.lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
+.lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
+[data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
 </style>
 </head>
 <body>
