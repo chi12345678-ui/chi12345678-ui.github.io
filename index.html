@@ -202,6 +202,38 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
 .lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
 .lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
 [data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
+/* ===== 附件与图片上传状态 ===== */
+.lr-thumb.uploading { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg,#f6f7f9); border:2px dashed rgba(255,122,26,.25); border-radius:12px; min-height:80px; }
+.lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
+.lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
+.lr-files { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
+.lr-fileitem { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:12px; font-size:.88rem; }
+.lr-fileitem i { font-size:1.1rem; color:var(--brand,#ff7a1a); width:22px; text-align:center; }
+.lr-fileitem .lf-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lr-fileitem .lf-name small { display:block; color:var(--muted,#8b92a3); font-size:.75rem; margin-top:1px; }
+.lr-fileitem .lf-view { color:var(--brand,#ff7a1a); font-size:.85rem; padding:4px 8px; border-radius:6px; transition:background .15s; }
+.lr-fileitem .lf-view:hover { background:rgba(255,122,26,.10); }
+.lr-fileitem button { width:26px; height:26px; border-radius:6px; border:none; background:rgba(0,0,0,.06); color:#555; cursor:pointer; display:grid; place-items:center; transition:background .15s; }
+.lr-fileitem button:hover { background:rgba(255,0,0,.12); color:#c00; }
+.article-attachments { margin-top:28px; padding-top:22px; border-top:1px solid rgba(0,0,0,.08); }
+.article-attachments h4 { font-size:.95rem; color:var(--ink,#1f2430); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+.article-attachments h4 i { color:var(--brand,#ff7a1a); }
+.att-card { display:flex; align-items:center; gap:12px; padding:14px 16px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:14px; margin-bottom:10px; text-decoration:none; transition:transform .15s, box-shadow .15s, border-color .15s; }
+.att-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(20,24,33,.10); border-color:rgba(255,122,26,.25); }
+.att-card > i:first-child { font-size:1.5rem; color:var(--brand,#ff7a1a); width:28px; text-align:center; }
+.att-card span { flex:1; min-width:0; }
+.att-card span b { display:block; font-size:.92rem; color:var(--ink,#1f2430); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.att-card span small { display:block; font-size:.78rem; color:var(--muted,#8b92a3); margin-top:2px; }
+.att-card > i:last-child { font-size:.9rem; color:var(--muted,#8b92a3); }
+.file-flag { display:inline-flex; align-items:center; gap:4px; background:rgba(255,122,26,.10); color:#e56a00; font-size:.72rem; padding:3px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }
+[data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
+[data-theme="dark"] .lr-fileitem { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .lr-fileitem button { background:rgba(255,255,255,.08); color:#aaa; }
+[data-theme="dark"] .lr-fileitem button:hover { background:rgba(255,0,0,.20); color:#ff6b6b; }
+[data-theme="dark"] .article-attachments { border-top-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card span b { color:#e8ecf2; }
+[data-theme="dark"] .att-card span small { color:#8b92a3; }
 </style>
 </head>
 <body>
@@ -343,7 +375,9 @@ footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; l
           <span class="hint">先存本机，联网自动同步云端 · Ctrl+Enter 快捷发布</span>
         </div>
       </div>
-
+        <div class="search-box" style="margin:18px 0;">
+          <input type="text" id="lrSearch" placeholder="🔍 搜索标题、正文、标签…" style="width:100%;padding:12px 16px;border:1px solid rgba(0,0,0,.1);border-radius:12px;font-size:.9rem;background:var(--card,#fff);color:var(--ink);">
+        </div>
       <div id="learningGrid"></div>
     </div></section>
 
