@@ -24,11 +24,11 @@
     </div>
     <p class="sign">用数字讲好业务的故事<br>记录生活的每一个精彩瞬间</p>
     <ul class="nav" id="nav">
-      <li><a data-nav="home"     href="#home" class="active"><span class="nico">🏠</span>首页</a></li>
-      <li><a data-nav="about"    href="#about"><span class="nico">🙋</span>关于我</a></li>
+      <li><a data-nav="home" href="#home" class="active"><span class="nico">🏠</span>首页</a></li>
+      <li><a data-nav="about" href="#about"><span class="nico">🙋</span>关于我</a></li>
       <li><a data-nav="projects" href="#projects"><span class="nico">💼</span>项目案例</a></li>
       <li><a data-nav="learning" href="#learning"><span class="nico">📚</span>学习成长</a></li>
-      <li><a data-nav="life"     href="#life"><span class="nico">🌱</span>生活随笔</a></li>
+      <li><a data-nav="life" href="#life"><span class="nico">🌱</span>生活随笔</a></li>
     </ul>
     <div class="side-foot">
       <div class="contact-row">
@@ -123,7 +123,7 @@
       </div>
     </div></section>
 
-    <!-- ================= 学习成长 ================= -->
+    <!-- ================= 学习成长（列表） ================= -->
     <section class="view" data-view="learning"><div class="sec">
       <div class="sec-tag reveal">LEARNING</div>
       <h2 class="sec-h reveal">学习成长</h2>
@@ -133,13 +133,21 @@
         <div class="search-box"><i class="fas fa-magnifying-glass"></i><input type="text" id="lrSearch" placeholder="搜索标题、正文、标签…"></div>
       </div>
       <div id="learningGrid"></div>
-      <!-- 隐藏式编辑抽屉：点"新建"才滑出 -->
-      <div class="drawer-mask" id="lrDrawerMask"></div>
-      <div class="drawer" id="lrDrawer">
-        <div class="drawer-head"><b id="lrDrawerTitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</b><button type="button" class="drawer-close" id="lrClose" aria-label="收起">×</button></div>
-        <div class="drawer-body">
-          <input class="ti" id="lrTitle" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
-          <textarea id="lrContent" placeholder="正文…"></textarea>
+    </div></section>
+
+    <!-- ================= 学习记录 · 整页编辑器 ================= -->
+    <section class="view" data-view="edit"><div class="sec edit-sec">
+      <div class="edit-top">
+        <button type="button" class="btn btn-ghost" id="lrBack"><i class="fas fa-arrow-left"></i> 返回</button>
+        <b class="edit-title" id="lrEditTitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</b>
+        <span class="edit-spacer"></span>
+        <button type="button" class="btn btn-ghost" id="lrPreview"><i class="fas fa-eye"></i> 预览</button>
+        <button type="button" class="btn btn-pub" id="lrPub"><i class="fas fa-paper-plane"></i> 发布</button>
+      </div>
+      <div class="edit-body">
+        <input class="ti" id="lrTitle" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
+        <textarea id="lrContent" placeholder="正文…"></textarea>
+        <div class="edit-cols">
           <div class="lr-block">
             <div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div>
             <div class="lr-thumbs" id="lrThumbs"></div>
@@ -149,36 +157,32 @@
             <div class="lbl"><i class="fas fa-paperclip"></i> 附件（Excel / PDF / Word / PPT）</div>
             <div class="lr-files" id="lrFiles"></div>
             <label class="file-btn"><i class="fas fa-plus"></i> 选择文件<input type="file" id="lrDoc" accept=".pdf,.xlsx,.xls,.doc,.docx,.ppt,.pptx,.txt,.csv,.zip,.md" multiple hidden></label>
-            <span class="hint" style="margin-left:8px;font-size:.78rem;color:var(--muted,#8a909c);">支持 PDF、Excel、Word、PPT 等，单个 &lt; 20MB</span>
-          </div>
-          <div class="lr-block">
-            <div class="lbl"><i class="fas fa-link"></i> 参考链接</div>
-            <div class="lr-linkrow">
-              <input class="li" id="lrLinkText" placeholder="链接标题">
-              <input class="li" id="lrLinkUrl" placeholder="https://...">
-              <button class="btn btn-ghost" id="lrAddLink"><i class="fas fa-plus"></i> 添加</button>
-            </div>
-            <div class="lr-links" id="lrLinkList"></div>
-          </div>
-          <div class="lr-block">
-            <div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔，含"置顶"则置顶）</div>
-            <input class="tags-in" id="lrTags" placeholder="RFM, Python, 用户分层">
-          </div>
-          <div class="erow2">
-            <button class="btn btn-pub" id="lrPub"><i class="fas fa-paper-plane"></i> 发布</button>
-            <button class="btn btn-ghost" id="lrPreview"><i class="fas fa-eye"></i> 预览</button>
-            <span class="hint">先存本机，联网自动同步云端 · Ctrl+Enter 快捷发布</span>
+            <span class="hint">支持 PDF、Excel、Word、PPT 等，单个 &lt; 20MB</span>
           </div>
         </div>
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-link"></i> 参考链接</div>
+          <div class="lr-linkrow">
+            <input class="li" id="lrLinkText" placeholder="链接标题">
+            <input class="li" id="lrLinkUrl" placeholder="https://...">
+            <button class="btn btn-ghost" id="lrAddLink"><i class="fas fa-plus"></i> 添加</button>
+          </div>
+          <div class="lr-links" id="lrLinkList"></div>
+        </div>
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔，含"置顶"则置顶）</div>
+          <input class="tags-in" id="lrTags" placeholder="RFM, Python, 用户分层">
+        </div>
+        <div class="erow2"><span class="hint">先存本机，联网自动同步云端 · Ctrl+Enter 快捷发布</span></div>
       </div>
     </div></section>
 
     <!-- ================= 阅读页 ================= -->
-    <section class="view" data-view="read"><div class="sec">
+    <section class="view" data-view="read"><div class="sec read-sec">
       <div id="readInner"></div>
     </div></section>
 
-    <!-- ================= 生活随笔 ================= -->
+    <!-- ================= 生活随笔（列表） ================= -->
     <section class="view" data-view="life"><div class="sec">
       <div class="sec-tag reveal">LIFE</div>
       <h2 class="sec-h reveal">生活随笔</h2>
@@ -188,26 +192,30 @@
         <button type="button" class="btn btn-ghost" id="lifeExportBtn"><i class="fas fa-file-export"></i> 导出备份 (JSON)</button>
       </div>
       <div class="posts" id="postList"></div>
-      <!-- 隐藏式发布抽屉 -->
-      <div class="drawer-mask" id="lifeDrawerMask"></div>
-      <div class="drawer" id="lifeDrawer">
-        <div class="drawer-head"><b><i class="fas fa-comment-dots"></i> 发一条随笔</b><button type="button" class="drawer-close" id="lifeClose" aria-label="收起">×</button></div>
-        <div class="drawer-body">
-          <div class="row1">
-            <div class="pav">历</div>
-            <textarea id="postInput" placeholder="这一刻的想法…"></textarea>
-          </div>
+    </div></section>
+
+    <!-- ================= 随笔 · 整页编辑器 ================= -->
+    <section class="view" data-view="lifeedit"><div class="sec edit-sec">
+      <div class="edit-top">
+        <button type="button" class="btn btn-ghost" id="lifeBack"><i class="fas fa-arrow-left"></i> 返回</button>
+        <b class="edit-title"><i class="fas fa-comment-dots"></i> 发一条随笔</b>
+        <span class="edit-spacer"></span>
+        <button type="button" class="btn btn-pub" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
+      </div>
+      <div class="edit-body">
+        <textarea id="postInput" placeholder="这一刻的想法…"></textarea>
+        <div class="edit-cols">
           <div class="lr-block">
-            <div class="lbl"><i class="fas fa-image"></i> 配图</div>
+            <div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div>
             <div class="lr-thumbs" id="lifeThumbs"></div>
             <label class="file-btn"><i class="fas fa-plus"></i> 选择图片<input type="file" id="lifeFile" accept="image/*" multiple hidden></label>
           </div>
-          <div class="row2">
-            <input class="tags" id="postTags" placeholder="标签：日常, 复盘（逗号分隔）">
-            <button class="btn btn-pub2" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
-            <span class="hint">先存本机，联网自动补传并实时同步</span>
+          <div class="lr-block">
+            <div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔，含"置顶"则置顶）</div>
+            <input class="tags-in" id="postTags" placeholder="日常, 复盘">
           </div>
         </div>
+        <div class="erow2"><span class="hint">先存本机，联网自动补传并实时同步 · Ctrl+Enter 快捷发布</span></div>
       </div>
     </div></section>
 
@@ -293,6 +301,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=20260801a"></script>
+<script src="app.js?v=20260806b"></script>
 </body>
 </html>
