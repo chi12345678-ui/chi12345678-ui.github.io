@@ -10,11 +10,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link rel="stylesheet" href="style.css">
-<base target="_blank">
 </head>
 <body>
 <div class="app">
-  <!-- 侧边栏 -->
   <aside class="side">
     <div class="brand">
       <img src="me.jpg" class="avatar" alt="头像" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
@@ -46,16 +44,14 @@
     </div>
   </aside>
 
-  <!-- 主体 -->
   <main class="main">
-    <!-- 工具栏 -->
     <div class="tools">
       <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
       <button id="offlineBtn" title="离线模式"><i class="fas fa-wifi"></i></button>
       <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
     </div>
 
-    <!-- ===== 首页 ===== -->
+    <!-- 首页 -->
     <section class="view active" data-view="home">
       <div class="sec">
         <div class="reveal">
@@ -104,7 +100,7 @@
 
         <div class="reveal" style="margin-top:52px">
           <div class="sec-tag">LEARNING</div>
-          <h2 class="sec-h">最新学习</h2>
+          <h2 class="sec-h" id="homeLatestH">最新学习</h2>
           <p class="sec-sub">最近更新的学习笔记与复盘</p>
           <div id="homeLatest"></div>
           <div class="home-more" id="homeLatestMore"><a href="#learning">查看全部 <i class="fas fa-arrow-right"></i></a></div>
@@ -120,7 +116,7 @@
       </div>
     </section>
 
-    <!-- ===== 项目案例 ===== -->
+    <!-- 项目案例 -->
     <section class="view" data-view="projects">
       <div class="sec">
         <div class="reveal">
@@ -138,7 +134,7 @@
       </div>
     </section>
 
-    <!-- ===== 学习成长 ===== -->
+    <!-- 学习成长 -->
     <section class="view" data-view="learning">
       <div class="sec">
         <div class="reveal">
@@ -186,7 +182,7 @@
           </div>
 
           <div class="lr-block">
-            <div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔，含"置顶"则置顶）</div>
+            <div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔，含&quot;置顶&quot;则置顶）</div>
             <input type="text" id="lrTags" class="tags-in" placeholder="例如：SQL, 数据分析, 置顶">
           </div>
 
@@ -200,7 +196,7 @@
       </div>
     </section>
 
-    <!-- ===== 生活随笔 ===== -->
+    <!-- 生活随笔 -->
     <section class="view" data-view="life">
       <div class="sec">
         <div class="reveal">
@@ -237,7 +233,7 @@
       </div>
     </section>
 
-    <!-- ===== 归档汇总 ===== -->
+    <!-- 归档汇总 -->
     <section class="view" data-view="archive">
       <div class="sec">
         <div class="reveal">
@@ -262,7 +258,7 @@
       </div>
     </section>
 
-    <!-- ===== 关于我 ===== -->
+    <!-- 关于我 -->
     <section class="view" data-view="about">
       <div class="sec">
         <div class="reveal">
@@ -276,12 +272,12 @@
               <h4>速览</h4>
               <div class="fact"><span class="num">100W+</span><span class="lab"><b>月销增长</b>从 0 到月销百万母婴店</span></div>
               <div class="fact"><span class="num">8</span><span class="lab"><b>RFM 分层</b>把 10 万用户分成 8 类</span></div>
-              <div class="fact"><span class="num">2×</span><span class="lab"><b>召回效率</b>精细化发券翻倍</span></div>
+              <div class="fact"><span class="num">2x</span><span class="lab"><b>召回效率</b>精细化发券翻倍</span></div>
               <div class="fact"><span class="num">∞</span><span class="lab"><b>持续生长</b>这座花园不会停</span></div>
             </div>
             <div class="edges">
-              <div class="edge"><span class="no">01</span><div><h3><i class="fas fa-bullseye"></i> 把模糊需求变成数据模型</h3><p>库存健康度诊断、智能补货模型，让"该备多少货"从拍脑袋变成可计算。</p></div></div>
-              <div class="edge"><span class="no">02</span><div><h3><i class="fas fa-users"></i> 用 RFM 驱动精细化运营</h3><p>用户分层、复购归因、留存分析、A/B 测试，把"哪些用户该发券"算清楚。</p></div></div>
+              <div class="edge"><span class="no">01</span><div><h3><i class="fas fa-bullseye"></i> 把模糊需求变成数据模型</h3><p>库存健康度诊断、智能补货模型，让&quot;该备多少货&quot;从拍脑袋变成可计算。</p></div></div>
+              <div class="edge"><span class="no">02</span><div><h3><i class="fas fa-users"></i> 用 RFM 驱动精细化运营</h3><p>用户分层、复购归因、留存分析、A/B 测试，把&quot;哪些用户该发券&quot;算清楚。</p></div></div>
               <div class="edge"><span class="no">03</span><div><h3><i class="fas fa-seedling"></i> 长期主义的记录者</h3><p>这座数字花园就是我的方法论沉淀——只要网站不停，生长就不终止。</p></div></div>
             </div>
           </div>
@@ -293,14 +289,14 @@
       </div>
     </section>
 
-    <!-- ===== 阅读页 ===== -->
+    <!-- 阅读页 -->
     <section class="view" data-view="read">
       <div class="sec">
         <div class="reveal article" id="readInner"></div>
       </div>
     </section>
 
-    <!-- ===== 简历页 ===== -->
+    <!-- 简历页 -->
     <section class="view" data-view="resume">
       <div class="sec">
         <div class="reveal">
@@ -326,15 +322,10 @@
   </main>
 </div>
 
-<!-- 灯箱 -->
 <div class="overlay" id="lightbox" onclick="if(event.target===this){this.classList.remove('on');lockScroll(false)}">
   <img class="lb-img" id="lbImg" alt="">
 </div>
-
-<!-- Toast -->
 <div class="toast" id="toast"></div>
-
-<!-- 离线提示 -->
 <div class="off-toast" id="offToast"><b>离线模式</b>：内容先存本机，联网后自动同步</div>
 
 <script src="app.js"></script>
