@@ -441,3 +441,6 @@ footer{max-width:1680px;margin:0;padding:26px clamp(24px,4.5vw,72px) 40px;border
   .cal-grid .cal-d .cd-num{font-size:12px}
   .cal-grid .cal-d .cd-sub{font-size:8px}
 }
+/* ===== 补丁 v20260806d：修复"删重复把正本也隐藏" ===== */
+try { localStorage.removeItem('chi_life_hide_content'); } catch (e) {}
+function lifeIsHiddenObj(p, sets) { return sets.hidSet.has(String(p && p.id)); }
