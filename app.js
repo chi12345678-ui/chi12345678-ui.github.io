@@ -1,8 +1,7 @@
 /* =====================================================================
-   阿历的数字花园 · app.js（v20260801a 完整重构版）
-   修复：① 学习记录重复（发布拦截+加载去重） ② 附件上传（Storage 真实上传）
-   ③ 搜索（真实可用） ④ 隐藏式编辑抽屉 ⑤ 首页干支/时辰+日历+分类汇总+标签云
-   ⑥ 生活随笔朋友圈式九宫格+点击放大
+   阿历的数字花园 · app.js（v20260806b 整页编辑器版）
+   ① 学习记录去重 ② 附件真实上传 ③ 搜索可用 ④ 整页编辑器（非弹窗）
+   ⑤ 干支时辰+农历 ⑥ 首页日历/分类汇总/标签云 ⑦ 朋友圈九宫格
 ===================================================================== */
 
 /* ===== 云端 ===== */
@@ -27,7 +26,6 @@ const fmtDate = iso => { const d = new Date(iso); return `${d.getFullYear()}.${S
 const toastEl = document.getElementById('toast'); let toastTimer = null;
 function showToast(h, ms = 4200) { if (!toastEl) return; toastEl.innerHTML = h; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms); }
 function compress(file, max = 1000, q = 0.7) { return new Promise(res => { const r = new FileReader(); r.onload = () => { const img = new Image(); img.onload = () => { let w = img.width, h = img.height; if (w > max || h > max) { if (w > h) { h = h * max / w; w = max; } else { w = w * max / h; h = max; } } const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); res(c.toDataURL('image/jpeg', q)); }; img.src = r.result; }; r.readAsDataURL(file); }); }
-const linkify = h => esc(h).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 function lockScroll(on) { document.body.style.overflow = on ? 'hidden' : ''; }
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const isPinned = a => (a.tags || []).includes('置顶');
@@ -36,7 +34,7 @@ window.__isHTML = function (s) { return /<[a-z][\s\S]*>/i.test(s || ''); };
 function toRTEHTML(raw) { raw = raw == null ? '' : String(raw); if (window.__isHTML(raw)) return raw; return raw.split('\n').map(l => { const e = esc(l); return '<p>' + (e || '<br>') + '</p>'; }).join(''); }
 function normTxt(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
 function contentOf(p) { return p && (p.content != null ? p.content : (p.txt != null ? p.txt : '')); }
-function plainOf(p) { const c = contentOf(p); return String(c || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
+function plainOf(p) { return String(contentOf(p) || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
 
 /* ===== 乐观发布池 ===== */
 const POSTED_LIFE_KEY = 'chi_posts_posted_v1', POSTED_LR_KEY = 'chi_lr_posted_v1';
@@ -72,19 +70,14 @@ async function uploadImageToStorage(file) {
   const path = `uploads/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error } = await sb.storage.from(IMG_BUCKET).upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
   if (error) throw error;
-  const { data: { publicUrl } } = sb.storage.from(IMG_BUCKET).getPublicUrl(path);
-  return publicUrl;
+  return sb.storage.from(IMG_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 async function processImageUpload(file, arr, renderFn) {
   const placeholder = { _uploading: true, name: file.name };
-  arr.push(placeholder);
+  arr.push(placeholder); renderFn();
   const idx = arr.length - 1;
-  renderFn();
-  try {
-    if (sb) { arr[idx] = await uploadImageToStorage(file); }
-    else { arr[idx] = await compress(file); }
-  } catch (err) {
-    console.error('图片上传失败，fallback base64', err);
+  try { if (sb) { arr[idx] = await uploadImageToStorage(file); } else { arr[idx] = await compress(file); } }
+  catch (err) {
     try { arr[idx] = await compress(file); }
     catch (e2) { arr.splice(idx, 1); showToast('「' + esc(file.name) + '」上传失败'); renderFn(); return; }
   }
@@ -96,14 +89,13 @@ async function migrateImagesToStorage(images) {
     if (!s || typeof s !== 'string' || !s.startsWith('data:image')) { out.push(s); continue; }
     try {
       const res = await fetch(s); const blob = await res.blob();
-      const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
-      out.push(await uploadImageToStorage(file));
+      out.push(await uploadImageToStorage(new File([blob], 'image.jpg', { type: 'image/jpeg' })));
     } catch (e) { out.push(s); }
   }
   return out;
 }
 
-/* ===== 附件上传（修复：原来完全没有绑定逻辑） ===== */
+/* ===== 附件上传 ===== */
 const ATT_BUCKET = 'attachments';
 const ATT_MAX = 20 * 1024 * 1024;
 function fileIcon(name) {
@@ -126,7 +118,7 @@ async function uploadAttachment(file) {
   return sb.storage.from(ATT_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-/* ===== 路由 ===== */
+/* ===== 路由（整页视图） ===== */
 const views = [...document.querySelectorAll('.view')];
 const navLinks = [...document.querySelectorAll('#nav a')];
 function revealIn(v) { const els = v.querySelectorAll('.reveal'); els.forEach(e => e.classList.remove('in')); requestAnimationFrame(() => requestAnimationFrame(() => { let i = 0; els.forEach(e => { e.style.transitionDelay = (Math.min(i++, 7) * 0.04) + 's'; e.classList.add('in'); }); })); }
@@ -147,14 +139,14 @@ async function route() {
   }
   if (view === 'learning') { primeLearningSync(); renderLearningList(); }
   if (view === 'life') { primeLifeSync(); renderPosts(lifeList, false); }
-  if (view === 'home') { primeLearningSync(); primeLifeSync(); renderHomeLatest(); renderHomeLife(); }
-  const valid = ['home', 'about', 'projects', 'learning', 'life', 'resume'].includes(view) ? view : 'home';
+  if (view === 'home') { primeLearningSync(); primeLifeSync(); renderHomeLatest(); renderHomeLife(); renderHomeCases(); }
+  const valid = ['home', 'about', 'projects', 'learning', 'life'].includes(view) ? view : 'home';
   showView(valid); setNav(valid);
   if (view === 'learning') { loadLearning().then(() => { if (curHash() === 'learning') renderLearningList(); }); }
   if (view === 'life') { loadPosts().then(() => { if (curHash() === 'life') renderPosts(lifeList, !cloudOK); }); }
   if (view === 'home') {
-    loadLearning().then(() => { if (curHash() === 'home') { renderHomeLatest(); renderStats(); renderTagCloud(); } });
-    loadPosts().then(() => { if (curHash() === 'home') { renderHomeLife(); renderStats(); renderTagCloud(); } });
+    loadLearning().then(() => { if (curHash() === 'home') { renderHomeLatest(); renderStats(); renderTagCloud(); renderCal(); } });
+    loadPosts().then(() => { if (curHash() === 'home') { renderHomeLife(); renderStats(); renderTagCloud(); renderCal(); } });
   }
 }
 document.addEventListener('click', e => {
@@ -163,8 +155,8 @@ document.addEventListener('click', e => {
   const dl = e.target.closest('[data-del]'); if (dl) { e.preventDefault(); e.stopPropagation(); deleteLearning(dl.dataset.del, dl.dataset.local === '1'); return; }
   const le = e.target.closest('[data-life-edit]'); if (le) { e.preventDefault(); e.stopPropagation(); editLife(le.dataset.lifeEdit); return; }
   const ld = e.target.closest('[data-life-del]'); if (ld) { e.preventDefault(); e.stopPropagation(); deleteLife(ld.dataset.lifeDel, ld.dataset.local === '1'); return; }
-  const pc = e.target.closest('.postcard'); if (pc) { e.preventDefault(); go('read/' + encodeURIComponent(pc.dataset.id)); return; }
   const limg = e.target.closest('.limg'); if (limg) { e.preventDefault(); e.stopPropagation(); openLB(limg.dataset.img || limg.src); return; }
+  const pc = e.target.closest('.postcard'); if (pc) { e.preventDefault(); go('read/' + encodeURIComponent(pc.dataset.id)); return; }
   const a = e.target.closest('a[href^="#"]'); if (a) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }
 });
 
@@ -174,10 +166,19 @@ const CASES = [
   { color: 'linear-gradient(135deg,#2f6fed,#5b8def)', icon: 'fa-boxes-stacked', tag: 'INVENTORY', title: '快消品进销存分析', desc: '以 Power BI 完成数据建模与清洗，搭建进销存看板 + 分析报告：监控库存、月销与临期风险，完成 ABC 动销与智能补货诊断。', tech: ['Power BI', 'DAX'], docs: [{ label: '演示案例', href: '快消品进销存演示案例.pdf' }, { label: '分析报告', href: '快消品进销存案例分析报告.pdf' }], dl: '快消品进销存演示案例.pbix' },
   { color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)', icon: 'fa-rotate', tag: 'RETENTION · LTV', title: '复购与留存分析', desc: '复购专题双报告：销售趋势、留存、新增/复购拆解，以及母婴店铺「黄金60天」转化归因，核心度量以 DAX 实现。', tech: ['Power BI', 'DAX', '归因分析'], docs: [{ label: '演示案例', href: '复购分析案例.pdf' }, { label: '分析报告', href: '复购案例分析.pdf' }], dl: '复购分析案例.pbix' }
 ];
-function renderCases() {
-  document.getElementById('caseGrid').innerHTML = CASES.map((c, i) => `<article class="case case--row"><div class="case-cover" style="background:${c.color}" data-doc0="${esc((c.docs[0] || {}).href || '')}"><span class="big">${String(i + 1).padStart(2, '0')}</span><i class="ci fas ${c.icon}"></i><span class="ctag">${c.tag}</span></div><div class="case-body"><h3>${esc(c.title)}</h3><p>${esc(c.desc)}</p><div class="case-docs">${c.docs.map(d => `<a class="case-doc" href="${esc(d.href)}" target="_blank" rel="noopener"><i class="fas fa-file-lines"></i> ${esc(d.label)}</a>`).join('')}</div><div class="case-foot"><div class="case-tech">${c.tech.map(t => `<span>${esc(t)}</span>`).join('')}</div><a class="case-dl" href="${esc(c.dl)}" download><i class="fas fa-download"></i> 源文件</a></div></div></article>`).join('');
+function caseHTML(c, i) {
+  return `<article class="case case--row"><div class="case-cover" style="background:${c.color}" data-doc0="${esc((c.docs[0] || {}).href || '')}"><span class="big">${String(i + 1).padStart(2, '0')}</span><i class="ci fas ${c.icon}"></i><span class="ctag">${c.tag}</span></div><div class="case-body"><h3>${esc(c.title)}</h3><p>${esc(c.desc)}</p><div class="case-docs">${c.docs.map(d => `<a class="case-doc" href="${esc(d.href)}" target="_blank" rel="noopener"><i class="fas fa-file-lines"></i> ${esc(d.label)}</a>`).join('')}</div><div class="case-foot"><div class="case-tech">${c.tech.map(t => `<span>${esc(t)}</span>`).join('')}</div><a class="case-dl" href="${esc(c.dl)}" download><i class="fas fa-download"></i> 源文件</a></div></div></article>`;
 }
-document.getElementById('caseGrid').addEventListener('click', e => { const cv = e.target.closest('.case-cover'); if (cv && !e.target.closest('.case-doc') && !e.target.closest('.case-dl') && cv.dataset.doc0) window.open(cv.dataset.doc0, '_blank'); });
+function renderCases() { document.getElementById('caseGrid').innerHTML = CASES.map(caseHTML).join(''); }
+function renderHomeCases() {
+  const g = document.getElementById('homeCases'), head = document.getElementById('homeCasesHead');
+  if (!CASES.length) { if (head) head.style.display = 'none'; g.innerHTML = ''; return; }
+  if (head) head.style.display = 'flex';
+  g.innerHTML = CASES.slice(0, 2).map(caseHTML).join('');
+}
+function bindCaseCover(el) { el.addEventListener('click', e => { const cv = e.target.closest('.case-cover'); if (cv && !e.target.closest('.case-doc') && !e.target.closest('.case-dl') && cv.dataset.doc0) window.open(cv.dataset.doc0, '_blank'); }); }
+bindCaseCover(document.getElementById('caseGrid'));
+bindCaseCover(document.getElementById('homeCases'));
 
 /* ===== 证书 ===== */
 const CERTS = [{ n: 'CDA 数据分析师', s: 'LEVEL-1', img: './certs/CDA-LEVEL1.jpg' }, { n: 'Office 计算机', s: '二级证书', img: './certs/office_level2.jpg' }, { n: '英语六级', s: 'CET-6', img: './certs/CET6.jpg' }, { n: '普通话', s: '二甲证书', img: './certs/putonghua.jpg' }];
@@ -185,7 +186,7 @@ function renderCerts() { document.getElementById('certGrid').innerHTML = CERTS.m
 document.getElementById('certGrid').addEventListener('click', e => { const el = e.target.closest('[data-img]'); if (el) openLB(el.dataset.img); });
 function openLB(src) { document.getElementById('lbImg').src = src; document.getElementById('lightbox').classList.add('on'); lockScroll(true); }
 
-/* ===== 学习成长 ===== */
+/* ===== 学习成长：数据 ===== */
 const GRADS = ['linear-gradient(135deg,#e8730c,#ff9d4d)', 'linear-gradient(135deg,#2f6fed,#5b8def)', 'linear-gradient(135deg,#1f9d63,#46c98a)', 'linear-gradient(135deg,#8b5cf6,#a78bfa)'];
 const SEED_LEARNING = [
   { id: 'seed-1', title: '我用 RFM 把 10 万用户分成 8 类，召回效率翻了一倍', content: '刚入行时运营问我"哪些用户该发券"，我下意识拉消费 Top。后来才懂：高消费不等于该召回——昨天刚买的人发券纯属浪费。\n\nRFM 三维度=三句人话：R 多久没来、F 来得勤不勤、M 花得多不多。\n\n最大坑：阈值用均值，被大户带偏；改分位数后分层稳多了。\n\n方法论的价值在于可迁移——换家公司，字段对上，框架照样跑。', images: [], links: [{ text: 'RFM 模型维基百科', url: 'https://en.wikipedia.org/wiki/RFM_(market_research)' }], tags: ['RFM', 'Python', '用户分层'], emoji: '🎯', created_at: '2026-07-18T09:00:00Z' },
@@ -196,15 +197,12 @@ let learningList = [], _lp = null;
 const LR_KEY = 'chi_lr_drafts';
 const getLR = () => { try { const r = JSON.parse(localStorage.getItem(LR_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
 const setLR = a => localStorage.setItem(LR_KEY, JSON.stringify(a));
-
-/* 修复重复：加载云端后按标题去重（保留最新），并异步清理云端重复行 */
 async function cleanupCloudDupes(rows) {
   if (!sb || !rows || rows.length < 2) return;
   const seen = new Set(), dupIds = [];
   rows.forEach(r => { const k = normTxt(r.title); if (seen.has(k)) dupIds.push(r.id); else seen.add(k); });
   if (!dupIds.length) return;
   for (const id of dupIds) { try { await sb.from('learning').delete().eq('id', id); } catch (e) { } }
-  console.log('[dedupe] 已清理云端重复学习记录 ' + dupIds.length + ' 条');
 }
 async function loadLearning() {
   if (_lp) return _lp; return _lp = (async () => {
@@ -222,8 +220,7 @@ async function loadLearning() {
       cleanupCloudDupes(cloud);
     }
     const useSeed = !cloudArr || cloudArr.length === 0; const base = (cloudArr || []).concat(useSeed ? SEED_LEARNING : []);
-    const postedLR = getPostedLR().map(x => ({ ...x, _posted: true }));
-    learningList = sortPosts([...base, ...getLR().map(x => ({ ...x, _local: true })), ...postedLR]);
+    learningList = sortPosts([...base, ...getLR().map(x => ({ ...x, _local: true })), ...getPostedLR().map(x => ({ ...x, _posted: true }))]);
     learningList = applyLocalOverlay(learningList);
     learningList = dedupePostedArr(learningList, 'title');
     confirmPostedArr(getPostedLR(), cloudArr || [], 'title', setPostedLR);
@@ -233,7 +230,7 @@ async function loadLearning() {
 function invalidateLearning() { _lp = null; }
 function cardHTML(p, i) {
   const imgs = p.images || []; const cover = imgs[0] ? `background-image:url('${imgs[0]}')` : `background:${GRADS[i % GRADS.length]}`;
-  const tags = (p.tags || []).slice(0, 4).map(t => `<span>${esc(t)}</span>`).join(''); const ex = (p.content || '').replace(/<[^>]+>/g, '').replace(/https?:\/\/\S+/g, '').replace(/\n+/g, ' ').trim().slice(0, 120);
+  const tags = (p.tags || []).slice(0, 4).map(t => `<span>${esc(t)}</span>`).join(''); const ex = plainOf(p).replace(/https?:\/\/\S+/g, '').slice(0, 120);
   const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : ''; const localFlag = p._local ? `<span class="draft-flag">📍 本机</span>` : '';
   const fileFlag = (p.files && p.files.length) ? `<span class="file-flag"><i class="fas fa-paperclip"></i>${p.files.length}</span>` : '';
   const mgmt = `<div class="pc-mgmt"><button class="pc-m" data-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button>${p._local ? `<button class="pc-m sync-btn" data-sync="${esc(p.id)}" title="同步云端"><i class="fas fa-rotate"></i></button>` : ''}</div>`;
@@ -243,22 +240,20 @@ let lrQuery = '';
 function renderLearningList() {
   const g = document.getElementById('learningGrid');
   let list = learningList;
-  if (lrQuery) {
-    const q = lrQuery.toLowerCase();
-    list = list.filter(p => (p.title || '').toLowerCase().includes(q) || plainOf(p).toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q)));
-  }
+  if (lrQuery) { const q = lrQuery.toLowerCase(); list = list.filter(p => (p.title || '').toLowerCase().includes(q) || plainOf(p).toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q))); }
   if (!list.length) { g.innerHTML = '<div class="no-result">' + (lrQuery ? '没有匹配的内容，换个关键词试试 🔍' : '还没有学习记录，点「新建学习记录」写第一篇 ✍️') + '</div>'; return; }
   g.innerHTML = list.map(cardHTML).join('');
 }
 function renderHomeLatest() {
   const list = learningList.slice(0, 4);
-  const h = document.getElementById('homeLatestH'), g = document.getElementById('homeLatest');
-  const head = document.getElementById('homeLatestHead');
+  const g = document.getElementById('homeLatest'), head = document.getElementById('homeLatestHead');
   if (!list.length) { if (head) head.style.display = 'none'; g.innerHTML = ''; return; }
   if (head) head.style.display = 'flex';
   g.innerHTML = list.map(cardHTML).join('');
 }
 async function resyncOne(id) { const d = getLR(); const x = d.find(a => a.id === id); if (!x || !sb) return; let ok = false; try { const migrated = await migrateImagesToStorage(x.images); const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: migrated, links: x.links, tags: x.tags, files: x.files || [], emoji: x.emoji || '📚' }), 15000); ok = !r.error; } catch (e) { } if (ok) { setLR(d.filter(a => a.id !== id)); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已同步到云端 ✓'); } else showToast('同步失败，稍后再试（内容仍安全存在本机）'); }
+
+/* ===== 阅读页 ===== */
 function attHTML(files) {
   if (!files || !files.length) return '';
   return `<div class="article-attachments"><h4><i class="fas fa-paperclip"></i> 附件下载</h4>${files.map(f => `<a class="att-card" href="${esc(f.url)}" target="_blank" rel="noopener" download="${esc(f.name)}"><i class="fas ${fileIcon(f.name)}"></i><span><b>${esc(f.name)}</b><small>${f.size ? fmtSize(f.size) : '附件'}</small></span><i class="fas fa-download"></i></a>`).join('')}</div>`;
@@ -282,19 +277,32 @@ function renderRead(p, preview) {
   document.getElementById('readInner').innerHTML = `${bar}${localBar}<article class="article"><h1 class="article-title">${esc(p.title || '无标题')}</h1><div class="article-meta"><span>${fmtDate(p.created_at || new Date().toISOString())}</span>${tags}</div><div class="article-body">${(window.__isHTML && window.__isHTML(p.content)) ? p.content : toRTEHTML(p.content || '')}</div>${gallery}${atts}${refs}${nav}</article>`;
   document.getElementById('readInner').querySelectorAll('.gal-item').forEach(g => g.onclick = () => openLB(g.dataset.img));
   const bl = document.getElementById('backList'); if (bl) bl.onclick = () => go('learning');
-  const be = document.getElementById('backEdit'); if (be) be.onclick = () => go('learning');
+  const be = document.getElementById('backEdit'); if (be) be.onclick = () => { showView('edit'); setNav('learning'); };
   const sn = document.getElementById('syncNow'); if (sn) sn.onclick = () => resyncOne(p.id);
   const ec = document.getElementById('editCur'); if (ec) ec.onclick = () => editLearning(p.id);
   const dc = document.getElementById('delCur'); if (dc) dc.onclick = () => deleteLearning(p.id, !!p._local);
   document.getElementById('readInner').querySelectorAll('.an[data-id]').forEach(a => a.onclick = () => go('read/' + a.dataset.id));
 }
 
-/* ===== 学习成长：编辑器（抽屉式） ===== */
+/* ===== 学习成长：整页编辑器 ===== */
 let lrImages = [], lrLinks = [], lrFiles = [];
-let editingId = null, editingLocal = false;
-function setEditorMode(on) { const pub = document.getElementById('lrPub'); pub.innerHTML = on ? '<i class="fas fa-floppy-disk"></i> 保存修改' : '<i class="fas fa-paper-plane"></i> 发布'; }
+let editingId = null, editingLocal = false, editReturnTo = 'learning';
+function setEditorMode(on) { const pub = document.getElementById('lrPub'); pub.innerHTML = on ? '<i class="fas fa-floppy-disk"></i> 保存修改' : '<i class="fas fa-paper-plane"></i> 发布'; document.getElementById('lrEditTitle').innerHTML = on ? '<i class="fas fa-pen"></i> 编辑学习记录' : '<i class="fas fa-pen-nib"></i> 写一篇学习记录'; }
 function clearEditor() { editingId = null; editingLocal = false; document.getElementById('lrTitle').value = ''; if (window.__rte) window.__rte.clear(); else document.getElementById('lrContent').value = ''; document.getElementById('lrTags').value = ''; lrImages = []; lrLinks = []; lrFiles = []; renderThumbs(); renderLinkList(); renderFileList(); setEditorMode(false); }
-function editLearning(id) { const p = learningList.find(a => String(a.id) === String(id)); if (!p) return; editingId = String(id); editingLocal = !!p._local; document.getElementById('lrTitle').value = p.title || ''; if (window.__rte) window.__rte.ed.innerHTML = toRTEHTML(p.content || ''); else document.getElementById('lrContent').value = p.content || ''; document.getElementById('lrTags').value = (p.tags || []).join(', '); lrImages = (p.images || []).slice(); renderThumbs(); lrLinks = (p.links || []).map(l => ({ text: l.text, url: l.url })); renderLinkList(); lrFiles = (p.files || []).slice(); renderFileList(); setEditorMode(true); openDrawer('lr'); setTimeout(() => document.getElementById('lrTitle').scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); showToast('已进入编辑模式 · 改完点「保存修改」'); }
+function openLearningEditor() { showView('edit'); setNav('learning'); window.scrollTo(0, 0); }
+function editLearning(id) {
+  const p = learningList.find(a => String(a.id) === String(id)); if (!p) return;
+  editingId = String(id); editingLocal = !!p._local;
+  editReturnTo = curHash().startsWith('read/') ? curHash() : 'learning';
+  document.getElementById('lrTitle').value = p.title || '';
+  if (window.__rte) window.__rte.ed.innerHTML = toRTEHTML(p.content || ''); else document.getElementById('lrContent').value = p.content || '';
+  document.getElementById('lrTags').value = (p.tags || []).join(', ');
+  lrImages = (p.images || []).slice(); renderThumbs();
+  lrLinks = (p.links || []).map(l => ({ text: l.text, url: l.url })); renderLinkList();
+  lrFiles = (p.files || []).slice(); renderFileList();
+  setEditorMode(true); openLearningEditor();
+  setTimeout(() => document.getElementById('lrTitle').focus(), 150);
+}
 /* 本机小账本 */
 const HIDE_KEY = 'chi_lr_hide', EDIT_KEY = 'chi_lr_edit';
 const getHide = () => { try { const r = JSON.parse(localStorage.getItem(HIDE_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
@@ -316,7 +324,7 @@ async function deleteLearning(id, isLocal) {
     if (!ok) { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); if (curHash().startsWith('read/')) go('learning'); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); return; }
   } else { const h = getHide(); if (!h.includes(sid)) h.push(sid); setHide(h); }
   invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest();
-  if (curHash().startsWith('read/')) go('learning');
+  if (curHash().startsWith('read/') || curHash() === 'edit') go('learning');
   showToast('已删除 ✓');
 }
 function renderThumbs() { document.getElementById('lrThumbs').innerHTML = lrImages.map((s, i) => { if (s && typeof s === 'object' && s._uploading) return `<div class="lr-thumb uploading"><div class="up-spin"><i class="fas fa-spinner fa-spin"></i></div><span class="up-hint">上传中</span></div>`; return `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmimg="${i}">&times;</button></div>`; }).join(''); }
@@ -324,7 +332,6 @@ function renderLinkList() { document.getElementById('lrLinkList').innerHTML = lr
 function renderFileList() { document.getElementById('lrFiles').innerHTML = lrFiles.map((f, i) => { if (f && f._uploading) return `<div class="lr-fileitem"><i class="fas fa-spinner fa-spin"></i><span class="lf-name">${esc(f.name)}<small>上传中…</small></span></div>`; return `<div class="lr-fileitem"><i class="fas ${fileIcon(f.name)}"></i><span class="lf-name">${esc(f.name)}<small>${fmtSize(f.size || 0)}</small></span><a class="lf-view" href="${esc(f.url)}" target="_blank" rel="noopener">查看</a><button data-rmfile="${i}"><i class="fas fa-times"></i></button></div>`; }).join(''); }
 document.getElementById('lrFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; await processImageUpload(f, lrImages, renderThumbs); } e.target.value = ''; });
 document.getElementById('lrThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rmimg]'); if (b) { lrImages.splice(+b.dataset.rmimg, 1); renderThumbs(); } });
-/* 附件选择（修复：真实上传到 Storage） */
 document.getElementById('lrDoc').addEventListener('change', async e => {
   const files = [...e.target.files]; e.target.value = '';
   for (const f of files) {
@@ -335,7 +342,6 @@ document.getElementById('lrDoc').addEventListener('change', async e => {
       lrFiles[lrFiles.indexOf(ph)] = { name: f.name, size: f.size, url };
       showToast('附件「' + esc(f.name) + '」上传成功 ✓');
     } catch (err) {
-      console.error('附件上传失败', err);
       lrFiles.splice(lrFiles.indexOf(ph), 1);
       showToast('附件上传失败：' + esc(err.message || '网络或权限问题') + '（请先在 Supabase 运行 fix.sql）', 6000);
     }
@@ -346,6 +352,8 @@ document.getElementById('lrFiles').addEventListener('click', e => { const b = e.
 document.getElementById('lrAddLink').addEventListener('click', () => { const t = document.getElementById('lrLinkText'), u = document.getElementById('lrLinkUrl'); const url = u.value.trim(); if (!url) { u.focus(); return; } lrLinks.push({ text: t.value.trim() || url, url }); t.value = ''; u.value = ''; renderLinkList(); });
 document.getElementById('lrLinkList').addEventListener('click', e => { const b = e.target.closest('[data-rmlink]'); if (b) { lrLinks.splice(+b.dataset.rmlink, 1); renderLinkList(); } });
 function gatherPost() { return { title: document.getElementById('lrTitle').value.trim(), content: document.getElementById('lrContent').value.trim(), images: lrImages.filter(s => typeof s === 'string'), links: lrLinks.slice(), files: lrFiles.filter(f => f && f.url), tags: document.getElementById('lrTags').value.split(/[,，]/).map(t => t.trim()).filter(Boolean) }; }
+document.getElementById('lrBack').addEventListener('click', () => go(editReturnTo || 'learning'));
+document.getElementById('lrNewBtn').addEventListener('click', () => { clearEditor(); editReturnTo = 'learning'; openLearningEditor(); setTimeout(() => document.getElementById('lrTitle').focus(), 150); });
 document.getElementById('lrPreview').addEventListener('click', () => { const p = gatherPost(); if (!p.title && !p.content) { showToast('先写点标题或正文再预览'); return; } renderRead({ ...p, created_at: new Date().toISOString(), emoji: '👀' }, true); showView('read'); setNav('learning'); });
 document.getElementById('lrPub').addEventListener('click', publishLearning);
 async function publishLearning() {
@@ -366,11 +374,10 @@ async function publishLearning() {
       for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('learning').update({ title: p.title, content: p.content, images: p.images, links: p.links, tags: p.tags, files: p.files, emoji: '📚' }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } }
     }
     btn.disabled = false;
-    if (ok) { clearEditor(); closeDrawer('lr'); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); showToast('已保存修改 ✓'); return; }
+    if (ok) { const dest = editReturnTo || 'learning'; clearEditor(); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); go(dest); showToast('已保存修改 ✓'); return; }
     btn.innerHTML = '<i class="fas fa-floppy-disk"></i> 保存修改'; showToast('保存失败 · 原内容未丢失'); return;
   }
   const p = gatherPost(); if (!p.title) { document.getElementById('lrTitle').focus(); showToast('请填写标题'); return; }
-  /* 修复重复：同标题拦截 */
   const dup = learningList.find(a => normTxt(a.title) === normTxt(p.title));
   if (dup) { showToast('已有同标题《' + esc(p.title) + '》，请直接编辑它，避免重复', 5200); return; }
   const btn = document.getElementById('lrPub'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发布中…';
@@ -378,10 +385,10 @@ async function publishLearning() {
   btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> 发布';
   document.getElementById('lrTitle').value = ''; if (window.__rte) window.__rte.clear(); else document.getElementById('lrContent').value = ''; document.getElementById('lrTags').value = ''; lrImages = []; lrLinks = []; lrFiles = []; renderThumbs(); renderLinkList(); renderFileList();
   if (ok) {
-    const pool = getPostedLR(); pool.unshift({ id: uid('LR'), ...p, emoji: '📚', created_at: new Date().toISOString() }); setPostedLR(pool); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); closeDrawer('lr'); showToast('已发布 ✓ 同步到云端'); return;
+    const pool = getPostedLR(); pool.unshift({ id: uid('LR'), ...p, emoji: '📚', created_at: new Date().toISOString() }); setPostedLR(pool); invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); go('learning'); showToast('已发布 ✓ 同步到云端'); return;
   }
   const d = getLR(); d.unshift({ id: uid('LR'), ...p, emoji: '📚', created_at: new Date().toISOString(), _local: true }); setLR(d);
-  invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); closeDrawer('lr');
+  invalidateLearning(); await loadLearning(); renderLearningList(); renderHomeLatest(); go('learning');
   showToast('已保存到本机 ✓ 联网后自动同步，内容不会丢', 6000);
 }
 
@@ -393,7 +400,6 @@ let lifeEditId = null, lifeEditLocal = false;
 const SEED_LIFE = [{ id: 'sl1', content: '今天把进销存看板的"该补货吗"挪到了第一屏。看板的第一屏只该回答一个问题。', tags: ['复盘'], images: [], created_at: '2026-07-20T21:30:00Z' }, { id: 'sl2', content: '周末给草缸换了水，顺便把网球拍线也换了。生活和分析一样，定期维护才不会崩。🎾', tags: ['生活'], images: [], created_at: '2026-07-13T18:00:00Z' }];
 function loadLocal() { try { const r = JSON.parse(localStorage.getItem(LKEY)); if (Array.isArray(r)) return r; } catch (e) { } return []; }
 function saveLocal(p) { localStorage.setItem(LKEY, JSON.stringify(p)); }
-function setLiveBadge(on) { /* 徽章已移入抽屉，保留空函数兼容 */ }
 function setSubText(on) { document.getElementById('postSubText').innerHTML = '分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。'; }
 function postHTML(p) {
   let raw = contentOf(p);
@@ -407,29 +413,23 @@ function postHTML(p) {
       const root = doc.querySelector('.__rtx');
       if (root) { root.querySelectorAll('img').forEach(im => { const s = im.getAttribute('src') || im.getAttribute('data-src'); if (s) imgs.push(s); im.remove(); }); txtHtml = root.innerHTML; } else txtHtml = raw;
     } catch (e) { txtHtml = raw; }
-  } else {
-    ptxtCls = 'ptxt';
-    txtHtml = toRTEHTML(raw);
-  }
+  } else { ptxtCls = 'ptxt'; txtHtml = toRTEHTML(raw); }
   imgs = imgs.filter((s, i) => s && imgs.indexOf(s) === i);
   const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
   const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join('');
   let imgHtml = '';
   if (imgs.length) {
     const cols = imgs.length >= 3 ? 3 : imgs.length;
-    const cells = imgs.map(s => `<div class="lg-cell"><img class="limg" src="${esc(s)}" data-img="${esc(s)}" alt="" loading="lazy"></div>`).join('');
-    imgHtml = `<div class="life-grid lg-c${cols}">${cells}</div>`;
+    imgHtml = `<div class="life-grid lg-c${cols}">${imgs.map(s => `<div class="lg-cell"><img class="limg" src="${esc(s)}" data-img="${esc(s)}" alt="" loading="lazy"></div>`).join('')}</div>`;
   }
   const pinned = isPinned(p) ? `<span class="pin-flag">📌 置顶</span>` : '';
   const flag = p._local ? `<span class="draft-flag">📍 本机</span>` : '';
   const mgmt = p._seed ? '' : `<div class="life-mgmt"><button class="pc-m" data-life-edit="${esc(p.id)}" title="编辑"><i class="fas fa-pen"></i></button><button class="pc-m pc-m-del" data-life-del="${esc(p.id)}" data-local="${p._local ? 1 : 0}" title="删除"><i class="fas fa-trash"></i></button></div>`;
   return `<div class="post"><div class="ph"><div class="pav">历</div><div class="pinfo"><div class="who">阿历</div><div class="when">${relTime(ts)}</div></div>${pinned}${flag}${mgmt}</div><div class="${ptxtCls}">${txtHtml}</div>${imgHtml}${tags ? `<div class="ptags">${tags}</div>` : ''}</div>`;
 }
-function mergeByTime(a, b) { return sortPosts([...a, ...b]); }
 function renderPosts(posts, off) { if (!posts || !posts.length) { postList.innerHTML = off ? '<div class="no-result">离线暂存模式，先写一条存本机吧 ✍️</div>' : '<div class="no-result">还没有随笔，点「发一条随笔」写第一条 ✍️</div>'; return; } postList.innerHTML = posts.map(postHTML).join(''); }
 function renderHomeLife() {
-  const g = document.getElementById('homeLife'); if (!g) return;
-  const head = document.getElementById('homeLifeHead');
+  const g = document.getElementById('homeLife'), head = document.getElementById('homeLifeHead');
   const list = lifeList.slice(0, 3);
   if (!list.length) { if (head) head.style.display = 'none'; g.innerHTML = ''; return; }
   if (head) head.style.display = 'flex';
@@ -448,9 +448,7 @@ async function loadPosts() {
   const local = loadLocal(); if (local.length) { const remain = []; for (const x of local) { let ok = false; try { const r = await withTimeout(sb.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 12000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } saveLocal(remain); if (remain.length !== local.length) { try { const r2 = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) data = r2.data; } catch (e) { } } }
   seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
   const seedLife = (!data || !data.length) ? SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })) : [];
-  lifeList = mergeByTime(data || [], seedLife.concat(loadLocal().map(x => ({ ...x, _local: true }))));
-  const postedLife = getPostedLife().map(x => ({ ...x, _posted: true }));
-  lifeList = sortPosts([...lifeList, ...postedLife]);
+  lifeList = sortPosts([...(data || []), ...seedLife, ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
   lifeList = dedupePostedArr(lifeList, 'content');
   confirmPostedArr(getPostedLife(), data || [], 'content', setPostedLife);
   const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
@@ -459,7 +457,8 @@ async function loadPosts() {
 function subscribeRT() { if (!sb) return; try { sb.channel('posts-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, pl => { if (!cloudOK) return; const p = pl.new; if (!p || seenIds.has(p.id)) return; seenIds.add(p.id); const e = postList.querySelector('.no-result'); if (e) e.remove(); postList.insertAdjacentHTML('afterbegin', postHTML(p)); }).subscribe(); } catch (e) { } }
 function setLifeEditorMode(on) { postPub.innerHTML = on ? SAVE_HTML : PUB_HTML; }
 function clearLifeEditor() { lifeEditId = null; lifeEditLocal = false; if (window.__rteLife) window.__rteLife.clear(); else postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs(); setLifeEditorMode(false); }
-function editLife(id) { const p = lifeList.find(a => String(a.id) === String(id)); if (!p || p._seed) return; lifeEditId = String(id); lifeEditLocal = !!p._local; if (window.__rteLife) window.__rteLife.ed.innerHTML = toRTEHTML(p.content || ''); else postInput.value = toRTEHTML(p.content || ''); postTags.value = (p.tags || []).join(', '); lifeImages = (p.images || []).slice(); renderLifeThumbs(); setLifeEditorMode(true); openDrawer('life'); showToast('已进入编辑模式 · 改完点「保存修改」'); }
+function openLifeEditor() { showView('lifeedit'); setNav('life'); window.scrollTo(0, 0); }
+function editLife(id) { const p = lifeList.find(a => String(a.id) === String(id)); if (!p || p._seed) return; lifeEditId = String(id); lifeEditLocal = !!p._local; if (window.__rteLife) window.__rteLife.ed.innerHTML = toRTEHTML(p.content || ''); else postInput.value = toRTEHTML(p.content || ''); postTags.value = (p.tags || []).join(', '); lifeImages = (p.images || []).slice(); renderLifeThumbs(); setLifeEditorMode(true); openLifeEditor(); }
 async function deleteLife(id, isLocal) {
   if (!confirm('确定删除这条随笔？此操作不可撤销。')) return;
   const sid = String(id);
@@ -488,7 +487,7 @@ async function publishLife() {
     if (pi >= 0) { pp[pi] = Object.assign({}, pp[pi], { content, tags, images: imgs }); setPostedLife(pp); ok = true; }
     if (lifeEditLocal) { const l = loadLocal(); const idx = l.findIndex(a => String(a.id) === sid); if (idx >= 0) { l[idx] = Object.assign({}, l[idx], { content, tags, images: imgs }); saveLocal(l); ok = true; } } else if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').update({ content, tags, images: imgs }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } } }
     postPub.disabled = false;
-    if (ok) { clearLifeEditor(); closeDrawer('life'); showToast('已保存修改 ✓'); loadPosts(); renderHomeLife(); return; }
+    if (ok) { clearLifeEditor(); showToast('已保存修改 ✓'); go('life'); loadPosts(); renderHomeLife(); return; }
     postPub.innerHTML = SAVE_HTML; showToast('保存失败 · 原内容未丢失'); return;
   }
   const content = (window.__rteLife && window.__rteLife.isEmpty()) ? '' : postInput.value.trim();
@@ -500,21 +499,22 @@ async function publishLife() {
   postPub.innerHTML = PUB_HTML; postPub.disabled = false;
   if (window.__rteLife) window.__rteLife.clear(); else postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs();
   if (ok) {
-    const pool = getPostedLife(); pool.unshift({ id: uid('LF'), content, tags, images: imgs, created_at: new Date().toISOString() }); setPostedLife(pool); showToast('已发布 ✓ 实时同步中…'); closeDrawer('life'); loadPosts(); renderHomeLife(); return;
+    const pool = getPostedLife(); pool.unshift({ id: uid('LF'), content, tags, images: imgs, created_at: new Date().toISOString() }); setPostedLife(pool); showToast('已发布 ✓ 实时同步中…'); go('life'); loadPosts(); renderHomeLife(); return;
   }
   const l = loadLocal(); l.unshift({ id: uid('LF'), content, tags, images: imgs, ts: Date.now(), created_at: new Date().toISOString(), _local: true }); saveLocal(l);
   cloudOK = false; setSubText(false);
   const hide = getLifeHide();
   lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...l.map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
   const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
-  renderPosts(lifeList, true); renderHomeLife(); closeDrawer('life');
+  renderPosts(lifeList, true); renderHomeLife(); go('life');
   showToast('已保存到本机 ✓ 联网后自动补传', 6000);
 }
 postPub.addEventListener('click', publishLife);
+document.getElementById('lifeBack').addEventListener('click', () => go('life'));
+document.getElementById('lifeNewBtn').addEventListener('click', () => { clearLifeEditor(); openLifeEditor(); setTimeout(() => { if (window.__rteLife) window.__rteLife.focus(); else postInput.focus(); }, 150); });
 function renderLifeThumbs() { document.getElementById('lifeThumbs').innerHTML = lifeImages.map((s, i) => { if (s && typeof s === 'object' && s._uploading) return `<div class="lr-thumb uploading"><div class="up-spin"><i class="fas fa-spinner fa-spin"></i></div><span class="up-hint">上传中</span></div>`; return `<div class="lr-thumb"><img src="${s}" alt=""><button data-rmlife="${i}">&times;</button></div>`; }).join(''); }
 document.getElementById('lifeFile').addEventListener('change', async e => { const files = [...e.target.files]; for (const f of files) { if (!f.type.startsWith('image/')) continue; await processImageUpload(f, lifeImages, renderLifeThumbs); } e.target.value = ''; });
 document.getElementById('lifeThumbs').addEventListener('click', e => { const b = e.target.closest('[data-rmlife]'); if (b) { lifeImages.splice(+b.dataset.rmlife, 1); renderLifeThumbs(); } });
-/* 导出备份 */
 function exportLifeJSON() {
   const data = lifeList.map(p => ({ id: p.id, content: contentOf(p), tags: p.tags || [], images: p.images || [], created_at: p.created_at || (p.ts ? new Date(p.ts).toISOString() : null) }));
   if (!data.length) { showToast('暂无随笔可导出'); return; }
@@ -527,18 +527,7 @@ function exportLifeJSON() {
 }
 document.getElementById('lifeExportBtn').addEventListener('click', exportLifeJSON);
 
-/* ===== 抽屉（隐藏式编辑窗口） ===== */
-function openDrawer(kind) { const d = document.getElementById(kind === 'lr' ? 'lrDrawer' : 'lifeDrawer'); const m = document.getElementById(kind === 'lr' ? 'lrDrawerMask' : 'lifeDrawerMask'); d.classList.add('open'); m.classList.add('open'); lockScroll(true); }
-function closeDrawer(kind) { const d = document.getElementById(kind === 'lr' ? 'lrDrawer' : 'lifeDrawer'); const m = document.getElementById(kind === 'lr' ? 'lrDrawerMask' : 'lifeDrawerMask'); d.classList.remove('open'); m.classList.remove('open'); lockScroll(false); }
-document.getElementById('lrNewBtn').addEventListener('click', () => { clearEditor(); openDrawer('lr'); setTimeout(() => document.getElementById('lrTitle').focus(), 250); });
-document.getElementById('lifeNewBtn').addEventListener('click', () => { clearLifeEditor(); openDrawer('life'); setTimeout(() => { if (window.__rteLife) window.__rteLife.focus(); else postInput.focus(); }, 250); });
-document.getElementById('lrClose').addEventListener('click', () => closeDrawer('lr'));
-document.getElementById('lifeClose').addEventListener('click', () => closeDrawer('life'));
-document.getElementById('lrDrawerMask').addEventListener('click', () => closeDrawer('lr'));
-document.getElementById('lifeDrawerMask').addEventListener('click', () => closeDrawer('life'));
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDrawer('lr'); closeDrawer('life'); } });
-
-/* ===== 搜索（修复：真实可用） ===== */
+/* ===== 搜索 ===== */
 document.getElementById('lrSearch').addEventListener('input', e => { lrQuery = e.target.value.trim(); renderLearningList(); });
 document.getElementById('globalSearch').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
@@ -549,7 +538,7 @@ document.getElementById('globalSearch').addEventListener('keydown', e => {
   showToast('已在学习成长中搜索「' + esc(q) + '」');
 });
 
-/* ===== 首页：统计 / 标签云 ===== */
+/* ===== 首页：统计 / 标签云 / 日历 ===== */
 function renderStats() {
   const sp = document.getElementById('statProjects'), sl = document.getElementById('statLearning'), sf = document.getElementById('statLife');
   if (sp) sp.textContent = CASES.length;
@@ -562,7 +551,7 @@ function renderTagCloud() {
   learningList.forEach(p => (p.tags || []).forEach(t => { if (t !== '置顶') cnt[t] = (cnt[t] || 0) + 1; }));
   lifeList.forEach(p => (p.tags || []).forEach(t => { if (t !== '置顶') cnt[t] = (cnt[t] || 0) + 1; }));
   const top = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 12);
-  el.innerHTML = top.length ? top.map(([t, n]) => `<button type="button" class="tagchip" data-tag="${esc(t)}">${esc(t)}<small>${n}</small></button>`).join('') : '<span style="font-size:.8rem;color:var(--ink-3)">暂无标签</span>';
+  el.innerHTML = top.length ? top.map(([t, n]) => `<button type="button" class="tagchip" data-tag="${esc(t)}">${esc(t)}<small>${n}</small></button>`).join('') : '<span style="font-size:.85rem;color:var(--ink-3)">暂无标签</span>';
 }
 document.getElementById('tagCloud').addEventListener('click', e => {
   const b = e.target.closest('.tagchip'); if (!b) return;
@@ -570,8 +559,6 @@ document.getElementById('tagCloud').addEventListener('click', e => {
   const ls = document.getElementById('lrSearch'); if (ls) ls.value = lrQuery;
   go('learning'); renderLearningList();
 });
-
-/* ===== 首页：日历 ===== */
 let calY, calM;
 (function initCal() { const d = new Date(); calY = d.getFullYear(); calM = d.getMonth(); })();
 function renderCal() {
@@ -598,7 +585,7 @@ function renderCal() {
 document.getElementById('calPrev').addEventListener('click', () => { calM--; if (calM < 0) { calM = 11; calY--; } renderCal(); });
 document.getElementById('calNext').addEventListener('click', () => { calM++; if (calM > 11) { calM = 0; calY++; } renderCal(); });
 
-/* ===== 首页：天干地支 + 时辰 + 农历 ===== */
+/* ===== 天干地支 + 时辰 + 农历 ===== */
 const GAN = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
 const ZHI = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
 const SX = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
@@ -627,7 +614,7 @@ function tick() {
 }
 tick(); setInterval(tick, 1000);
 
-/* ===== 联系方式弹窗 / lightbox ===== */
+/* ===== 联系方式 / lightbox ===== */
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-qr],[data-mail]'); if (!b) return; e.preventDefault();
   if (b.hasAttribute('data-mail')) { location.href = 'mailto:' + b.getAttribute('data-mail'); return; }
@@ -654,7 +641,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.g
   if (pm) { pm.addEventListener('click', function (e) { if (e.target === pm) closePdf(); }); document.getElementById('pdfClose').addEventListener('click', closePdf); }
 })();
 
-/* ===== 主题 / 回顶 / 品牌回首页 ===== */
+/* ===== 主题 / 回顶 / 品牌 ===== */
 const root = document.documentElement, themeBtn = document.getElementById('themeBtn');
 function setTheme(t) { root.setAttribute('data-theme', t); localStorage.setItem('chi_theme', t); themeBtn.innerHTML = t === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; }
 setTheme(localStorage.getItem('chi_theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'));
@@ -740,7 +727,7 @@ function makeRTE(ta, opts) {
 }
 
 /* ===== 启动 ===== */
-renderCases(); renderCerts();
+renderCases(); renderCerts(); renderHomeCases();
 primeLearningSync(); primeLifeSync();
 route();
 subscribeRT();
