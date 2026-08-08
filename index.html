@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿历的个人主页 · 数字花园</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=JetBrains+Mono&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img src="me.jpg" class="avatar" alt="头像" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="avatar-fb">历</div>
+      <div class="brand-txt">
+        <h1>阿历的个人主页</h1>
+        <p>数据分析 · 成长博客</p>
+      </div>
+    </div>
+    <p class="sign">用数字讲好业务的故事<br>记录生活的每一个精彩瞬间</p>
+    <nav>
+      <ul class="nav" id="mainNav">
+        <li><a href="#home" class="active" data-view="home"><span class="nico">🏠</span> 首页</a></li>
+        <li><a href="#about" data-view="about"><span class="nico">🙋</span> 关于我</a></li>
+        <li><a href="#projects" data-view="projects"><span class="nico">💼</span> 项目案例</a></li>
+        <li><a href="#learning" data-view="learning"><span class="nico">📚</span> 学习成长</a></li>
+        <li><a href="#life" data-view="life"><span class="nico">🌱</span> 生活随笔</a></li>
+      </ul>
+    </nav>
+    <div class="side-foot">
+      <div class="contact-row">
+        <button class="cbtn" title="微信" onclick="showWechat()"><i class="fab fa-weixin"></i></button>
+        <button class="cbtn" title="小红书" onclick="showXiaohongshu()"><i class="fas fa-book-open"></i></button>
+        <button class="cbtn" title="QQ" onclick="showQQ()"><i class="fab fa-qq"></i></button>
+        <button class="cbtn" title="GitHub" onclick="window.open('https://github.com/chi12345678-ui','_blank')"><i class="fab fa-github"></i></button>
+        <button class="cbtn" title="发邮件" onclick="window.location.href='mailto:chift0707@gmail.com'"><i class="fas fa-envelope"></i></button>
+      </div>
+      <p class="copy">© <span id="year"></span> 阿历 · 数字花园</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="tools">
+      <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
+      <button id="offlineBtn" title="离线模式"><i class="fas fa-wifi"></i></button>
+      <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
+    </div>
+
+    <!-- ===== 首页 ===== -->
+    <div id="view-home" class="view active">
+      <div class="home-layout">
+        <div class="home-left">
+          <section class="sec">
+            <h1 class="hi">你好呀！<span class="wave">👋</span></h1>
+            <div class="datebar" id="datebar">
+              <span class="d" id="dateStr">--</span>
+              <span class="sep"></span>
+              <span class="d" id="lunarStr">--</span>
+              <span class="sep"></span>
+              <span class="d" id="gzStr">--</span>
+              <span class="sep"></span>
+              <span class="clock" id="clock">--:--:--</span>
+            </div>
+            <div class="intro">
+              <p><span class="lead">我是 <b class="em">阿历</b></span>，一名深耕快消品与电商领域的数据分析从业者，成功利用数据分析将一家电商母婴店铺从 0 变成月销 100W+。</p>
+              <p>📊 多年市场运营操作经验，擅长库存健康度诊断与智能补货模型，把模糊的业务需求梳理成清晰的数据模型。</p>
+              <p>🛒 熟练运用 RFM 用户分层、复购归因、留存分析、A/B 测试 驱动精细化运营落地。</p>
+              <p>🌱 这里是我的成长博客——记录学习、项目、工作与生活，内容会持续更新，欢迎常来。</p>
+              <p class="contact-note">📮 合作或交流，欢迎邮件 <a href="mailto:chift0707@gmail.com" class="mailinline">chift0707@gmail.com</a>（点左侧图标可扫码加微信 / 小红书 / QQ）</p>
+            </div>
+          </section>
+
+          <section class="sec">
+            <div class="sec-header">
+              <div>
+                <p class="sec-tag">PROJECTS</p>
+                <h2 class="sec-h">最新项目</h2>
+                <p class="sec-sub">用数据把业务问题，变成可落地的增长动作。</p>
+              </div>
+              <a class="sec-more" href="#projects" data-view="projects">查看更多 <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="case-grid case-grid--home" id="homeCases"></div>
+          </section>
+
+          <section class="sec">
+            <div class="sec-header">
+              <div>
+                <p class="sec-tag">LEARNING</p>
+                <h2 class="sec-h">最新学习</h2>
+                <p class="sec-sub">最近更新的学习笔记与复盘。</p>
+              </div>
+              <a class="sec-more" href="#learning" data-view="learning">查看更多 <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div id="homeLatest"></div>
+          </section>
+
+          <section class="sec">
+            <div class="sec-header">
+              <div>
+                <p class="sec-tag">LIFE</p>
+                <h2 class="sec-h">最新随笔</h2>
+                <p class="sec-sub">分析之外的日常碎片。</p>
+              </div>
+              <a class="sec-more" href="#life" data-view="life">查看更多 <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="home-life" id="homeLife"></div>
+          </section>
+        </div>
+
+        <div class="home-right">
+          <!-- 日历 -->
+          <div class="widget widget-cal">
+            <div class="widget-h"><i class="fas fa-calendar-alt"></i> 日历</div>
+            <div class="cal-header">
+              <button class="cal-nav" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+              <span id="calMonthYear">--</span>
+              <button class="cal-nav" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="cal-weekdays">
+              <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+            </div>
+            <div class="cal-days" id="calDays"></div>
+            <div class="cal-today-info" id="calTodayInfo"></div>
+          </div>
+
+          <!-- 花园导航 -->
+          <div class="widget widget-garden">
+            <div class="widget-h"><i class="fas fa-compass"></i> 逛花园</div>
+            <a class="wg-card" href="#projects" data-view="projects">
+              <span class="wg-ico">💼</span>
+              <span class="wg-name">项目案例</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a class="wg-card" href="#learning" data-view="learning">
+              <span class="wg-ico">📚</span>
+              <span class="wg-name">学习成长</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a class="wg-card" href="#life" data-view="life">
+              <span class="wg-ico">🌱</span>
+              <span class="wg-name">生活随笔</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a class="wg-card" href="#archive" data-view="archive">
+              <span class="wg-ico">📦</span>
+              <span class="wg-name">归档汇总</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+
+          <!-- 花园数据 -->
+          <div class="widget widget-stats">
+            <div class="widget-h"><i class="fas fa-chart-pie"></i> 花园数据</div>
+            <div class="stat-row"><span>项目案例</span><b id="statProjects">0</b></div>
+            <div class="stat-row"><span>学习笔记</span><b id="statLearning">0</b></div>
+            <div class="stat-row"><span>生活随笔</span><b id="statLife">0</b></div>
+            <div class="stat-row"><span>运行天数</span><b id="statDays">0</b></div>
+          </div>
+
+          <!-- 关于我 -->
+          <div class="widget widget-profile">
+            <div class="widget-h"><i class="fas fa-user"></i> 关于我</div>
+            <p class="widget-bio">快消品与电商领域的数据分析从业者，擅长库存健康度诊断与智能补货模型。</p>
+            <a class="widget-link" href="#about" data-view="about">查看完整介绍 <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 关于我 ===== -->
+    <div id="view-about" class="view">
+      <section class="sec">
+        <p class="sec-tag">ABOUT</p>
+        <h2 class="sec-h">关于我</h2>
+        <div class="about-wrap">
+          <div>
+            <p class="lede">我是 <b>阿历</b>，一名深耕 <b>快消品与电商</b> 领域的数据分析从业者。我相信数据不是冷冰冰的数字，而是 <b>听懂业务、讲清故事</b> 的语言。这座花园记录我从一个表格新手，到能独立搭建补货模型、用户分层体系的每一步—— <b>慢慢种，慢慢长</b>。</p>
+            <div class="edges">
+              <div class="edge"><div class="no">01</div><div><h3><i class="fas fa-database"></i> 把模糊需求变成数据模型</h3><p>库存健康度诊断、智能补货模型，让"该备多少货"从拍脑袋变成可计算。</p></div></div>
+              <div class="edge"><div class="no">02</div><div><h3><i class="fas fa-users"></i> 用 RFM 驱动精细化运营</h3><p>用户分层、复购归因、留存分析、A/B 测试，把"哪些用户该发券"算清楚。</p></div></div>
+              <div class="edge"><div class="no">03</div><div><h3><i class="fas fa-seedling"></i> 长期主义的记录者</h3><p>这座数字花园就是我的方法论沉淀——只要网站不停，生长就不终止。</p></div></div>
+            </div>
+            <h3 class="block-h"><i class="fas fa-certificate"></i> 证书墙 <span class="k">CERTIFICATES</span></h3>
+            <div class="cert-grid" id="certGrid"></div>
+          </div>
+          <div class="facts">
+            <h4>速览</h4>
+            <div class="fact"><div class="num">100W+</div><div class="lab"><b>月销增长</b>从 0 到月销百万母婴店</div></div>
+            <div class="fact"><div class="num">8</div><div class="lab"><b>RFM 分层</b>把 10 万用户分成 8 类</div></div>
+            <div class="fact"><div class="num">2x</div><div class="lab"><b>召回效率</b>精细化发券翻倍</div></div>
+            <div class="fact"><div class="num">∞</div><div class="lab"><b>持续生长</b>这座花园不会停</div></div>
+          </div>
+        </div>
+      </section>
+      <section class="sec">
+        <p class="sec-tag">RESUME</p>
+        <h2 class="sec-h">简历</h2>
+        <div class="resume-card">
+          <div class="ri"><i class="fas fa-file-alt"></i></div>
+          <div class="rt"><b>池增历 · 市场数据运营 3 年</b><span>快消 / 电商 · 数据分析 · 增长运营</span></div>
+          <div class="resume-actions">
+            <a class="ra-btn ra-primary" href="#" id="resumeDownload"><i class="fas fa-download"></i> 下载简历 PDF</a>
+            <a class="ra-btn ra-ghost" href="mailto:chift0707@gmail.com"><i class="fas fa-envelope"></i> 联系我</a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== 项目案例 ===== -->
+    <div id="view-projects" class="view">
+      <section class="sec">
+        <div class="read-bar">
+          <span class="back-link" onclick="goHome()"><i class="fas fa-arrow-left"></i> 返回首页</span>
+          <span class="rb-spacer"></span>
+          <button class="btn btn-pub rb-btn" onclick="openEditor('project')"><i class="fas fa-plus"></i> 新建项目</button>
+        </div>
+        <p class="sec-tag">PROJECTS</p>
+        <h2 class="sec-h">项目案例</h2>
+        <p class="sec-sub">用数据把业务问题，变成可落地的增长动作。每个案例都附可下载的源文件与报告。</p>
+        <div class="case-grid" id="caseGrid"></div>
+      </section>
+    </div>
+
+    <!-- ===== 学习成长 ===== -->
+    <div id="view-learning" class="view">
+      <section class="sec">
+        <div class="read-bar">
+          <span class="back-link" onclick="goHome()"><i class="fas fa-arrow-left"></i> 返回首页</span>
+          <span class="rb-spacer"></span>
+          <button class="btn btn-pub rb-btn" onclick="openEditor('learning')"><i class="fas fa-plus"></i> 写学习笔记</button>
+        </div>
+        <p class="sec-tag">LEARNING</p>
+        <h2 class="sec-h">学习成长</h2>
+        <p class="sec-sub">像博客一样记录每一次学习——文字、图片、参考链接。断网也能写、绝不丢，联网后自动同步到云端。</p>
+        <div id="learningGrid"></div>
+      </section>
+    </div>
+
+    <!-- ===== 生活随笔 ===== -->
+    <div id="view-life" class="view">
+      <section class="sec">
+        <div class="read-bar">
+          <span class="back-link" onclick="goHome()"><i class="fas fa-arrow-left"></i> 返回首页</span>
+          <span class="rb-spacer"></span>
+          <button class="btn btn-pub rb-btn" onclick="openEditor('life')"><i class="fas fa-plus"></i> 写随笔</button>
+        </div>
+        <p class="sec-tag">LIFE</p>
+        <h2 class="sec-h">生活随笔</h2>
+        <p class="sec-sub">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。</p>
+        <div class="posts" id="lifePosts"></div>
+      </section>
+    </div>
+
+    <!-- ===== 归档汇总 ===== -->
+    <div id="view-archive" class="view">
+      <section class="sec">
+        <div class="read-bar">
+          <span class="back-link" onclick="goHome()"><i class="fas fa-arrow-left"></i> 返回首页</span>
+        </div>
+        <p class="sec-tag">ARCHIVE</p>
+        <h2 class="sec-h">归档汇总</h2>
+        <p class="sec-sub">全文搜索 + 标签归类，一站式找到所有内容。</p>
+        <div class="archive-search-box"><i class="fas fa-search"></i><input type="text" id="archiveSearch" placeholder="搜索标题、内容、标签..." oninput="renderArchive()"></div>
+        <div class="archive-tabs" id="archiveTabs">
+          <button class="archive-tab active" data-filter="all" onclick="setArchiveFilter('all')">全部</button>
+          <button class="archive-tab" data-filter="project" onclick="setArchiveFilter('project')">项目</button>
+          <button class="archive-tab" data-filter="learning" onclick="setArchiveFilter('learning')">学习</button>
+          <button class="archive-tab" data-filter="life" onclick="setArchiveFilter('life')">随笔</button>
+        </div>
+        <div id="archiveList"></div>
+      </section>
+    </div>
+
+    <!-- ===== 文章详情 ===== -->
+    <div id="view-read" class="view">
+      <section class="sec article">
+        <span class="back-link" onclick="historyBack()"><i class="fas fa-arrow-left"></i> 返回</span>
+        <div id="readContent"></div>
+      </section>
+    </div>
+
+    <footer>
+      <p>© <span id="footYear"></span> 阿历 · 数字花园 · 用数字讲好业务的故事</p>
+    </footer>
+  </main>
+</div>
+
+<!-- 编辑器弹窗 -->
+<div class="editor-overlay" id="editorOverlay">
+  <div class="editor-modal">
+    <div class="editor-head">
+      <h3 id="editorTitle">新建内容</h3>
+      <button class="editor-close" onclick="closeEditor()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="editor-body">
+      <div class="editor" style="box-shadow:none;border:0;padding:0;margin:0;max-width:100%;">
+        <input type="text" class="ti" id="edTitle" placeholder="标题">
+        <div class="rte-wrap">
+          <div class="rte-bar" id="rteBar">
+            <button class="rte-b" onclick="rteCmd('bold')" title="加粗"><i class="fas fa-bold"></i></button>
+            <button class="rte-b" onclick="rteCmd('italic')" title="斜体"><i class="fas fa-italic"></i></button>
+            <button class="rte-b" onclick="rteCmd('underline')" title="下划线"><i class="fas fa-underline"></i></button>
+            <button class="rte-b" onclick="rteCmd('strikeThrough')" title="删除线"><i class="fas fa-strikethrough"></i></button>
+            <span class="rte-sep"></span>
+            <button class="rte-b" onclick="rteCmd('formatBlock','H2')" title="标题"><i class="fas fa-heading"></i></button>
+            <button class="rte-b" onclick="rteCmd('formatBlock','BLOCKQUOTE')" title="引用"><i class="fas fa-quote-left"></i></button>
+            <button class="rte-b" onclick="rteCmd('insertUnorderedList')" title="列表"><i class="fas fa-list-ul"></i></button>
+            <button class="rte-b" onclick="rteCmd('insertOrderedList')" title="有序列表"><i class="fas fa-list-ol"></i></button>
+            <span class="rte-sep"></span>
+            <button class="rte-b" onclick="rteLink()" title="链接"><i class="fas fa-link"></i></button>
+            <button class="rte-b" onclick="rteImage()" title="图片"><i class="fas fa-image"></i></button>
+            <button class="rte-b" onclick="rteCmd('removeFormat')" title="清除格式"><i class="fas fa-eraser"></i></button>
+          </div>
+          <div class="rte" id="rte" contenteditable="true" data-ph="开始写作..."></div>
+        </div>
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div>
+          <div class="lr-thumbs" id="edThumbs"></div>
+          <button class="file-btn" onclick="document.getElementById('edImgInput').click()"><i class="fas fa-plus"></i> 选择图片</button>
+          <input type="file" id="edImgInput" accept="image/*" multiple style="display:none" onchange="edHandleImages(this)">
+        </div>
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-paperclip"></i> 附件（Excel / PDF / Word / PPT）</div>
+          <div class="lr-attachments" id="edAttachments"></div>
+          <button class="file-btn" onclick="document.getElementById('edFileInput').click()"><i class="fas fa-plus"></i> 选择文件</button>
+          <input type="file" id="edFileInput" style="display:none" onchange="edHandleFiles(this)">
+          <p style="font-size:12px;color:var(--ink-3);margin-top:6px">支持 PDF、Excel、Word、PPT 等，单个建议 < 20MB</p>
+        </div>
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-link"></i> 参考链接</div>
+          <div class="lr-links" id="edLinks"></div>
+          <div class="lr-linkrow">
+            <input type="text" class="li" id="edLinkTitle" placeholder="链接标题">
+            <input type="text" class="li" id="edLinkUrl" placeholder="https://...">
+            <button class="btn btn-ghost" onclick="edAddLink()" style="padding:8px 14px;font-size:13px">添加</button>
+          </div>
+        </div>
+        <input type="text" class="tags-in" id="edTags" placeholder="标签（逗号分隔，含「置顶」则置顶）">
+        <div class="erow2">
+          <button class="btn btn-pub" id="edSubmit" onclick="edSubmit()">发布</button>
+          <button class="btn btn-ghost" onclick="closeEditor()">取消</button>
+          <span class="hint" id="edHint">先存本机，联网自动同步云端 · Ctrl+Enter 快捷发布</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="lightbox" onclick="closeLightbox()"><img class="lb-img" id="lbImg" src="" alt=""></div>
+<div class="overlay" id="qrOverlay" onclick="closeQr()">
+  <div style="background:var(--panel);padding:28px;border-radius:20px;text-align:center;box-shadow:var(--shadow-lg);max-width:320px;" onclick="event.stopPropagation()">
+    <h3 style="margin-bottom:16px;font-family:var(--disp)">扫码添加</h3>
+    <img id="qrImg" src="" style="width:220px;height:220px;object-fit:contain;border-radius:12px;border:1px solid var(--line)" alt="二维码">
+    <p style="margin-top:12px;color:var(--ink-3);font-size:14px" id="qrText"></p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="off-toast" id="offToast"><b>✓ 已保存到本地</b> 联网后将自动同步</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>
