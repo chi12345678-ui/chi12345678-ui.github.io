@@ -842,3 +842,6 @@ window.renderHomeLife = renderHomeLife;
 /* ===== 补丁 v20260806d：修复"删重复把正本也隐藏" ===== */
 try { localStorage.removeItem('chi_life_hide_content'); } catch (e) {}
 function lifeIsHiddenObj(p, sets) { return sets.hidSet.has(String(p && p.id)); }
+/* ===== 补丁 v20260806d：修复"删重复把正本也隐藏" ===== */
+try { localStorage.removeItem('chi_life_hide_content'); } catch (e) {}
+function lifeIsHiddenObj(p, sets) { return sets.hidSet.has(String(p && p.id)); }
