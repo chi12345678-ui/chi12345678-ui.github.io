@@ -1,358 +1,843 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="阿历的数字花园 - 快消品与电商领域数据分析从业者的成长博客">
-  <meta name="keywords" content="数据分析, RFM, 进销存, Power BI, Python, SQL">
-  <meta name="author" content="阿历">
-  <title>阿历的数字花园</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿历的个人主页 · 数字花园</title>
+<meta name="description" content="阿历的个人主页——用数据创造业务价值，记录生活的每一个精彩瞬间。">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>if(!window.supabase){document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
+<script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
+
+<style>
+/* ===== 优化层：只调外观/结构/新增组件，绝不改 style.css / app.js；整段删掉即恢复原样 ===== */
+
+/* 0) reveal 显示兜底 */
+.reveal{ transition:opacity .6s ease, transform .6s ease !important; }
+.reveal.rv-on{ opacity:1 !important; transform:none !important; }
+
+/* 1) 版心贴左 + 首页加宽 */
+.main > .view{ width:100% !important; max-width:none !important; justify-self:stretch !important; }
+.view > .sec, .main > .sec{ width:auto !important; max-width:min(1180px,100%) !important; margin-left:clamp(20px,3.2vw,64px) !important; margin-right:0 !important; justify-self:start !important; }
+.view[data-view="home"] > .sec{ max-width:min(1380px,100%) !important; }
+
+/* 2) 左栏品牌名 = 最大字 */
+.brand{ cursor:pointer !important; border-radius:18px !important; transition:background .2s !important; }
+.brand:hover{ background:rgba(255,138,61,.07) !important; }
+.brand-txt h1{ font-size:1.55rem !important; font-weight:800 !important; line-height:1.2 !important; letter-spacing:.3px !important; margin:0 !important; white-space:nowrap !important; color:var(--ink,#1f2430) !important; }
+.sign{ line-height:1.75 !important; }
+
+/* 3) 联系图标：品牌色方块 + 内联白色标 */
+.contact-row{ display:flex !important; gap:12px !important; flex-wrap:wrap !important; }
+.cbtn{ width:46px !important; height:46px !important; border-radius:14px !important; display:grid !important; place-items:center !important; color:#fff !important; overflow:hidden !important; border:none !important; cursor:pointer !important; padding:0 !important; background:#9aa0aa !important; box-shadow:0 4px 12px rgba(20,24,33,.10) !important; transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s, filter .18s !important; }
+.cbtn:hover{ transform:translateY(-3px) !important; box-shadow:0 10px 22px rgba(20,24,33,.20) !important; filter:saturate(1.08) !important; }
+.cbtn:active{ transform:translateY(-1px) scale(.96) !important; }
+.cbtn.wx{ background:#07C160 !important; }
+.cbtn.xhs{ background:#FF2442 !important; }
+.cbtn.qq{ background:#12B7F5 !important; }
+.cbtn.mail{ background:#5b6470 !important; }
+.cbtn .cico{ width:30px !important; height:30px !important; display:block !important; }
+
+/* 4) 首页两栏 hero（已移除中间橙点分隔线，避免压字） */
+.home-hero{ position:relative !important; display:grid !important; grid-template-columns:1fr !important; gap:30px !important; margin:8px 0 44px !important; }
+.home-hero::after{ display:none !important; }
+.home-hero .intro{ margin:0 !important; }
+.tour-panel{ position:relative !important; padding:26px 26px 14px !important; border-radius:24px !important; background:linear-gradient(158deg, rgba(255,138,61,.12), rgba(255,255,255,.55) 70%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 18px 44px rgba(255,122,26,.10) !important; }
+.tour-panel .guide-h{ margin-top:0 !important; }
+.tour-panel .tour{ margin:6px 0 0 !important; }
+.tour-panel .tour a{ background:rgba(255,255,255,.62) !important; transition:transform .18s, box-shadow .18s !important; }
+.tour-panel .tour a:hover{ transform:translateY(-2px) !important; box-shadow:0 8px 20px rgba(255,122,26,.12) !important; }
+@media (min-width:980px){
+  .home-hero{ grid-template-columns:minmax(0,1.12fr) minmax(320px,.88fr) !important; gap:clamp(34px,4.4vw,80px) !important; align-items:start !important; }
+}
+
+/* 4b) 首页三块：标题左 + 更多右 */
+.home-block-head{ display:none; align-items:center; justify-content:space-between; gap:12px; margin:42px 0 16px !important; }
+.home-block-head .block-h{ margin:0 !important; }
+.home-more{ display:inline-flex !important; align-items:center; gap:7px; font-size:.88rem !important; font-weight:600 !important; color:var(--brand,#ff7a1a) !important; text-decoration:none !important; padding:7px 14px !important; border-radius:999px !important; background:rgba(255,122,26,.08) !important; border:1px solid rgba(255,122,26,.18) !important; transition:background .2s, transform .2s, box-shadow .2s !important; white-space:nowrap !important; }
+.home-more:hover{ background:rgba(255,122,26,.16) !important; transform:translateY(-1px) !important; box-shadow:0 6px 16px rgba(255,122,26,.18) !important; }
+.home-more i{ transition:transform .2s !important; }
+.home-more:hover i{ transform:translateX(3px) !important; }
+
+/* 4c) 三块容器：单列博客横板 */
+#homeCases, #homeLatest, #homeLife{ display:flex !important; flex-direction:column !important; gap:16px !important; width:100% !important; max-width:none !important; }
+#homeCases > *, #homeLatest > *, #homeLife > *{ width:100% !important; max-width:none !important; height:auto !important; min-height:0 !important; position:relative !important; text-align:left !important; transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s !important; }
+
+/* 项目案例：尊重自带左封面，仅轻阴影 + hover 浮起 */
+#homeCases > *{ box-shadow:0 6px 18px rgba(20,24,33,.07) !important; }
+#homeCases > *:hover{ transform:translateY(-3px) !important; box-shadow:0 16px 36px rgba(20,24,33,.13) !important; }
+
+/* 学习成长：白底 + 左橙引用条 = 笔记感 */
+#homeLatest > *{ background:#fff !important; border-radius:16px !important; box-shadow: inset 4px 0 0 #ff7a1a, 0 6px 18px rgba(20,24,33,.07) !important; }
+#homeLatest > *:hover{ transform:translateY(-3px) !important; box-shadow: inset 5px 0 0 #ff6a00, 0 16px 36px rgba(20,24,33,.13) !important; }
+
+/* 生活随笔：暖米底 + 左嫩绿引用条 = 动态感（与学习块区分） */
+#homeLife > *{ background:linear-gradient(135deg, rgba(7,193,96,.07), rgba(255,250,242,.9)) !important; border:1px solid rgba(7,193,96,.16) !important; border-radius:18px !important; box-shadow: inset 4px 0 0 #2bb673, 0 6px 18px rgba(20,80,50,.07) !important; }
+#homeLife > *:hover{ transform:translateY(-3px) !important; box-shadow: inset 5px 0 0 #1fa866, 0 16px 34px rgba(20,80,50,.12) !important; }
+
+/* 首页隐藏“编辑/删除”管理按钮（展示橱窗不需要；要编辑去对应栏目页） */
+#homeLatest button:has(.fa-pen), #homeLatest button:has(.fa-pencil), #homeLatest button:has(.fa-trash), #homeLatest button:has(.fa-edit),
+#homeLife  button:has(.fa-pen), #homeLife  button:has(.fa-pencil), #homeLife  button:has(.fa-trash), #homeLife  button:has(.fa-edit),
+#homeLatest a:has(.fa-pen), #homeLatest a:has(.fa-trash), #homeLife a:has(.fa-pen), #homeLife a:has(.fa-trash){ display:none !important; }
+
+[data-theme="dark"] #homeLatest > *{ background:#1b1f27 !important; box-shadow: inset 4px 0 0 #ff8a3d, 0 6px 18px rgba(0,0,0,.30) !important; }
+[data-theme="dark"] #homeLatest > *:hover{ box-shadow: inset 5px 0 0 #ff9a4d, 0 16px 36px rgba(0,0,0,.42) !important; }
+[data-theme="dark"] #homeLife > *{ background:linear-gradient(135deg, rgba(7,193,96,.12), rgba(27,31,39,.9)) !important; border-color:rgba(7,193,96,.22) !important; box-shadow: inset 4px 0 0 #2bb673, 0 6px 18px rgba(0,0,0,.30) !important; }
+[data-theme="dark"] #homeLife > *:hover{ box-shadow: inset 5px 0 0 #34d089, 0 16px 34px rgba(0,0,0,.42) !important; }
+[data-theme="dark"] #homeCases > *{ box-shadow:0 6px 18px rgba(0,0,0,.30) !important; }
+[data-theme="dark"] #homeCases > *:hover{ box-shadow:0 16px 36px rgba(0,0,0,.42) !important; }
+
+/* 5) 关于我：简介大卡 + 加强分割 + 能力条间淡线 */
+.about-wrap{ align-items:start !important; position:relative !important; overflow:visible !important; padding:clamp(22px,3vw,40px) !important; border-radius:26px !important; background:linear-gradient(135deg, rgba(255,138,61,.07), rgba(255,255,255,.45) 72%) !important; border:1px solid rgba(255,138,61,.16) !important; box-shadow:0 16px 40px rgba(255,122,26,.08) !important; }
+.sec-divider{ height:2px !important; margin:54px auto !important; max-width:620px !important; position:relative !important; background:linear-gradient(90deg,transparent,rgba(255,122,26,.55),transparent) !important; }
+.sec-divider::after{ content:"\2756  能力展开  \2756" !important; position:absolute !important; left:50% !important; top:50% !important; transform:translate(-50%,-50%) !important; color:#ff7a1a !important; background:var(--bg,#f6f7f9) !important; padding:0 18px !important; font-size:.82rem !important; letter-spacing:2px !important; opacity:.9 !important; white-space:nowrap !important; }
+.edges .edge{ position:relative !important; }
+.edges .edge + .edge::before{ content:"" !important; position:absolute !important; top:0 !important; left:6% !important; right:6% !important; height:1px !important; background:linear-gradient(90deg,transparent,rgba(255,122,26,.30),transparent) !important; }
+
+/* 6) 隐藏“本机/本机暂存”提示 */
+#postModeBadge{ display:none !important; }
+.src-hidden{ display:none !important; }
+
+/* 7) 简历预览弹窗：大窗 + 自适应宽度 + 加载动画 + 顶栏徽标 + 暗色 + 移动端 */
+.pdf-modal{ position:fixed; inset:0; background:rgba(12,15,21,.72); -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px); display:none; place-items:center; z-index:9998; padding:clamp(12px,2.4vw,28px); }
+.pdf-modal.open{ display:grid; animation:pdfFade .26s ease both; }
+@keyframes pdfFade{ from{opacity:0} to{opacity:1} }
+.pdf-card{ background:#fff; border-radius:20px; width:min(1400px,96vw); height:min(92vh,1200px); display:flex; flex-direction:column; box-shadow:0 36px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04); overflow:hidden; animation:pdfPop .3s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes pdfPop{ from{ transform:translateY(14px) scale(.965); opacity:0 } to{ transform:none; opacity:1 } }
+.pdf-bar{ display:flex; align-items:center; gap:12px; padding:13px 18px; border-bottom:1px solid #eef0f3; background:linear-gradient(180deg,#fdfdfd,#f7f8fa); flex-wrap:wrap; }
+.pdf-ico{ flex:0 0 auto; width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:linear-gradient(145deg,#ff8a3d,#ff6a00); color:#fff; font-size:1rem; box-shadow:0 4px 12px rgba(255,106,0,.32); }
+.pdf-bar b{ font-size:1rem; color:#1f2430; flex:1 1 200px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+.pdf-bar a,.pdf-bar button{ border:none; cursor:pointer; font-size:.85rem; padding:9px 14px; border-radius:11px; text-decoration:none; display:inline-flex; align-items:center; gap:7px; font-weight:600; transition:transform .16s, box-shadow .16s, background .16s, color .16s; }
+.pdf-dl{ background:#ff7a1a; color:#fff; box-shadow:0 4px 12px rgba(255,122,26,.3); }
+.pdf-dl:hover{ background:#ff6a00; transform:translateY(-1px); box-shadow:0 8px 18px rgba(255,122,26,.4); }
+.pdf-open{ background:#eef3ff; color:#2563eb; }
+.pdf-open:hover{ background:#dfe9ff; transform:translateY(-1px); }
+.pdf-close{ background:#eef0f3; color:#444; font-size:1.15rem; padding:8px 12px; }
+.pdf-close:hover{ background:#e2e5ea; color:#111; transform:rotate(90deg); }
+.pdf-stage{ flex:1; position:relative; background:#3f4347; }
+.pdf-stage iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; background:#525659; }
+.pdf-loading,.pdf-hint{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:28px; line-height:1.85; }
+.pdf-loading{ color:#e8e8e8; font-size:.94rem; gap:16px; align-content:center; }
+.pdf-spin{ width:42px; height:42px; border-radius:50%; border:3px solid rgba(255,255,255,.18); border-top-color:#ff8a3d; animation:pdfSpin .8s linear infinite; justify-self:center; }
+@keyframes pdfSpin{ to{ transform:rotate(360deg) } }
+.pdf-hint{ background:#fff; color:#555; font-size:.94rem; }
+.pdf-hint b{ color:#ff7a1a; font-family:'JetBrains Mono',monospace; }
+[data-theme="dark"] .pdf-card{ background:#1b1f27; box-shadow:0 36px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06); }
+[data-theme="dark"] .pdf-bar{ background:linear-gradient(180deg,#232834,#1d222c); border-bottom-color:#2c323e; }
+[data-theme="dark"] .pdf-bar b{ color:#eef1f6; }
+[data-theme="dark"] .pdf-close{ background:#2c323e; color:#c7ccd6; }
+[data-theme="dark"] .pdf-close:hover{ background:#373e4b; color:#fff; }
+[data-theme="dark"] .pdf-open{ background:#1d2c44; color:#8fb6ff; }
+[data-theme="dark"] .pdf-open:hover{ background:#243656; }
+[data-theme="dark"] .pdf-hint{ background:#1b1f27; color:#c2c8d4; }
+[data-theme="dark"] .pdf-stage{ background:#2a2e35; }
+@media (max-width:640px){
+  .pdf-card{ width:98vw; height:94vh; border-radius:14px; }
+  .pdf-bar{ padding:10px 12px; gap:8px; }
+  .pdf-ico{ order:1; }
+  .pdf-bar a,.pdf-bar button{ order:2; padding:8px 11px; font-size:.8rem; }
+  .pdf-bar b{ order:3; flex-basis:100%; font-size:.9rem; }
+}
+
+/* 8) 二维码弹窗 */
+.qr-modal{ position:fixed; inset:0; background:rgba(15,18,25,.62); -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); display:none; place-items:center; z-index:9999; padding:20px; }
+.qr-modal.open{ display:grid; }
+.qr-card{ background:#fff; border-radius:22px; padding:28px 26px 24px; max-width:320px; width:100%; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.40); position:relative; animation:qrpop .24s cubic-bezier(.2,.9,.25,1); }
+@keyframes qrpop{ from{ transform:scale(.88) translateY(8px); opacity:0; } to{ transform:scale(1) translateY(0); opacity:1; } }
+.qr-card h4{ margin:0 0 16px; font-size:1.08rem; font-weight:700; color:#1f2430; }
+.qr-card img{ width:224px; height:224px; object-fit:contain; border-radius:14px; border:1px solid #eef0f3; background:#fafbfc; }
+.qr-fallback{ display:none; padding:34px 12px; color:#8a909c; font-size:.92rem; line-height:1.7; }
+.qr-fallback b{ color:#FF2442; font-family:'JetBrains Mono',monospace; }
+.qr-card.no-img img{ display:none; }
+.qr-card.no-img .qr-fallback{ display:block; }
+.qr-close{ position:absolute; top:8px; right:12px; border:none; background:transparent; font-size:28px; line-height:1; color:#c2c7d0; cursor:pointer; transition:color .15s, transform .15s; }
+.qr-close:hover{ color:#666; transform:rotate(90deg); }
+.qr-tip{ margin:14px 0 0; font-size:.8rem; color:#aab0bb; }
+
+/* 9) footer 两行 */
+footer .ft-meta{ display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; justify-content:center; }
+footer .ft-disc{ display:block; margin-top:8px; font-size:.78rem; opacity:.72; line-height:1.7; }
+
+/* 10) 同步自检 */
+#syncFab{ position:fixed; right:22px; bottom:22px; z-index:9000; width:52px; height:52px; border-radius:50%; border:none; cursor:pointer; background:linear-gradient(145deg,#ff8a3d,#ff6a00); color:#fff; font-size:22px; box-shadow:0 10px 26px rgba(255,106,0,.40); display:grid; place-items:center; transition:transform .2s, box-shadow .2s; }
+#syncFab:hover{ transform:translateY(-3px) scale(1.05); box-shadow:0 16px 34px rgba(255,106,0,.5); }
+#syncFab:active{ transform:scale(.95); }
+.sync-card{ position:fixed; right:22px; bottom:86px; z-index:9001; width:min(400px,calc(100vw - 32px)); max-height:80vh; overflow:auto; background:#fff; border-radius:18px; box-shadow:0 24px 60px rgba(20,24,33,.28); border:1px solid #eef0f3; display:none; flex-direction:column; animation:qrpop .22s cubic-bezier(.2,.9,.25,1); }
+.sync-card.open{ display:flex; }
+.sc-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f0f1f4; position:sticky; top:0; background:#fff; z-index:1; }
+.sc-head b{ font-size:.98rem; color:#1f2430; }
+.sc-head button{ border:none; background:#f0f1f4; width:28px; height:28px; border-radius:8px; cursor:pointer; color:#666; font-size:1.1rem; }
+.sc-body{ padding:14px 16px 18px; font-size:.86rem; color:#444; line-height:1.6; }
+.sc-row{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px dashed #f0f1f4; }
+.sc-row:last-child{ border-bottom:none; }
+.sc-dot{ flex:0 0 auto; width:9px; height:9px; border-radius:50%; margin-top:6px; box-shadow:0 0 0 3px rgba(0,0,0,.04); }
+.sc-run{ margin-top:6px; border:none; cursor:pointer; background:#ff7a1a; color:#fff; padding:9px 16px; border-radius:10px; font-size:.86rem; font-weight:600; }
+.sc-run:hover{ background:#ff6a00; }
+.sc-verdict{ margin-top:10px; padding:11px 13px; border-radius:12px; background:#fff7ef; border:1px solid rgba(255,122,26,.25); color:#7a4410; line-height:1.7; }
+.sc-verdict.bad{ background:#fef2f2; border-color:rgba(220,38,38,.25); color:#7f1d1d; }
+.sc-verdict.good{ background:#f0fdf4; border-color:rgba(22,163,74,.25); color:#14532d; }
+.sc-code{ position:relative; margin:8px 0 2px; background:#1f2430; color:#e6edf3; font-family:'JetBrains Mono',monospace; font-size:.74rem; line-height:1.6; padding:12px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-all; cursor:pointer; transition:box-shadow .2s; }
+.sc-code:hover{ box-shadow:0 0 0 2px rgba(255,122,26,.5); }
+.sc-code::after{ content:"点击复制"; position:absolute; top:6px; right:8px; font-size:.62rem; color:#9aa6b4; font-family:'Noto Sans SC',sans-serif; }
+.sc-code.copied::after{ content:"已复制 ✓"; color:#4ade80; }
+[data-theme="dark"] .sync-card{ background:#1b1f27; border-color:#2c323e; }
+[data-theme="dark"] .sc-head{ background:#1b1f27; border-bottom-color:#2c323e; }
+[data-theme="dark"] .sc-head b{ color:#eef1f6; }
+[data-theme="dark"] .sc-head button{ background:#2c323e; color:#c7ccd6; }
+[data-theme="dark"] .sc-body{ color:#c2c8d4; }
+[data-theme="dark"] .sc-row{ border-bottom-color:#2c323e; }
+[data-theme="dark"] .sc-verdict{ background:#2a2118; border-color:rgba(255,122,26,.3); color:#f0c79a; }
+[data-theme="dark"] .sc-verdict.bad{ background:#2a1818; border-color:rgba(220,38,38,.3); color:#f3b4b4; }
+[data-theme="dark"] .sc-verdict.good{ background:#13241a; border-color:rgba(22,163,74,.3); color:#a7e8c0; }
+/* ===== 图片上传状态 ===== */
+.lr-thumb.uploading { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg,#f6f7f9); border:2px dashed rgba(255,122,26,.25); border-radius:12px; min-height:80px; }
+.lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
+.lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
+[data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
+/* ===== 附件与图片上传状态 ===== */
+.lr-thumb.uploading { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg,#f6f7f9); border:2px dashed rgba(255,122,26,.25); border-radius:12px; min-height:80px; }
+.lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
+.lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
+.lr-files { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
+.lr-fileitem { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:12px; font-size:.88rem; }
+.lr-fileitem i { font-size:1.1rem; color:var(--brand,#ff7a1a); width:22px; text-align:center; }
+.lr-fileitem .lf-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lr-fileitem .lf-name small { display:block; color:var(--muted,#8b92a3); font-size:.75rem; margin-top:1px; }
+.lr-fileitem .lf-view { color:var(--brand,#ff7a1a); font-size:.85rem; padding:4px 8px; border-radius:6px; transition:background .15s; }
+.lr-fileitem .lf-view:hover { background:rgba(255,122,26,.10); }
+.lr-fileitem button { width:26px; height:26px; border-radius:6px; border:none; background:rgba(0,0,0,.06); color:#555; cursor:pointer; display:grid; place-items:center; transition:background .15s; }
+.lr-fileitem button:hover { background:rgba(255,0,0,.12); color:#c00; }
+.article-attachments { margin-top:28px; padding-top:22px; border-top:1px solid rgba(0,0,0,.08); }
+.article-attachments h4 { font-size:.95rem; color:var(--ink,#1f2430); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+.article-attachments h4 i { color:var(--brand,#ff7a1a); }
+.att-card { display:flex; align-items:center; gap:12px; padding:14px 16px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:14px; margin-bottom:10px; text-decoration:none; transition:transform .15s, box-shadow .15s, border-color .15s; }
+.att-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(20,24,33,.10); border-color:rgba(255,122,26,.25); }
+.att-card > i:first-child { font-size:1.5rem; color:var(--brand,#ff7a1a); width:28px; text-align:center; }
+.att-card span { flex:1; min-width:0; }
+.att-card span b { display:block; font-size:.92rem; color:var(--ink,#1f2430); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.att-card span small { display:block; font-size:.78rem; color:var(--muted,#8b92a3); margin-top:2px; }
+.att-card > i:last-child { font-size:.9rem; color:var(--muted,#8b92a3); }
+.file-flag { display:inline-flex; align-items:center; gap:4px; background:rgba(255,122,26,.10); color:#e56a00; font-size:.72rem; padding:3px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }
+[data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
+[data-theme="dark"] .lr-fileitem { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .lr-fileitem button { background:rgba(255,255,255,.08); color:#aaa; }
+[data-theme="dark"] .lr-fileitem button:hover { background:rgba(255,0,0,.20); color:#ff6b6b; }
+[data-theme="dark"] .article-attachments { border-top-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card span b { color:#e8ecf2; }
+[data-theme="dark"] .att-card span small { color:#8b92a3; }
+/* ===== 图片上传状态 ===== */
+.lr-thumb.uploading { display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--bg,#f6f7f9); border:2px dashed rgba(255,122,26,.25); border-radius:12px; min-height:80px; }
+.lr-thumb.uploading .up-spin { color:var(--brand,#ff7a1a); font-size:1.2rem; margin-bottom:6px; }
+.lr-thumb.uploading .up-hint { font-size:.72rem; color:var(--muted,#8b92a3); }
+
+/* ===== 附件样式 ===== */
+.lr-files { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
+.lr-fileitem { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:12px; font-size:.88rem; }
+.lr-fileitem i { font-size:1.1rem; color:var(--brand,#ff7a1a); width:22px; text-align:center; }
+.lr-fileitem .lf-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lr-fileitem .lf-name small { display:block; color:var(--muted,#8b92a3); font-size:.75rem; margin-top:1px; }
+.lr-fileitem .lf-view { color:var(--brand,#ff7a1a); font-size:.85rem; padding:4px 8px; border-radius:6px; transition:background .15s; }
+.lr-fileitem .lf-view:hover { background:rgba(255,122,26,.10); }
+.lr-fileitem button { width:26px; height:26px; border-radius:6px; border:none; background:rgba(0,0,0,.06); color:#555; cursor:pointer; display:grid; place-items:center; transition:background .15s; }
+.lr-fileitem button:hover { background:rgba(255,0,0,.12); color:#c00; }
+
+/* 阅读页附件 */
+.article-attachments { margin-top:28px; padding-top:22px; border-top:1px solid rgba(0,0,0,.08); }
+.article-attachments h4 { font-size:.95rem; color:var(--ink,#1f2430); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+.article-attachments h4 i { color:var(--brand,#ff7a1a); }
+.att-card { display:flex; align-items:center; gap:12px; padding:14px 16px; background:var(--card,#fff); border:1px solid rgba(0,0,0,.08); border-radius:14px; margin-bottom:10px; text-decoration:none; transition:transform .15s, box-shadow .15s, border-color .15s; }
+.att-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(20,24,33,.10); border-color:rgba(255,122,26,.25); }
+.att-card > i:first-child { font-size:1.5rem; color:var(--brand,#ff7a1a); width:28px; text-align:center; }
+.att-card span { flex:1; min-width:0; }
+.att-card span b { display:block; font-size:.92rem; color:var(--ink,#1f2430); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.att-card span small { display:block; font-size:.78rem; color:var(--muted,#8b92a3); margin-top:2px; }
+.att-card > i:last-child { font-size:.9rem; color:var(--muted,#8b92a3); }
+
+/* 卡片附件标识 */
+.file-flag { display:inline-flex; align-items:center; gap:4px; background:rgba(255,122,26,.10); color:#e56a00; font-size:.72rem; padding:3px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }
+
+/* 搜索框 */
+.search-box { margin:18px 0; }
+.search-box input { width:100%; padding:12px 16px; border:1px solid rgba(0,0,0,.1); border-radius:12px; font-size:.9rem; background:var(--card,#fff); color:var(--ink); }
+.search-box input:focus { outline:none; border-color:var(--brand,#ff7a1a); }
+
+/* 暗色适配 */
+[data-theme="dark"] .lr-thumb.uploading { background:#1b1f27; border-color:rgba(255,138,61,.35); }
+[data-theme="dark"] .lr-fileitem { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .lr-fileitem button { background:rgba(255,255,255,.08); color:#aaa; }
+[data-theme="dark"] .lr-fileitem button:hover { background:rgba(255,0,0,.20); color:#ff6b6b; }
+[data-theme="dark"] .article-attachments { border-top-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card { background:#1b1f27; border-color:rgba(255,255,255,.08); }
+[data-theme="dark"] .att-card span b { color:#e8ecf2; }
+[data-theme="dark"] .att-card span small { color:#8b92a3; }
+[data-theme="dark"] .search-box input { background:#1b1f27; border-color:rgba(255,255,255,.08); color:#e8ecf2; }
+</style>
 </head>
 <body>
-  <div class="app">
-    <!-- 左侧边栏 -->
-    <aside class="side">
-      <div class="brand" onclick="go('home')">
-        <img src="me.jpg" class="avatar" alt="阿历" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="avatar-fb">历</div>
-        <div class="brand-txt">
-          <h1>阿历</h1>
-          <p>数据分析 · 增长运营</p>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="brand" id="brandHome" role="button" tabindex="0" title="回到首页">
+      <img class="avatar" src="me.jpg" alt="阿历" onerror="this.style.display='none';var f=this.nextElementSibling;if(f)f.style.display='flex';">
+      <div class="avatar-fb">历</div>
+      <div class="brand-txt"><h1>阿历的个人主页</h1><p>数据分析 · 成长博客</p></div>
+    </div>
+    <p class="sign">用数字讲好业务的故事<br>记录生活的每一个精彩瞬间</p>
+
+    <ul class="nav" id="nav">
+      <li><a data-nav="home"     href="#home" class="active"><span class="nico">🏠</span>首页</a></li>
+      <li><a data-nav="about"    href="#about"><span class="nico">🙋</span>关于我</a></li>
+      <li><a data-nav="projects" href="#projects"><span class="nico">💼</span>项目案例</a></li>
+      <li><a data-nav="learning" href="#learning"><span class="nico">📚</span>学习成长</a></li>
+      <li><a data-nav="life"     href="#life"><span class="nico">🌱</span>生活随笔</a></li>
+    </ul>
+
+    <div class="side-foot">
+      <div class="contact-row">
+        <button type="button" class="cbtn wx" data-qr="wechat.jpg" data-qr-title="微信" title="微信扫码加我" aria-label="微信">
+          <svg class="cico" viewBox="0 0 32 32">
+            <path fill="#fff" d="M12.4 5C6.9 5 2.5 8.6 2.5 13c0 2.5 1.4 4.7 3.7 6.2l-.9 2.9 3.3-1.6c1 .3 2 .4 3.1.4h.5a7 7 0 0 1-.2-1.8c0-4.3 4.1-7.7 9.1-7.7h.5C20.9 7.7 17 5 12.4 5Z"/>
+            <circle cx="9" cy="11.4" r="1.25" fill="#07C160"/><circle cx="15" cy="11.4" r="1.25" fill="#07C160"/>
+            <path fill="#fff" d="M29.5 19.1c0-3.6-3.6-6.5-8-6.5s-8 2.9-8 6.5 3.6 6.5 8 6.5c.9 0 1.8-.1 2.7-.4l2.6 1.3-.7-2.3c2-1.2 3.4-3.1 3.4-5.1Z"/>
+            <circle cx="18.6" cy="18" r="1.1" fill="#07C160"/><circle cx="24" cy="18" r="1.1" fill="#07C160"/>
+          </svg>
+        </button>
+        <button type="button" class="cbtn xhs" data-qr="xiaohongshu.jpg" data-qr-title="小红书" title="小红书扫码关注我" aria-label="小红书">
+          <svg class="cico" viewBox="0 0 32 32"><text x="16" y="20.5" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" font-family="'Noto Sans SC',sans-serif">小红书</text></svg>
+        </button>
+        <button type="button" class="cbtn qq" data-qr="qq.jpg" data-qr-title="QQ" title="QQ 扫码加我" aria-label="QQ">
+          <svg class="cico" viewBox="0 0 32 32"><text x="16" y="21" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="'Fredoka','Noto Sans SC',sans-serif">QQ</text></svg>
+        </button>
+        <button type="button" class="cbtn mail" data-mail="chift0707@gmail.com" title="给我发邮件" aria-label="邮箱">
+          <svg class="cico" viewBox="0 0 32 32">
+            <rect x="4" y="8" width="24" height="16" rx="3" fill="#fff"/>
+            <path d="M5 9.6 16 17 27 9.6" stroke="#5b6470" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="copy">© 2026 阿历 · 数字花园</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="tools">
+      <button id="themeBtn" title="切换主题"><i class="fas fa-moon"></i></button>
+      <button id="toTop" title="回到顶部"><i class="fas fa-arrow-up"></i></button>
+    </div>
+
+    <section class="view active" data-view="home"><div class="sec">
+      <h1 class="hi reveal">你好呀<span class="accent">！</span> <span class="wave">👋</span></h1>
+      <div class="datebar reveal"><span class="d" id="dateText"></span><span class="sep"></span><span class="clock" id="clock">--:--:--</span></div>
+
+      <div class="home-hero">
+        <div class="intro reveal">
+          <p class="lead">我是 <span class="em">阿历</span>，一名深耕快消品与电商领域的数据分析从业者，成功利用数据分析将一家电商母婴店铺从 0 变成月销 100W+。</p>
+          <p><span class="ico">📊</span>多年市场运营操作经验，擅长库存健康度诊断与智能补货模型，把模糊的业务需求梳理成清晰的数据模型。</p>
+          <p><span class="ico">🛒</span>熟练运用 <span class="em">RFM 用户分层、复购归因、留存分析、A/B 测试</span> 驱动精细化运营落地。</p>
+          <p><span class="ico">🌱</span>这里是我的<span class="em">成长博客</span>——记录学习、项目、工作与生活，内容会持续更新，欢迎常来。</p>
+          <p class="contact-note">📮 合作或交流，欢迎邮件 <a class="mailinline" href="mailto:chift0707@gmail.com">chift0707@gmail.com</a>（点左侧图标可扫码加微信 / 小红书 / QQ）</p>
+        </div>
+
+        <div class="tour-panel reveal">
+          <div class="guide-h"><i class="fas fa-compass"></i> 逛一逛这座花园</div>
+          <div class="tour">
+            <a href="#learning"><span class="tno">01</span><span class="tmain"><b><span class="emo">📚</span> 学习成长</b><span>像写博客一样记录每次学习，文字 / 配图 / 参考链接，断网也不丢。</span></span><span class="tgo"><i class="fas fa-arrow-right"></i></span></a>
+            <a href="#life"><span class="tno">02</span><span class="tmain"><b><span class="emo">🌱</span> 生活随笔</b><span>像发朋友圈一样记录日常，联网后所有设备实时同步。</span></span><span class="tgo"><i class="fas fa-arrow-right"></i></span></a>
+            <a href="#projects"><span class="tno">03</span><span class="tmain"><b><span class="emo">💼</span> 项目案例</b><span>用数据把业务问题，变成可落地的增长动作，附源文件下载。</span></span><span class="tgo"><i class="fas fa-arrow-right"></i></span></a>
+          </div>
         </div>
       </div>
-      <p class="sign">"数据不是冷冰冰的数字，而是听懂业务、讲清故事的语言"</p>
-      <nav>
-        <ul class="nav" id="nav">
-          <li><a href="#home" data-nav="home"><span class="nico">🏠</span>首页</a></li>
-          <li><a href="#learning" data-nav="learning"><span class="nico">📚</span>学习成长</a></li>
-          <li><a href="#life" data-nav="life"><span class="nico">🌿</span>生活随笔</a></li>
-          <li><a href="#projects" data-nav="projects"><span class="nico">📂</span>项目案例</a></li>
-          <li><a href="#about" data-nav="about"><span class="nico">👤</span>关于我</a></li>
-        </ul>
-      </nav>
-      <div class="side-foot">
-        <div class="contact-row">
-          <button class="cbtn wx" onclick="showQR('wechat.jpg','微信')" title="微信"><span class="cico">💬</span></button>
-          <button class="cbtn xhs" onclick="showQR('xiaohongshu.jpg','小红书')" title="小红书"><span class="cico">📕</span></button>
-          <button class="cbtn qq" onclick="showQR('qq.jpg','QQ')" title="QQ"><span class="cico">🐧</span></button>
-          <a href="mailto:chift0707@gmail.com" class="cbtn mail" title="邮件"><span class="cico">✉️</span></a>
-        </div>
-        <p class="copy">© 2026 阿历的数字花园</p>
+
+      <div class="home-block-head reveal" id="homeCasesHead">
+        <h3 class="block-h" id="homeCasesH"><i class="fas fa-briefcase"></i> 项目案例 · 精选 <span class="k">PROJECTS</span></h3>
+        <a class="home-more" href="#projects">更多 <i class="fas fa-arrow-right"></i></a>
       </div>
-    </aside>
+      <div class="case-grid" id="homeCases"></div>
 
-    <!-- 主内容区 -->
-    <main class="main">
-      <!-- 工具按钮 -->
-      <div class="tools">
-        <button id="themeToggle" onclick="toggleTheme()" title="切换主题">🌙</button>
-        <button id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+      <div class="home-block-head reveal" id="homeLatestHead">
+        <h3 class="block-h" id="homeLatestH"><i class="fas fa-book-open"></i> 学习成长 · 最新 <span class="k">LEARNING</span></h3>
+        <a class="home-more" href="#learning">更多 <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div id="homeLatest"></div>
+
+      <div class="home-block-head reveal" id="homeLifeHead">
+        <h3 class="block-h" id="homeLifeH"><i class="fas fa-seedling"></i> 生活随笔 · 最新 <span class="k">LIFE</span></h3>
+        <a class="home-more" href="#life">更多 <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="posts home-life" id="homeLife"></div>
+    </div></section>
+
+    <section class="view" data-view="learning"><div class="sec">
+      <div class="sec-tag reveal">LEARNING</div>
+      <h2 class="sec-h reveal">学习成长</h2>
+      <p class="sec-sub reveal">像博客一样记录每一次学习——文字、图片、参考链接。断网也能写、绝不丢，联网后自动同步到云端。</p>
+
+      <div class="editor reveal">
+        <div class="etitle"><i class="fas fa-pen-nib"></i> 写一篇学习记录</div>
+        <input class="ti" id="lrTitle" placeholder="标题，例如：用 DAX 实现复购率的几种写法">
+        <textarea id="lrContent" placeholder="正文…"></textarea>
+
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-image"></i> 配图（可多张，自动压缩）</div>
+          <div class="lr-thumbs" id="lrThumbs"></div>
+          <label class="file-btn"><i class="fas fa-plus"></i> 选择图片<input type="file" id="lrFile" accept="image/*" multiple hidden></label>
+        </div>
+        
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-paperclip"></i> 附件（Excel / PDF / Word / PPT）</div>
+          <div class="lr-files" id="lrFiles"></div>
+          <label class="file-btn"><i class="fas fa-plus"></i> 选择文件<input type="file" id="lrDoc" accept=".pdf,.xlsx,.xls,.doc,.docx,.ppt,.pptx,.txt,.csv,.zip,.md" multiple hidden></label>
+          <span class="hint" style="margin-left:8px;font-size:.78rem;color:var(--muted);">支持 PDF、Excel、Word、PPT 等，单个建议 &lt; 20MB</span>
+        </div>
+
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-link"></i> 参考链接</div>
+          <div class="lr-linkrow">
+            <input class="li" id="lrLinkText" placeholder="链接标题">
+            <input class="li" id="lrLinkUrl" placeholder="https://...">
+            <button class="btn btn-ghost" id="lrAddLink"><i class="fas fa-plus"></i> 添加</button>
+          </div>
+          <div class="lr-links" id="lrLinkList"></div>
+        </div>
+
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-tags"></i> 标签（逗号分隔，含“置顶”则置顶）</div>
+          <input class="tags-in" id="lrTags" placeholder="RFM, Python, 用户分层">
+        </div>
+
+        <div class="erow2">
+          <button class="btn btn-pub" id="lrPub"><i class="fas fa-paper-plane"></i> 发布</button>
+          <button class="btn btn-ghost" id="lrPreview"><i class="fas fa-eye"></i> 预览</button>
+          <span class="hint">先存本机，联网自动同步云端 · Ctrl+Enter 快捷发布</span>
+        </div>
+      </div>
+        <div class="search-box" style="margin:18px 0;">
+          <input type="text" id="lrSearch" placeholder="🔍 搜索标题、正文、标签…" style="width:100%;padding:12px 16px;border:1px solid rgba(0,0,0,.1);border-radius:12px;font-size:.9rem;background:var(--card,#fff);color:var(--ink);">
+        </div>
+              <div class="search-box">
+          <input type="text" id="lrSearch" placeholder="🔍 搜索标题、正文、标签…">
+        </div>
+      <div id="learningGrid"></div>
+    </div></section>
+
+    <section class="view" data-view="read"><div class="sec">
+      <div id="readInner"></div>
+    </div></section>
+
+    <section class="view" data-view="life"><div class="sec">
+      <div class="sec-tag reveal">LIFE</div>
+      <h2 class="sec-h reveal">生活随笔</h2>
+      <p class="sec-sub reveal" id="postSubText">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。</p>
+
+      <div class="post-box reveal">
+        <div class="etitle"><i class="fas fa-comment-dots"></i> 发一条随笔 <span id="postModeBadge" class="post-mode"><i class="fas fa-hard-drive"></i> 本机暂存</span></div>
+        <div class="row1">
+          <div class="pav">历</div>
+          <textarea id="postInput" placeholder="这一刻的想法…"></textarea>
+        </div>
+        <div class="lr-block">
+          <div class="lbl"><i class="fas fa-image"></i> 配图</div>
+          <div class="lr-thumbs" id="lifeThumbs"></div>
+          <label class="file-btn"><i class="fas fa-plus"></i> 选择图片<input type="file" id="lifeFile" accept="image/*" multiple hidden></label>
+        </div>
+        <div class="row2">
+          <input class="tags" id="postTags" placeholder="标签：日常, 复盘（逗号分隔）">
+          <button class="btn btn-pub2" id="postPub"><i class="fas fa-paper-plane"></i> 发布</button>
+          <span class="hint">先存本机，联网自动补传并实时同步</span>
+        </div>
       </div>
 
-      <!-- 首页 -->
-      <section class="view active" data-view="home">
-        <div class="sec">
-          <h1 class="hi reveal">你好呀！<span class="wave">👋</span><br>我是 <span class="accent">阿历</span></h1>
-          <div class="datebar reveal">
-            <span class="d" id="dateDisplay"></span>
-            <span class="sep"></span>
-            <span class="ganzhi" id="ganzhiDisplay"></span>
-            <span class="sep"></span>
-            <span class="clock" id="clockDisplay"></span>
-          </div>
-          <div class="home-search reveal">
-            <i>🔍</i>
-            <input type="text" placeholder="搜索学习记录、生活随笔..." id="homeSearch">
-          </div>
-          <div class="home-hero reveal">
-            <div class="intro">
-              <p class="lead">我是 <b>阿历</b>，一名深耕 <b>快消品与电商</b> 领域的数据分析从业者，成功利用数据分析将一家电商母婴店铺从 <b>0</b> 变成月销 <b>100W+</b>。</p>
-              <p>📊 多年市场运营操作经验，擅长库存健康度诊断与智能补货模型，把模糊的业务需求梳理成清晰的数据模型。</p>
-              <p>🛒 熟练运用 RFM 用户分层、复购归因、留存分析、A/B 测试 驱动精细化运营落地。</p>
-              <p>🌱 这里是我的成长博客——记录学习、项目、工作与生活，内容会持续更新，欢迎常来。</p>
-              <p class="contact-note">📮 合作或交流，欢迎邮件 <a href="mailto:chift0707@gmail.com" class="mailinline">chift0707@gmail.com</a>（点左侧图标可扫码加微信 / 小红书 / QQ）</p>
-            </div>
-          </div>
+      <div class="posts" id="postList"></div>
+    </div></section>
 
-          <div class="home-layout">
-            <div class="home-maincol">
-              <div class="home-block-head reveal">
-                <h2 class="block-h"><i>📚</i> 最新学习 <span class="k">LEARNING</span></h2>
-                <a href="#learning" class="home-more">查看全部 →</a>
-              </div>
-              <div id="homeLatestHead" style="display:none"></div>
-              <div id="homeLatest"></div>
+    <section class="view" data-view="projects"><div class="sec">
+      <div class="sec-tag reveal">PROJECTS</div>
+      <h2 class="sec-h reveal">项目案例</h2>
+      <p class="sec-sub reveal">用数据把业务问题，变成可落地的增长动作。每个案例都附可下载的源文件与报告。</p>
+      <div class="case-grid" id="caseGrid"></div>
+    </div></section>
 
-              <div class="home-block-head reveal">
-                <h2 class="block-h"><i>🌿</i> 生活碎片 <span class="k">LIFE</span></h2>
-                <a href="#life" class="home-more">查看全部 →</a>
-              </div>
-              <div id="homeLife"></div>
-
-              <div class="home-block-head reveal">
-                <h2 class="block-h"><i>📂</i> 项目案例 <span class="k">PROJECTS</span></h2>
-                <a href="#projects" class="home-more">查看全部 →</a>
-              </div>
-              <div id="homeCasesHead" style="display:none"></div>
-              <div id="homeCases"></div>
-            </div>
-            <div class="home-side">
-              <div class="widget reveal">
-                <div class="w-h"><i>📅</i> 日历</div>
-                <div id="calendarWidget"></div>
-              </div>
-              <div class="widget reveal">
-                <div class="w-h"><i>📊</i> 数据概览</div>
-                <div class="stat-list" id="statWidget"></div>
-              </div>
-              <div class="widget reveal">
-                <div class="w-h"><i>🏷️</i> 标签云</div>
-                <div class="tagcloud" id="tagCloudWidget"></div>
-              </div>
-            </div>
-          </div>
+    <section class="view" data-view="about"><div class="sec">
+      <div class="sec-tag reveal">ABOUT</div>
+      <h2 class="sec-h reveal">关于我</h2>
+      <div class="about-wrap reveal">
+        <div class="lede">我是 <b>阿历</b>，一名深耕<b>快消品与电商</b>领域的数据分析从业者。我相信数据不是冷冰冰的数字，而是<b>听懂业务、讲清故事</b>的语言。这座花园记录我从一个表格新手，到能独立搭建补货模型、用户分层体系的每一步——<b>慢慢种，慢慢长</b>。</div>
+        <div class="facts">
+          <h4>速览</h4>
+          <div class="fact"><span class="num">100W+</span><span class="lab"><b>月销增长</b>从 0 到月销百万母婴店</span></div>
+          <div class="fact"><span class="num">8</span><span class="lab"><b>RFM 分层</b>把 10 万用户分成 8 类</span></div>
+          <div class="fact"><span class="num">2×</span><span class="lab"><b>召回效率</b>精细化发券翻倍</span></div>
+          <div class="fact"><span class="num">∞</span><span class="lab"><b>持续生长</b>这座花园不会停</span></div>
         </div>
-      </section>
+      </div>
 
-      <!-- 学习成长 -->
-      <section class="view" data-view="learning">
-        <div class="sec">
-          <div class="sec-tag reveal">LEARNING</div>
-          <h2 class="sec-h reveal">学习成长</h2>
-          <p class="sec-sub reveal">像博客一样记录每一次学习——文字、图片、参考链接、附件。断网也能写、绝不丢，联网后自动同步到云端。</p>
-          <div class="list-toolbar reveal">
-            <div class="search-box">
-              <i>🔍</i>
-              <input type="text" placeholder="搜索标题、正文、标签..." id="lrSearch">
-            </div>
-            <button class="btn btn-pub" id="lrNewBtn"><i class="fa-solid fa-pen"></i> 写一篇学习记录</button>
-          </div>
-          <div id="learningGrid"></div>
-        </div>
-      </section>
+      <div class="sec-divider reveal" aria-hidden="true"></div>
 
-      <!-- 编辑器 -->
-      <section class="view" data-view="edit">
-        <div class="sec edit-sec">
-          <div class="edit-top reveal">
-            <div class="edit-title" id="lrEditTitle"><i class="fa-solid fa-pen"></i> 写一篇学习记录</div>
-            <div class="edit-spacer"></div>
-            <button class="btn btn-ghost" id="lrBack"><i class="fa-solid fa-arrow-left"></i> 返回</button>
-            <button class="btn btn-ghost" id="lrPreview"><i class="fa-solid fa-eye"></i> 预览</button>
-            <button class="btn btn-pub" id="lrPub"><i class="fa-solid fa-rocket"></i> 发布</button>
-          </div>
-          <div class="edit-body">
-            <input type="text" class="ti" id="lrTitle" placeholder="输入标题...">
-            <div class="rte-wrap" id="rteWrap">
-              <div class="rte-bar" id="rteBar">
-                <button class="rte-b" data-cmd="bold" title="加粗"><b>B</b></button>
-                <button class="rte-b" data-cmd="italic" title="斜体"><i>I</i></button>
-                <button class="rte-b" data-cmd="underline" title="下划线"><u>U</u></button>
-                <span class="rte-sep"></span>
-                <button class="rte-b" data-cmd="insertUnorderedList" title="无序列表">• 列表</button>
-                <button class="rte-b" data-cmd="insertOrderedList" title="有序列表">1. 列表</button>
-                <span class="rte-sep"></span>
-                <button class="rte-b" data-cmd="formatBlock" data-val="H2" title="标题2">H2</button>
-                <button class="rte-b" data-cmd="formatBlock" data-val="H3" title="标题3">H3</button>
-                <span class="rte-sep"></span>
-                <button class="rte-b" data-cmd="createLink" title="插入链接">🔗 链接</button>
-                <button class="rte-b" data-cmd="insertHorizontalRule" title="分割线">— 分割线</button>
-              </div>
-              <div class="rte" id="lrContent" contenteditable="true" data-ph="在这里写下你的学习笔记...支持富文本格式"></div>
-            </div>
-            <div class="edit-cols">
-              <div class="lr-block">
-                <div class="lbl"><i>🖼️</i> 配图（可多张，自动压缩）</div>
-                <label class="file-btn">
-                  <input type="file" id="lrFile" accept="image/*" multiple style="display:none">
-                  <i class="fa-solid fa-image"></i> 选择图片
-                </label>
-                <div class="hint">支持 JPG、PNG、GIF，单张自动压缩至 1000px</div>
-                <div class="lr-thumbs" id="lrThumbs"></div>
-              </div>
-              <div class="lr-block">
-                <div class="lbl"><i>📎</i> 附件（Excel / PDF / Word / PPT）</div>
-                <label class="file-btn">
-                  <input type="file" id="lrDoc" accept=".pdf,.xlsx,.xls,.doc,.docx,.ppt,.pptx,.csv,.txt,.md,.zip" multiple style="display:none">
-                  <i class="fa-solid fa-paperclip"></i> 选择文件
-                </label>
-                <div class="hint">支持 PDF、Excel、Word、PPT 等，单个 &lt; 20MB</div>
-                <div class="lr-files" id="lrFiles"></div>
-              </div>
-            </div>
-            <div class="lr-block">
-              <div class="lbl"><i>🔗</i> 参考链接</div>
-              <div class="lr-linkrow">
-                <input type="text" class="li" id="lrLinkText" placeholder="链接文字（可选）">
-                <input type="text" class="li" id="lrLinkUrl" placeholder="https://...">
-                <button class="btn btn-ghost" id="lrAddLink"><i class="fa-solid fa-plus"></i> 添加</button>
-              </div>
-              <div class="lr-links" id="lrLinkList"></div>
-            </div>
-            <div class="lr-block">
-              <div class="lbl"><i>🏷️</i> 标签（逗号分隔，含"置顶"则置顶）</div>
-              <input type="text" class="tags-in" id="lrTags" placeholder="Python, SQL, 复盘, 置顶...">
-            </div>
-            <p class="hint" style="text-align:center">先存本机，联网自动同步云端 · Ctrl+Enter 快捷发布</p>
-          </div>
-        </div>
-      </section>
+      <div class="edges reveal">
+        <div class="edge"><span class="no">01</span><div><h3><i class="fas fa-chart-column"></i> 把模糊需求变成数据模型</h3><p>库存健康度诊断、智能补货模型，让“该备多少货”从拍脑袋变成可计算。</p></div></div>
+        <div class="edge"><span class="no">02</span><div><h3><i class="fas fa-bullseye"></i> 用 RFM 驱动精细化运营</h3><p>用户分层、复购归因、留存分析、A/B 测试，把“哪些用户该发券”算清楚。</p></div></div>
+        <div class="edge"><span class="no">03</span><div><h3><i class="fas fa-seedling"></i> 长期主义的记录者</h3><p>这座数字花园就是我的方法论沉淀——只要网站不停，生长就不终止。</p></div></div>
+      </div>
 
-      <!-- 阅读页 -->
-      <section class="view" data-view="read">
-        <div class="sec">
-          <div id="readInner"></div>
+      <div class="block-h reveal" style="margin-top:48px"><i class="fas fa-file-arrow-down"></i> 简历</div>
+      <div class="resume-card reveal">
+        <div class="ri"><i class="fas fa-file-lines"></i></div>
+        <div class="rt"><b>池增历 · 市场数据运营 3 年</b><span>快消 / 电商 · 数据分析 · 增长运营</span></div>
+        <div class="resume-actions">
+          <button type="button" class="ra-btn ra-primary" id="resumePreview" data-pdf="池增历-市场数据运营3年-市场营销专业-本科.pdf"><i class="fas fa-up-right-from-square"></i> 在线预览</button>
+          <a class="ra-btn ra-primary" href="池增历-市场数据运营3年-市场营销专业-本科.pdf" download style="background:#ff9a4d"><i class="fas fa-download"></i> 下载简历</a>
+          <a class="ra-btn ra-ghost" href="mailto:chift0707@gmail.com"><i class="fas fa-envelope"></i> 邮件索取</a>
         </div>
-      </section>
+      </div>
 
-      <!-- 生活随笔 -->
-      <section class="view" data-view="life">
-        <div class="sec">
-          <div class="sec-tag reveal">LIFE</div>
-          <h2 class="sec-h reveal">生活随笔</h2>
-          <p class="sec-sub reveal" id="postSubText">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。</p>
-          <div class="list-toolbar reveal">
-            <div class="search-box">
-              <i>🔍</i>
-              <input type="text" placeholder="搜索生活随笔..." id="lifeSearch">
-            </div>
-          </div>
-          <div class="post-input-area reveal" style="background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:24px;box-shadow:var(--shadow)">
-            <textarea id="postInput" placeholder="今天发生了什么有趣的事？..." style="width:100%;min-height:80px;border:none;outline:none;background:transparent;font-size:15px;color:var(--ink);resize:vertical;font-family:inherit"></textarea>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap">
-              <label class="file-btn" style="font-size:12px;padding:7px 12px">
-                <input type="file" id="lifeFile" accept="image/*" multiple style="display:none">
-                <i class="fa-solid fa-image"></i> 选择图片
-              </label>
-              <input type="text" id="postTags" placeholder="标签，逗号分隔" style="flex:1;min-width:120px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--ink);outline:none;font-size:13px">
-              <button class="btn btn-pub" id="postPub"><i class="fa-solid fa-rocket"></i> 发布</button>
-            </div>
-            <div class="lr-thumbs" id="lifeThumbs" style="margin-top:10px"></div>
-          </div>
-          <div id="postList"></div>
-        </div>
-      </section>
+      <div class="block-h reveal"><i class="fas fa-certificate"></i> 证书墙</div>
+      <div class="cert-grid reveal" id="certGrid"></div>
+    </div></section>
 
-      <!-- 项目案例 -->
-      <section class="view" data-view="projects">
-        <div class="sec">
-          <div class="sec-tag reveal">PROJECTS</div>
-          <h2 class="sec-h reveal">项目案例</h2>
-          <p class="sec-sub reveal">用数据把业务问题，变成可落地的增长动作。每个案例都附可下载的源文件与报告。</p>
-          <div class="case-grid" id="caseGrid"></div>
-        </div>
-      </section>
+    <footer>
+      <div class="ft-meta">
+        <span>© <span id="year">2026</span> 创建者：游学者 · 池鹅</span>
+        <a href="#home">回到首页</a>
+      </div>
+      <span class="ft-disc">所有内容仅作个人学习交流记录使用，如需转载请注明出处；案例分析数据来源模拟数据集。</span>
+    </footer>
+  </main>
+</div>
 
-      <!-- 关于我 -->
-      <section class="view" data-view="about">
-        <div class="sec">
-          <div class="sec-tag reveal">ABOUT</div>
-          <h2 class="sec-h reveal">关于我</h2>
-          <div class="about-wrap reveal">
-            <div class="lede">
-              <p>我是 <b>阿历</b>，一名深耕 <b>快消品与电商</b> 领域的数据分析从业者。我相信数据不是冷冰冰的数字，而是 <b>听懂业务、讲清故事</b> 的语言。这座花园记录我从一个表格新手，到能独立搭建补货模型、用户分层体系的每一步—— <b>慢慢种，慢慢长</b>。</p>
-            </div>
-            <div class="facts">
-              <h4>速览</h4>
-              <div class="fact"><span class="num">100W+</span><span class="lab"><b>月销增长</b>从 0 到月销百万母婴店</span></div>
-              <div class="fact"><span class="num">8</span><span class="lab"><b>RFM 分层</b>把 10 万用户分成 8 类</span></div>
-              <div class="fact"><span class="num">2×</span><span class="lab"><b>召回效率</b>精细化发券翻倍</span></div>
-              <div class="fact"><span class="num">∞</span><span class="lab"><b>持续生长</b>这座花园不会停</span></div>
-            </div>
-          </div>
-          <div class="sec-divider"></div>
-          <div class="edges">
-            <div class="edge reveal">
-              <span class="no">01</span>
-              <div>
-                <h3><i class="fa-solid fa-chart-line"></i> 把模糊需求变成数据模型</h3>
-                <p>库存健康度诊断、智能补货模型，让"该备多少货"从拍脑袋变成可计算。</p>
-              </div>
-            </div>
-            <div class="edge reveal">
-              <span class="no">02</span>
-              <div>
-                <h3><i class="fa-solid fa-bullseye"></i> 用 RFM 驱动精细化运营</h3>
-                <p>用户分层、复购归因、留存分析、A/B 测试，把"哪些用户该发券"算清楚。</p>
-              </div>
-            </div>
-            <div class="edge reveal">
-              <span class="no">03</span>
-              <div>
-                <h3><i class="fa-solid fa-seedling"></i> 长期主义的记录者</h3>
-                <p>这座数字花园就是我的方法论沉淀——只要网站不停，生长就不终止。</p>
-              </div>
-            </div>
-          </div>
-          <div class="sec-divider"></div>
-          <div class="resume-card reveal">
-            <div class="ri"><i class="fa-solid fa-file-lines"></i></div>
-            <div class="rt">
-              <b>池增历 · 市场数据运营 3 年</b>
-              <span>快消 / 电商 · 数据分析 · 增长运营</span>
-            </div>
-            <div class="resume-actions">
-              <a href="池增历-市场数据运营3年-市场营销专业-本科.pdf" class="ra-btn ra-primary" target="_blank"><i class="fa-solid fa-eye"></i> 查看简历</a>
-              <a href="池增历-市场数据运营3年-市场营销专业-本科.pdf" class="ra-btn ra-ghost" download><i class="fa-solid fa-download"></i> 下载 PDF</a>
-            </div>
-          </div>
-          <h3 class="block-h reveal"><i class="fa-solid fa-trophy"></i> 证书墙</h3>
-          <div class="cert-grid" id="certGrid"></div>
-        </div>
-      </section>
+<div class="overlay" id="lightbox">
+  <span data-close style="position:absolute;top:18px;right:26px;color:#fff;font-size:34px;line-height:1;cursor:pointer;z-index:2">&times;</span>
+  <img class="lb-img" id="lbImg" alt="">
+</div>
 
-      <!-- 页脚 -->
-      <footer>
-        <div class="ft-meta">
-          <span>© 2026 阿历的数字花园 · 用数据种花</span>
-          <span>Built with ❤️ & Data</span>
-        </div>
-        <p class="ft-disc">本站所有内容仅供学习交流，案例数据均已脱敏处理。</p>
-      </footer>
-    </main>
+<div class="qr-modal" id="qrModal">
+  <div class="qr-card" id="qrCard">
+    <button type="button" class="qr-close" aria-label="关闭">&times;</button>
+    <h4 id="qrTitle">扫码加我</h4>
+    <img id="qrImg" alt="二维码">
+    <div class="qr-fallback" id="qrFallback"></div>
+    <p class="qr-tip">长按识别 / 扫一扫</p>
   </div>
+</div>
 
-  <!-- 弹层 -->
-  <div class="overlay" id="lightbox" onclick="this.classList.remove('on');lockScroll(false)">
-    <img class="lb-img" id="lbImg" alt="">
-  </div>
-  
-  <div class="qr-modal" id="qrModal" onclick="if(event.target===this)closeQR()">
-    <div class="qr-card" id="qrCard">
-      <button class="qr-close" onclick="closeQR()">✕</button>
-      <h4 id="qrTitle">扫码添加</h4>
-      <img id="qrImg" src="" alt="">
-      <div class="qr-fallback">二维码加载失败，请通过左侧联系方式联系</div>
-      <p class="qr-tip">打开对应 App 扫码添加</p>
+<div class="pdf-modal" id="pdfModal">
+  <div class="pdf-card">
+    <div class="pdf-bar">
+      <span class="pdf-ico" aria-hidden="true"><i class="fas fa-file-pdf"></i></span>
+      <b id="pdfName">简历预览</b>
+      <a class="pdf-open" id="pdfOpen" href="#" target="_blank" rel="noopener" style="display:none"><i class="fas fa-up-right-from-square"></i> 新标签打开</a>
+      <a class="pdf-dl" id="pdfDl" href="#" download><i class="fas fa-download"></i> 下载</a>
+      <button type="button" class="pdf-close" id="pdfClose" aria-label="关闭">&times;</button>
+    </div>
+    <div class="pdf-stage">
+      <div class="pdf-loading" id="pdfLoading"><span class="pdf-spin"></span><span>正在加载预览…</span></div>
+      <div class="pdf-hint" id="pdfHint" style="display:none"></div>
+      <iframe id="pdfFrame" src="about:blank" title="简历预览" style="display:none"></iframe>
     </div>
   </div>
+</div>
 
-  <div class="pdf-modal" id="pdfModal" onclick="if(event.target===this)closePDF()">
-    <div class="pdf-card">
-      <div class="pdf-bar">
-        <i class="fa-solid fa-file-pdf pdf-ico"></i>
-        <b id="pdfName">文档预览</b>
-        <a id="pdfOpen" class="pdf-open" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> 新窗口打开</a>
-        <a id="pdfDl" class="pdf-dl" download><i class="fa-solid fa-download"></i> 下载</a>
-        <button class="pdf-close" onclick="closePDF()">✕</button>
-      </div>
-      <div class="pdf-stage">
-        <iframe id="pdfFrame" src=""></iframe>
-        <div class="pdf-loading" id="pdfLoading">
-          <div class="pdf-spin"></div>
-          <p>正在加载文档...</p>
-        </div>
-      </div>
-    </div>
-  </div>
+<button type="button" id="syncFab" title="同步自检" aria-label="同步自检">🩺</button>
+<div class="sync-card" id="syncCard">
+  <div class="sc-head"><b>🩺 同步自检</b><button type="button" id="syncClose" aria-label="关闭">&times;</button></div>
+  <div class="sc-body" id="syncBody">点下方按钮，自动检查“换设备能否看到内容”：实测读权限、读出<b>云端真实条数</b>，再和你<b>本机可见条数</b>对比，定位是不是“没传上云”。<br><button type="button" class="sc-run" id="syncRun">开始体检</button></div>
+</div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div>
 
-  <script src="app.js"></script>
+<script src="app.js?v=20260731b"></script>
+
+<script>
+(function(){
+  var tools=document.querySelector('.tools');
+  function hideTools(){ if(tools) tools.style.display='none'; }
+  function showTools(){ if(tools) tools.style.display=''; }
+  function myToast(m){ var t=document.getElementById('toast'); if(!t)return;
+    t.textContent=m; t.style.cssText='display:block;opacity:1;transform:translate(-50%,0);position:fixed;left:50%;bottom:32px;z-index:10000;background:#1f2430;color:#fff;padding:10px 18px;border-radius:12px;font-size:.88rem;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:opacity .3s,transform .3s';
+    clearTimeout(t._h); t._h=setTimeout(function(){t.style.opacity='0';t.style.transform='translate(-50%,8px)';},1600); }
+
+  /* reveal 兜底 */
+  function revealInView(scope){ (scope||document).querySelectorAll('.reveal').forEach(function(el){
+    var r=el.getBoundingClientRect(); if(r.top < (window.innerHeight||0) + 40 && r.bottom > -40) el.classList.add('rv-on'); }); }
+  var revEls=document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    var ro=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('rv-on'); ro.unobserve(e.target); } }); },{threshold:.06, rootMargin:'0px 0px -5% 0px'});
+    revEls.forEach(function(el){ ro.observe(el); });
+  } else { revEls.forEach(function(el){ el.classList.add('rv-on'); }); }
+  requestAnimationFrame(function(){ revealInView(document);
+    document.querySelectorAll('.view[data-view="home"] .reveal').forEach(function(el){ el.classList.add('rv-on'); }); });
+
+  /* 二维码 + 邮件 */
+  var modal=document.getElementById('qrModal'),card=document.getElementById('qrCard'),
+      img=document.getElementById('qrImg'),title=document.getElementById('qrTitle'),fb=document.getElementById('qrFallback');
+  function openQR(src,t){ if(!modal)return; card.classList.remove('no-img'); title.textContent='扫码加我 · '+(t||'');
+    img.onload=function(){card.classList.remove('no-img');};
+    img.onerror=function(){card.classList.add('no-img'); if(fb)fb.innerHTML='还没上传 <b>'+src+'</b><br>把这张二维码图片放到网站根目录，<br>刷新后这里就能扫码 👆';};
+    img.src=src; modal.classList.add('open'); hideTools(); }
+  function closeQR(){ if(modal){ modal.classList.remove('open'); showTools(); } }
+  document.addEventListener('click',function(e){ var b=e.target.closest('[data-qr],[data-mail]'); if(!b)return; e.preventDefault();
+    if(b.hasAttribute('data-mail')){ location.href='mailto:'+b.getAttribute('data-mail'); return; }
+    openQR(b.getAttribute('data-qr'), b.getAttribute('data-qr-title')||''); });
+  if(modal) modal.addEventListener('click',function(e){ if(e.target===modal||e.target.closest('.qr-close'))closeQR(); });
+
+  /* 简历预览：大窗 + FitH 自适应宽度 + 探测 + 兜底 */
+  var pm=document.getElementById('pdfModal'),pf=document.getElementById('pdfFrame'),
+      pn=document.getElementById('pdfName'),pd=document.getElementById('pdfDl'),
+      po=document.getElementById('pdfOpen'),pLoad=document.getElementById('pdfLoading'),pHint=document.getElementById('pdfHint');
+  var fileEnc='', fileView='';
+  function showIframe(){ pf.src=fileView; pf.style.display='block'; pLoad.style.display='none'; pHint.style.display='none'; po.style.display='inline-flex'; po.setAttribute('href',fileView); }
+  function showHint(name,msg){ pf.style.display='none'; pLoad.style.display='none'; pHint.style.display='grid';
+    pHint.innerHTML='⚠️ '+msg+'<br>请确认 <b>'+name+'</b> 已上传到网站根目录、且文件名与仓库<b>一字不差</b>。<br>也可点右上“新标签打开”或“下载”查看。';
+    po.style.display='inline-flex'; po.setAttribute('href',fileView); }
+  function openPdf(file){ if(!pm)return; fileEnc=encodeURI(file); fileView=fileEnc+'#toolbar=1&navpanes=0&view=FitH';
+    var name=decodeURIComponent(file.split('/').pop()); pn.textContent=name; pd.setAttribute('href',fileEnc); po.setAttribute('href',fileView);
+    pf.style.display='none'; pHint.style.display='none'; po.style.display='none'; pLoad.style.display='grid';
+    pm.classList.add('open'); hideTools();
+    fetch(fileEnc,{method:'HEAD'}).then(function(r){
+      var ct=(r.headers.get('content-type')||'').toLowerCase();
+      if(r.ok && ct.indexOf('pdf')>=0){ showIframe(); return; }
+      if(r.ok && ct.indexOf('html')>=0){ showHint(name,'取到的是网页不是 PDF（多半文件名对不上，被兜底成首页了）。'); return; }
+      return fetch(fileEnc).then(function(r2){ if(!r2.ok) throw 0; return r2.arrayBuffer().then(function(buf){
+        var h=new Uint8Array(buf.slice(0,5)),s=''; for(var i=0;i<h.length;i++) s+=String.fromCharCode(h[i]);
+        if(s==='%PDF-') showIframe(); else showHint(name,'取到的不是 PDF 文件。'); }); });
+    }).catch(function(){ showHint(name,'读取简历时出错。'); });
+  }
+  function closePdf(){ if(!pm)return; pm.classList.remove('open'); pf.src='about:blank'; pf.style.display='none'; pLoad.style.display='grid'; pHint.style.display='none'; showTools(); }
+  document.addEventListener('click',function(e){ var b=e.target.closest('[data-pdf]'); if(!b)return; e.preventDefault(); openPdf(b.getAttribute('data-pdf')); });
+  if(pm){ pm.addEventListener('click',function(e){ if(e.target===pm)closePdf(); });
+    var pc=document.getElementById('pdfClose'); if(pc)pc.addEventListener('click',closePdf); }
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closeQR(); closePdf(); } });
+
+  /* 导航 active 管理 + 首页路由 */
+  var brand=document.getElementById('brandHome');
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+  function setActiveNav(name){ navLinks.forEach(function(a){ a.classList.toggle('active', a.getAttribute('data-nav')===name); }); }
+  function goHome(){
+    document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+    var h=document.querySelector('.view[data-view="home"]'); if(h){ h.classList.add('active'); revealInView(h); }
+    setActiveNav('home');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  var homeLink=document.querySelector('#nav a[data-nav="home"]');
+  if(homeLink){ homeLink.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation();
+    if(location.hash!=='#home') history.replaceState(null,'','#home'); goHome(); }, true); }
+  navLinks.forEach(function(a){ if(a.getAttribute('data-nav')==='home') return;
+    a.addEventListener('click',function(){ setActiveNav(a.getAttribute('data-nav')); }); });
+  if(brand){
+    brand.addEventListener('click',function(e){ e.preventDefault(); if(location.hash!=='#home') history.replaceState(null,'','#home'); goHome(); });
+    brand.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); brand.click(); } });
+  }
+  window.addEventListener('hashchange',function(){
+    var hash=location.hash||'#home';
+    if(hash==='#home'){ goHome(); }
+    else { var name=hash.replace('#',''); setActiveNav(name); var av=document.querySelector('.view.active'); if(av) revealInView(av); }
+  });
+
+  var y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
+
+  /* 副标题清洗 */
+  var CLEAN2='分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。';
+  var APP_RE=/已连接|云端数据库|实时同步|访客也能|本机暂存|连不上|仅本机|本地暂存|联网后所有设备/;
+  var SNAP_RE=/已连接|云端数据库|连不上|本机暂存|仅本机|访客也能/;
+  var appSubSnapshot='';
+  var subEl=document.getElementById('postSubText');
+  function cleanSub(){ if(!subEl) return; var t=subEl.textContent||'';
+    if(!appSubSnapshot && SNAP_RE.test(t)) appSubSnapshot=t;
+    if(APP_RE.test(t) || t.indexOf('联网后所有设备实时同步')>=0) subEl.innerHTML=CLEAN2; }
+  cleanSub();
+
+  /* 隐藏卡片右上“本机/本地”来源标 */
+  function directText(el){ var s=''; el.childNodes.forEach(function(n){ if(n.nodeType===3) s+=n.textContent; }); return s.trim(); }
+  function hideLocalBadges(root){ (root||document).querySelectorAll('#postList *, #homeLife *').forEach(function(el){
+    var full=(el.textContent||'').trim(), dt=directText(el);
+    if((dt==='本机'||dt==='本地'||full==='本机'||full==='本地') && el.querySelectorAll('img,canvas').length===0){ el.classList.add('src-hidden'); } }); }
+  hideLocalBadges();
+  if(window.MutationObserver){ var mo=new MutationObserver(function(){ cleanSub(); hideLocalBadges(); refreshHome(); });
+    ['postList','homeLife','postSubText','caseGrid','homeLatest'].forEach(function(id){ var n=document.getElementById(id); if(n) mo.observe(n,{childList:true,subtree:true,characterData:true}); }); }
+
+  /* 首页三块：项目案例克隆 + 学习/随笔截断 3 + 显示标题&更多 */
+  var caseGrid=document.getElementById('caseGrid'), homeCases=document.getElementById('homeCases'), homeCasesHead=document.getElementById('homeCasesHead');
+  var homeLatest=document.getElementById('homeLatest'), homeLatestHead=document.getElementById('homeLatestHead');
+  var homeLife=document.getElementById('homeLife'), homeLifeHead=document.getElementById('homeLifeHead');
+  function showHead(h){ if(h){ h.style.display='flex'; h.classList.add('rv-on'); } }
+  function trim3(c){ if(!c) return; var k=c.children; for(var i=0;i<k.length;i++) k[i].style.display=(i<3?'':'none'); }
+  function cloneCases(){ if(!caseGrid||!homeCases) return;
+    if(caseGrid.children.length && !homeCases.children.length){
+      var n=Math.min(3,caseGrid.children.length);
+      for(var i=0;i<n;i++) homeCases.appendChild(caseGrid.children[i].cloneNode(true));
+    }
+    if(homeCases.children.length) showHead(homeCasesHead); }
+  function refreshHome(){
+    cloneCases();
+    if(homeLatest && homeLatest.children.length){ trim3(homeLatest); showHead(homeLatestHead); }
+    if(homeLife && homeLife.children.length){ trim3(homeLife); showHead(homeLifeHead); }
+  }
+  refreshHome();
+  setTimeout(refreshHome,600); setTimeout(refreshHome,1800);
+
+  /* ===== 同步自检（重做）：读权限实测 + 云端真实条数 + 本机可见条数对比 + 一键修复SQL ===== */
+  var fab=document.getElementById('syncFab'),scard=document.getElementById('syncCard'),
+      sbody=document.getElementById('syncBody'),srun=document.getElementById('syncRun'),sclose=document.getElementById('syncClose');
+  function el(tag,cls,html){ var n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; }
+  function row(color,html){ var r=el('div','sc-row'); var d=el('span','sc-dot'); d.style.background=color; r.appendChild(d); r.appendChild(el('span',null,html)); return r; }
+  function clearBody(){ while(sbody.firstChild) sbody.removeChild(sbody.firstChild); }
+  function copySql(pre){ var txt=pre.textContent;
+    function done(){ pre.classList.add('copied'); myToast('修复命令已复制，去 Supabase 后台 SQL Editor 粘贴运行'); setTimeout(function(){pre.classList.remove('copied');},1800); }
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(function(){ fallbackCopy(txt,done); }); }
+    else fallbackCopy(txt,done); }
+  function fallbackCopy(txt,cb){ var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); cb&&cb(); }
+  function appSays(){ cleanSub(); var t=appSubSnapshot||((subEl&&subEl.textContent)||'');
+    if(/已连接|云端数据库|访客也能/.test(t)) return true;
+    if(/连不上|本机暂存|仅本机|本地暂存/.test(t)) return false;
+    return null; }
+  function renderedCount(){
+    var a=(document.getElementById('postList')||{}).children, b=(document.getElementById('learningGrid')||{}).children;
+    return (a?a.length:0)+(b?b.length:0);
+  }
+  function parseKeys(src){
+    var m=src.match(/createClient\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']/);
+    var url=m&&m[1], key=m&&m[2];
+    if(!url){ var mu=src.match(/https?:\/\/[A-Za-z0-9.\-]+\.supabase\.co[^"'\s`]*/); if(mu) url=mu[0]; }
+    if(!key){ var mk=src.match(/eyJ[A-Za-z0-9_\-]{30,}/); if(mk) key=mk[0]; }
+    var tbl=(src.match(/\.from\(\s*["']([^"']+)["']/g)||[]).map(function(x){var mm=x.match(/["']([^"']+)["']/);return mm&&mm[1];}).filter(Boolean);
+    var tables=[]; tbl.forEach(function(t){ if(tables.indexOf(t)<0) tables.push(t); });
+    return {url:url,key:key,tables:tables};
+  }
+  function buildFixSql(tables){
+    if(!tables||!tables.length) return '-- 没自动识别到表名：把下面的 表名 换成 app.js 里 .from("...") 的名字\n-- 对每张表都执行下面 4 条（幂等，重复运行不报错）\n';
+    var out='-- 一键补齐 读/写/改/删 公开策略（幂等，重复运行不报错）\n-- 涉及表：'+tables.join(', ')+'\n';
+    tables.forEach(function(t){
+      out+='\nDO $$ BEGIN CREATE POLICY "pub_select" ON "'+t+'" FOR SELECT USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+      out+='DO $$ BEGIN CREATE POLICY "pub_insert" ON "'+t+'" FOR INSERT WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+      out+='DO $$ BEGIN CREATE POLICY "pub_update" ON "'+t+'" FOR UPDATE USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+      out+='DO $$ BEGIN CREATE POLICY "pub_delete" ON "'+t+'" FOR DELETE USING (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;\n';
+    });
+    return out;
+  }
+  function runSyncCheck(){
+    clearBody();
+    sbody.appendChild(row(window.supabase?'#16a34a':'#dc2626', window.supabase?'<b>云端库</b>：已加载就绪 ✅':'<b>云端库</b>：没加载成功 ❌（CDN 不通，换个网络再试）'));
+    var says=appSays();
+    if(says===true) sbody.appendChild(row('#16a34a','<b>应用自报</b>：已连接云端 ✅（注意：这通常只代表“读”通，不代表“写”通）'));
+    else if(says===false) sbody.appendChild(row('#d97706','<b>应用自报</b>：当前离线 / 本机暂存 ⚠️'));
+    else sbody.appendChild(row('#94a3b8','<b>应用自报</b>：暂未捕获到状态（发布一条后会更新）'));
+
+    var rendered=renderedCount();
+    sbody.appendChild(row('#64748b','<b>本机当前可见</b>：'+rendered+' 条（学习+随笔，仅供参考）'));
+
+    fetch('app.js').then(function(r){return r.text();}).then(function(src){
+      var k=parseKeys(src);
+      var url=k.url, key=k.key, tables=k.tables, table=tables[0]||'';
+      if(!url||!key){
+        sbody.appendChild(row(says===true?'#16a34a':'#d97706', says===true?'<b>读权限实测</b>：钥匙写法特殊未自动识别，但应用已确认连通 ✅':'<b>读权限实测</b>：没读到钥匙 ❌ 请核对 app.js 顶部 createClient 的 URL / key 两行。'));
+        finish(says, null, rendered, tables, key?'':'nokey');
+        return;
+      }
+      var base=url.replace(/\/$/,'');
+      var target=base+'/rest/v1/'+(table||'')+'?select=id';
+      sbody.appendChild(row('#2563eb','<b>读权限实测</b>：正在向云端表 <b>'+(table||'未识别')+'</b> 读取…'));
+      fetch(target,{headers:{'apikey':key,'Authorization':'Bearer '+key,'Prefer':'count=exact','Range':'0-0'}}).then(function(r){
+        var cloud=null, cr=r.headers.get('content-range')||''; var cm=cr.match(/\/(\d+)/); if(cm) cloud=parseInt(cm[1],10);
+        if(r.status>=200&&r.status<300){
+          if(cloud===null){ /* 头没暴露，退而求其次数返回数组 */ }
+          sbody.appendChild(row('#16a34a','<b>读权限实测</b>：通过 ✅'+(cloud!==null?'　云端真实条数 = <b>'+cloud+'</b>':'　（云端条数头未返回，见下方对比）')));
+          if(cloud===null){
+            return r.json().then(function(arr){ var n=Array.isArray(arr)?arr.length:null;
+              sbody.appendChild(row('#64748b','<b>云端取样</b>：'+(n!==null?('首屏取到 '+n+' 条（总数头被浏览器屏蔽，仅作参考）'):'取到数据但无法计数')));
+              finish(says, n, rendered, tables, 'ok');
+            }).catch(function(){ finish(says, null, rendered, tables, 'ok'); });
+          }
+          finish(says, cloud, rendered, tables, 'ok');
+        } else if(r.status===401){
+          sbody.appendChild(row('#dc2626','<b>读权限实测</b>：401 密钥被拒 🔑 核对 app.js 顶部 URL / key 是否抄错。'));
+          finish(says, null, rendered, tables, '401');
+        } else if(r.status===403){
+          sbody.appendChild(row('#dc2626','<b>读权限实测</b>：403 读权限被拦 🔒 连“读”都没开，必须运行下方修复SQL。'));
+          finish(says, null, rendered, tables, '403');
+        } else if(r.status===404){
+          sbody.appendChild(row('#dc2626','<b>读权限实测</b>：404 表不存在 🗂 在后台建表 <b>'+(table||'见 .from')+'</b>。'));
+          finish(says, null, rendered, tables, '404');
+        } else {
+          sbody.appendChild(row('#d97706','<b>读权限实测</b>：状态 '+r.status+'，截图发我定位。'));
+          finish(says, null, rendered, tables, 'other');
+        }
+      }).catch(function(){
+        sbody.appendChild(row('#dc2626','<b>读权限实测</b>：网络失败 🌐 换个网络再试。'));
+        finish(says, null, rendered, tables, 'net');
+      });
+    }).catch(function(){
+      sbody.appendChild(row(says===true?'#16a34a':'#d97706', says===true?'<b>读权限实测</b>：读取 app.js 失败，但应用已连通 ✅':'<b>读取 app.js 失败</b>，请确认网站已部署。'));
+      finish(says, null, rendered, [], says===true?'ok':'nokey');
+    });
+  }
+
+  function finish(says, cloud, rendered, tables, code){
+    var v=el('div','sc-verdict');
+    var needSql=false;
+    if(code==='403'||code==='401'||code==='404'){
+      needSql=true;
+      v.className='sc-verdict bad';
+      v.innerHTML='🚨 <b>权限/表有问题</b>。这就是“换手机看不到”的根因之一：内容根本没进云端。<br>👉 复制下方修复SQL → 去 Supabase 后台 <b>SQL Editor</b> 运行 → 回<b>发布过内容的那台设备</b>刷新页面触发补传 → 换手机强刷。';
+    } else if(code==='nokey'){
+      v.className='sc-verdict '+(says===true?'good':'bad');
+      v.innerHTML = says===true
+        ? '✅ 应用已连通，钥匙写法特殊未自动实测。若换手机仍看不到，多半是<b>写入(INSERT)策略</b>没开，建议运行下方修复SQL兜底。'
+        : '⚠️ 没读到钥匙、应用也暂未确认连接。请核对 app.js 顶部 createClient 的 URL / key 是否填了、抄对。';
+      needSql = says!==true;
+    } else if(code==='net'){
+      v.className='sc-verdict bad';
+      v.innerHTML='🌐 网络没通，无法实测。请连上网络后点“重新体检”。';
+    } else {
+      // code==='ok'
+      if(cloud!==null && rendered>cloud){
+        needSql=true;
+        v.className='sc-verdict bad';
+        var diff=rendered-cloud;
+        v.innerHTML='⚠️ 本机可见 <b>'+rendered+'</b> 条，云端只有 <b>'+cloud+'</b> 条 —— 有约 <b>'+diff+'</b> 条<b>只存在你这台设备、没传上云</b>。<br>这正是“换手机看不到”的原因：写入(INSERT)策略没开，发布时补传静默失败。<br>👉 运行下方修复SQL → 回<b>本机</b>刷新触发补传 → 换手机强刷即可看到。';
+      } else if(cloud!==null && cloud===0 && rendered===0){
+        v.className='sc-verdict';
+        v.innerHTML='📭 云端和本机都还是空的——你还没发布过内容。先发一条学习记录或随笔，再点“重新体检”。';
+      } else if(cloud!==null && cloud===0 && rendered>0){
+        needSql=true;
+        v.className='sc-verdict bad';
+        v.innerHTML='⚠️ 云端 <b>0</b> 条，但本机有 <b>'+rendered+'</b> 条 —— 内容<b>完全没传上云</b>，写入策略没开。<br>👉 运行下方修复SQL → 回<b>本机</b>刷新触发补传 → 换手机强刷。';
+      } else {
+        v.className='sc-verdict good';
+        var cTxt = cloud!==null?('云端 <b>'+cloud+'</b> 条'):'云端已能读到数据';
+        v.innerHTML='✅ '+cTxt+'，且本机没有“多余未上传”的内容，读写链路看起来是通的。<br>👉 换手机请用 <b>无痕模式 / 清缓存后强刷</b> 打开网址验证；若仍空，运行下方修复SQL兜底一次最稳。';
+      }
+    }
+    sbody.appendChild(v);
+
+    // 修复SQL（一律给出，幂等；needSql 时强调，否则作为兜底）
+    var sql=buildFixSql(tables);
+    var pre=el('pre','sc-code'); pre.textContent=sql;
+    pre.addEventListener('click',function(){copySql(pre);});
+    var lab=el('div',null, needSql?'<b style="color:#dc2626">⬇ 必做：点下面黑框复制修复SQL</b>':'<b style="color:#64748b">⬇ 兜底修复SQL（点黑框复制，可选）</b>');
+    lab.style.marginTop='10px';
+    sbody.appendChild(lab);
+    sbody.appendChild(pre);
+
+    var tip=el('div',null,'<span style="opacity:.8">最稳的验证：跑完SQL后，<b>在本机随便发一条新的</b>，立刻换手机强刷——新发的能出现，就说明同步彻底通了。</span>');
+    tip.style.marginTop='8px';
+    sbody.appendChild(tip);
+
+    var b=el('button','sc-run','重新体检'); b.style.marginTop='12px'; b.addEventListener('click',runSyncCheck); sbody.appendChild(b);
+  }
+
+  if(srun) srun.addEventListener('click',runSyncCheck);
+  if(fab) fab.addEventListener('click',function(){ var open=scard.classList.toggle('open'); if(open && !sbody.querySelector('.sc-row')) runSyncCheck(); });
+  if(sclose) sclose.addEventListener('click',function(){ scard.classList.remove('open'); });
+})();
+</script>
 </body>
 </html>
