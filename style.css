@@ -444,3 +444,36 @@ footer{max-width:1680px;margin:0;padding:26px clamp(24px,4.5vw,72px) 40px;border
 /* ===== 补丁 v20260806d：修复"删重复把正本也隐藏" ===== */
 try { localStorage.removeItem('chi_life_hide_content'); } catch (e) {}
 function lifeIsHiddenObj(p, sets) { return sets.hidSet.has(String(p && p.id)); }
+     /* ========== 补丁 v20260806d：导航栏缩小 + 案例卡片比例协调 ========== */
+/* --- 左侧导航整体缩小 --- */
+.side{padding:28px 20px 20px}
+.avatar{width:88px;height:110px;flex:0 0 110px;border-radius:20px}
+.avatar-fb{width:88px;height:110px;flex:0 0 110px;border-radius:20px;font-size:36px}
+.brand-txt{margin-top:18px}
+.brand-txt h1{font-size:24px}
+.brand-txt p{font-size:14px;margin-top:6px}
+.sign{font-size:15.5px;margin:18px 2px 22px;padding-left:10px}
+.nav{gap:7px}
+.nav a{font-size:17px;padding:11px 14px;gap:11px;border-radius:13px}
+.nav a .nico{width:22px;font-size:16px}
+.cbtn{width:40px;height:40px;border-radius:12px}
+.cbtn .cico{width:26px;height:26px}
+.side-foot{padding-top:16px;margin-top:14px}
+.contact-row{gap:10px;margin-bottom:12px}
+
+/* --- 项目案例：色块变窄、内容变紧凑，比例协调 --- */
+.case-grid{gap:20px}
+.case--row{grid-template-columns:230px minmax(0,1fr)}
+.case-cover{min-height:0}
+.case-cover .big{font-size:46px;left:14px;top:6px}
+.case-cover .ci{font-size:42px}
+.case-cover .ctag{font-size:10px;padding:3px 8px}
+.case-body{padding:16px 20px}
+.case-body h3{font-size:19px;margin-bottom:6px}
+.case-body p{font-size:13.5px;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.case-docs{gap:8px;margin-bottom:10px}
+.case-doc{font-size:12.5px;padding:6px 10px;gap:6px}
+.case-foot{gap:10px}
+.case-tech{gap:6px}
+.case-tech span{font-size:11px;padding:3px 8px}
+.case-dl{font-size:12.5px;padding:7px 12px;gap:6px}
