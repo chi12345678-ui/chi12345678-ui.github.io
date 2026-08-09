@@ -250,7 +250,6 @@ async function toggleSection(type) {
 
 // ===== 管理后台 =====
 async function loadAdminData() {
-    // 加载所有数据（包括草稿）
     const { data: posts } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
     allPosts = posts || [];
     allProjects = await loadProjects();
@@ -277,7 +276,7 @@ function renderAdminList(tab) {
     else if (tab === 'certificates') items = allCertificates;
 
     if (items.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted);padding:20px;">暂无数据，点击“新建”添加。</p>';
+        container.innerHTML = '<p style="color:var(--text-muted);padding:20px;">暂无数据，点击"新建"添加。</p>';
         return;
     }
 
