@@ -1,452 +1,399 @@
 /* ========================================
-   阿历的数字花园 — Supabase 版
-   数据存储: Supabase (posts 表)
-   文件存储: GitHub 仓库 (项目文件 + 证书)
+   阿历的数字花园 — 全功能脚本（Supabase 驱动）
+   顶部导航 + 左文右图
    ======================================== */
 
-// ========================================
-// 配置
-// ========================================
 const SUPABASE_URL = 'https://bqdhqnviozvqljjigzys.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
+const SUPABASE_ANON_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const GITHUB = {
-  owner: 'chi12345678-ui',
-  repo: 'chi12345678-ui.github.io'
-};
-
-// 初始化 Supabase 客户端
-const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => document.querySelectorAll(s);
-
-// 内存缓存
+let currentPage = 'home';
+let currentAdminTab = 'posts';
+let editingId = null;
+let quillEditor = null;
 let allPosts = [];
-let allFiles = [];
-let certFiles = [];
+let allProjects = [];
+let allCertificates = [];
 
-// ========================================
-// 1. 主题切换
-// ========================================
-(function initTheme(){
-  const saved = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = saved || (prefersDark ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme', theme);
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 
-  $('#themeToggle').addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-  });
-})();
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
-// ========================================
-// 2. 从 Supabase 加载文章数据
-// ========================================
-async function loadPosts() {
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false });
+function navigate(page) {
+  $$('.page-section').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById(`page-${page}`);
+  if (target) target.classList.add('active');
+  $$('.nav-link').forEach(link => link.classList.toggle('active', link.dataset.page === page));
+  currentPage = page;
+  document.getElementById('navLinks')?.classList.remove('open');
+  document.getElementById('mobileMenuBtn')?.classList.remove('active');
+  if (page === 'admin') { loadAdminData(); showAdminTab(currentAdminTab); }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    if (error) throw error;
+async function loadPosts(category = null) {
+  let query = supabase.from('posts').select('*').eq('status', 'published');
+  if (category) query = query.eq('category', category);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) { console.error('加载文章失败:', error); return []; }
+  return data || [];
+}
+async function loadProjects() {
+  const { data, error } = await supabase.from('projects').select('*').order('sort_order', { ascending: true });
+  if (error) { console.error('加载项目失败:', error); return []; }
+  return data || [];
+}
+async function loadCertificates() {
+  const { data, error } = await supabase.from('certificates').select('*').order('sort_order', { ascending: true });
+  if (error) { console.error('加载证书失败:', error); return []; }
+  return data || [];
+}
 
-    allPosts = data || [];
-    renderPosts();
-  } catch (e) {
-    console.error('Supabase 加载失败:', e);
-    showNoData('notesList', '数据库连接失败，请确认已在 Supabase SQL Editor 执行建表语句');
-    showNoData('blogList', '数据库连接失败');
-    showNoData('lifeList', '数据库连接失败');
+async function renderHome() {
+  const projects = await loadProjects();
+  const posts = await loadPosts();
+
+  const projectGrid = $('#projectsGrid');
+  if (projectGrid) {
+    const show = projects.slice(0, 4);
+    projectGrid.innerHTML = show.map(p => `
+      <article class="project-card" onclick="window.open('${p.demo_link || p.github_link || '#','_blank')}">
+        <div class="project-img">${p.cover_image ? `<img src="${p.cover_image}" alt="${p.title}">` : `<div class="project-img-placeholder">📁</div>`}</div>
+        <div class="project-body">
+          <div class="project-tags">${p.tags ? p.tags.map(t => `<span class="project-tag">${t}</span>`).join('') : ''}</div>
+          <h3 class="project-title">${p.title}</h3>
+          <p class="project-desc">${p.description || ''}</p>
+          <div class="project-meta"><span>${formatDate(p.created_at)}</span><span class="project-link">查看详情</span></div>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  const notesList = $('#notesList');
+  if (notesList) {
+    const notes = posts.filter(p => p.category === 'note').slice(0, 5);
+    notesList.innerHTML = notes.map(n => `
+      <article class="note-item" onclick="viewPost('${n.id}')">
+        <span class="note-date">${formatDate(n.created_at)}</span>
+        <div class="note-content"><h3 class="note-title">${n.title}</h3><p class="note-desc">${n.summary || n.content.replace(/<[^>]+>/g,'').slice(0,80)}</p></div>
+        <div class="note-tags">${(n.tags||[]).map(t => `<span class="note-tag">${t}</span>`).join('')}</div>
+      </article>
+    `).join('');
+  }
+
+  const blogGrid = $('#blogGrid');
+  if (blogGrid) {
+    const blogs = posts.filter(p => p.category === 'blog').slice(0, 4);
+    blogGrid.innerHTML = blogs.map(b => `
+      <article class="blog-card" onclick="viewPost('${b.id}')">
+        <div class="blog-meta"><span>${formatDate(b.created_at)}</span><span>${b.tags ? b.tags.slice(0,2).join(' · ') : ''}</span></div>
+        <h3 class="blog-title">${b.title}</h3>
+        <p class="blog-excerpt">${b.summary || b.content.replace(/<[^>]+>/g,'').slice(0,120)}</p>
+        <span class="blog-readmore">阅读全文</span>
+      </article>
+    `).join('');
+  }
+
+  const lifeGrid = $('#lifeGrid');
+  if (lifeGrid) {
+    const lives = posts.filter(p => p.category === 'life').slice(0, 3);
+    lifeGrid.innerHTML = lives.map(l => `
+      <article class="life-card" onclick="viewPost('${l.id}')">
+        <div class="life-mood">📝</div>
+        <p class="life-text">${l.summary || l.content.replace(/<[^>]+>/g,'').slice(0,60)}</p>
+        <div class="life-footer"><span>${formatDate(l.created_at)}</span><span>随笔</span></div>
+      </article>
+    `).join('');
   }
 }
 
-function renderPosts() {
-  const notes = allPosts.filter(p => p.type === 'note');
-  const blogs = allPosts.filter(p => p.type === 'blog');
-  const lifes = allPosts.filter(p => p.type === 'life');
-
-  renderContentList('notesList', notes, 'note');
-  renderContentList('blogList', blogs, 'blog');
-  renderContentList('lifeList', lifes, 'life');
+function viewPost(id) {
+  const post = allPosts.find(p => p.id === id);
+  if (!post) return;
+  alert(`标题：${post.title}\n\n内容：${post.content.replace(/<[^>]+>/g,'').slice(0,300)}...\n\n完整内容请到管理后台查看。`);
 }
 
-function renderContentList(listId, items, type) {
-  const list = $('#' + listId);
-  if (!list) return;
+async function toggleSection(type) {
+  const moreEl = $(`#${type}More`);
+  const btnEl = $(`#${type}Toggle`);
+  if (!moreEl || !btnEl) return;
+  const isOpen = moreEl.classList.contains('open');
+  if (isOpen) {
+    moreEl.classList.remove('open');
+    btnEl.textContent = '查看全部 →';
+    const section = $(`#page-${type}`);
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    let items = [];
+    if (type === 'projects') items = await loadProjects();
+    else {
+      const posts = await loadPosts();
+      const map = { notes: 'note', blog: 'blog', life: 'life' };
+      items = posts.filter(p => p.category === map[type]);
+    }
+    if (items.length === 0) { btnEl.textContent = '暂无更多'; return; }
+    let html = '';
+    if (type === 'projects') {
+      html = `<div class="projects-grid">${items.map(p => `
+        <article class="project-card" onclick="window.open('${p.demo_link || p.github_link || '#','_blank')}">
+          <div class="project-img">${p.cover_image ? `<img src="${p.cover_image}" alt="${p.title}">` : `<div class="project-img-placeholder">📁</div>`}</div>
+          <div class="project-body">
+            <div class="project-tags">${p.tags ? p.tags.map(t => `<span class="project-tag">${t}</span>`).join('') : ''}</div>
+            <h3 class="project-title">${p.title}</h3>
+            <p class="project-desc">${p.description || ''}</p>
+            <div class="project-meta"><span>${formatDate(p.created_at)}</span><span class="project-link">查看详情</span></div>
+          </div>
+        </article>
+      `).join('')}</div>`;
+    } else {
+      const listClass = type === 'notes' ? 'notes-list' : (type === 'blog' ? 'blog-grid' : 'life-grid');
+      html = `<div class="${listClass}">${items.map(item => {
+        if (type === 'notes') {
+          return `<article class="note-item" onclick="viewPost('${item.id}')">
+            <span class="note-date">${formatDate(item.created_at)}</span>
+            <div class="note-content"><h3 class="note-title">${item.title}</h3><p class="note-desc">${item.summary || item.content.replace(/<[^>]+>/g,'').slice(0,80)}</p></div>
+            <div class="note-tags">${(item.tags||[]).map(t => `<span class="note-tag">${t}</span>`).join('')}</div>
+          </article>`;
+        } else if (type === 'blog') {
+          return `<article class="blog-card" onclick="viewPost('${item.id}')">
+            <div class="blog-meta"><span>${formatDate(item.created_at)}</span></div>
+            <h3 class="blog-title">${item.title}</h3>
+            <p class="blog-excerpt">${item.summary || item.content.replace(/<[^>]+>/g,'').slice(0,120)}</p>
+            <span class="blog-readmore">阅读全文</span>
+          </article>`;
+        } else if (type === 'life') {
+          return `<article class="life-card" onclick="viewPost('${item.id}')">
+            <div class="life-mood">📝</div>
+            <p class="life-text">${item.summary || item.content.replace(/<[^>]+>/g,'').slice(0,60)}</p>
+            <div class="life-footer"><span>${formatDate(item.created_at)}</span></div>
+          </article>`;
+        }
+      }).join('')}</div>`;
+    }
+    moreEl.innerHTML = html;
+    moreEl.classList.add('open');
+    btnEl.textContent = '收起 ↑';
+  }
+}
 
+// 管理后台
+async function loadAdminData() {
+  const { data: posts } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+  allPosts = posts || [];
+  allProjects = await loadProjects();
+  allCertificates = await loadCertificates();
+  renderAdminList(currentAdminTab);
+}
+function showAdminTab(tab) {
+  currentAdminTab = tab;
+  $$('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  $$('.admin-list').forEach(el => el.style.display = 'none');
+  const target = document.getElementById(`admin${tab.charAt(0).toUpperCase()+tab.slice(1)}List`);
+  if (target) target.style.display = 'flex';
+  renderAdminList(tab);
+}
+function renderAdminList(tab) {
+  const container = document.getElementById(`admin${tab.charAt(0).toUpperCase()+tab.slice(1)}List`);
+  if (!container) return;
+  let items = [];
+  if (tab === 'posts') items = allPosts;
+  else if (tab === 'projects') items = allProjects;
+  else if (tab === 'certificates') items = allCertificates;
   if (items.length === 0) {
-    const names = { note: '学习笔记', blog: '博客文章', life: '生活随笔' };
-    list.innerHTML = `<div class="loading">暂无${names[type]}。点击右上角「+」按钮新建，内容将实时同步到数据库。</div>`;
+    container.innerHTML = '<p style="color:var(--text-muted);padding:20px;">暂无数据，点击“新建”添加。</p>';
     return;
   }
-
-  list.innerHTML = items.slice(0, 5).map(item => {
-    const date = item.created_at ? item.created_at.slice(0, 10) : '未知日期';
-    const desc = item.content ? stripMarkdown(item.content).slice(0, 60) + '...' : '暂无描述';
-    const tags = (item.tags || []).slice(0, 2);
+  container.innerHTML = items.map(item => {
+    const title = item.title || item.name || '未命名';
+    const meta = tab === 'posts' ? `分类: ${item.category} | ${formatDate(item.created_at)}` :
+                 tab === 'projects' ? `更新: ${formatDate(item.updated_at)}` :
+                 `颁发: ${item.issue_date || ''}`;
     return `
-      <article class="content-item" onclick="openArticle(${item.id})">
-        <span class="content-date">${date}</span>
-        <div class="content-info">
-          <h3 class="content-title">${escapeHtml(item.title)}</h3>
-          <p class="content-desc">${escapeHtml(desc)}</p>
+      <div class="admin-item">
+        <div class="admin-item-info"><div class="admin-item-title">${title}</div><div class="admin-item-meta">${meta}</div></div>
+        <div class="admin-item-actions">
+          <button class="edit-btn" onclick="editAdminItem('${tab}','${item.id}')">编辑</button>
+          <button class="delete-btn" onclick="deleteAdminItem('${tab}','${item.id}')">删除</button>
         </div>
-        <div class="content-tags">${tags.map(t=>`<span class="content-tag">${escapeHtml(t)}</span>`).join('')}</div>
-      </article>
+      </div>
     `;
   }).join('');
 }
-
-// ========================================
-// 3. Supabase Realtime 实时订阅
-// ========================================
-function subscribePosts() {
-  supabase
-    .channel('posts-changes')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'posts'
-    }, (payload) => {
-      console.log('Realtime 更新:', payload);
-      // 重新加载数据
-      loadPosts();
-      // 显示提示
-      const eventMap = { INSERT: '新文章发布', UPDATE: '文章更新', DELETE: '文章删除' };
-      showToast(eventMap[payload.eventType] || '数据已更新');
-    })
-    .subscribe();
+function editAdminItem(tab, id) {
+  let item = null;
+  if (tab === 'posts') item = allPosts.find(p => p.id === id);
+  else if (tab === 'projects') item = allProjects.find(p => p.id === id);
+  else if (tab === 'certificates') item = allCertificates.find(p => p.id === id);
+  if (!item) return;
+  editingId = id;
+  const form = $('#adminForm');
+  form.style.display = 'block';
+  document.getElementById('adminFormTitle').textContent = `编辑 ${tab === 'posts' ? '文章' : tab === 'projects' ? '项目' : '证书'}`;
+  if (tab === 'posts') {
+    document.getElementById('formId').value = item.id;
+    document.getElementById('formTitle').value = item.title || '';
+    document.getElementById('formCategory').value = item.category || 'blog';
+    document.getElementById('formSummary').value = item.summary || '';
+    document.getElementById('formCover').value = item.cover_image || '';
+    document.getElementById('formTags').value = (item.tags || []).join(', ');
+    document.getElementById('formStatus').value = item.status || 'published';
+    if (quillEditor) quillEditor.root.innerHTML = item.content || '';
+  }
+  $('#adminFormElement').dataset.tab = tab;
+}
+async function deleteAdminItem(tab, id) {
+  if (!confirm('确定要删除吗？')) return;
+  let table = tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates';
+  const { error } = await supabase.from(table).delete().eq('id', id);
+  if (error) { alert('删除失败: ' + error.message); return; }
+  alert('删除成功');
+  loadAdminData();
+}
+async function handleAdminSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const tab = form.dataset.tab || 'posts';
+  const id = document.getElementById('formId').value;
+  const title = document.getElementById('formTitle').value;
+  const category = document.getElementById('formCategory').value;
+  const summary = document.getElementById('formSummary').value;
+  const cover = document.getElementById('formCover').value;
+  const tags = document.getElementById('formTags').value.split(',').map(s => s.trim()).filter(Boolean);
+  const status = document.getElementById('formStatus').value;
+  const content = quillEditor ? quillEditor.root.innerHTML : '';
+  const data = { title, summary, cover_image: cover, tags, status, content, updated_at: new Date().toISOString() };
+  if (tab === 'posts') data.category = category;
+  let result;
+  if (id) {
+    result = await supabase.from(tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates')
+      .update(data).eq('id', id);
+  } else {
+    data.created_at = new Date().toISOString();
+    result = await supabase.from(tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates')
+      .insert([data]);
+  }
+  if (result.error) { alert('保存失败: ' + result.error.message); return; }
+  alert('保存成功');
+  resetForm();
+  loadAdminData();
+  renderHome();
+}
+function resetForm() {
+  document.getElementById('adminForm').style.display = 'none';
+  document.getElementById('adminFormElement').reset();
+  document.getElementById('formId').value = '';
+  editingId = null;
+  if (quillEditor) quillEditor.root.innerHTML = '';
 }
 
-// ========================================
-// 4. GitHub API — 项目文件 & 证书
-// ========================================
-async function fetchGitHubFiles() {
-  try {
-    const [contentsRes, certsRes] = await Promise.all([
-      fetch(`https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/`).catch(() => null),
-      fetch(`https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/certs`).catch(() => null)
-    ]);
-
-    if (contentsRes && contentsRes.ok) {
-      allFiles = await contentsRes.json();
-      renderProjectsFromRepo();
-    } else {
-      renderDefaultProjects();
+// 初始化
+async function init() {
+  quillEditor = new Quill('#editorContainer', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        ['bold','italic','underline','strike'],
+        ['blockquote','code-block'],
+        [{ header: 1 }, { header: 2 }],
+        [{ list: 'ordered'}, { list: 'bullet' }],
+        [{ script: 'sub'}, { script: 'super' }],
+        [{ indent: '-1'}, { indent: '+1' }],
+        [{ size: ['small', false, 'large', 'huge'] }],
+        [{ header: [1,2,3,4,5,6,false] }],
+        [{ color: [] }, { background: [] }],
+        [{ font: [] }],
+        [{ align: [] }],
+        ['clean'],
+        ['link','image','video']
+      ]
     }
+  });
 
-    if (certsRes && certsRes.ok) {
-      certFiles = await certsRes.json();
-      renderCerts();
-    } else {
-      showNoData('certsGrid', '暂无证书，上传图片到 certs/ 文件夹即可自动展示');
-    }
-  } catch (e) {
-    console.error('GitHub API 错误:', e);
-    renderDefaultProjects();
-    showNoData('certsGrid', '加载失败');
-  }
-}
+  quillEditor.getModule('toolbar').addHandler('image', function() {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `posts/${fileName}`;
+      const { data, error } = await supabase.storage.from('assets').upload(filePath, file);
+      if (error) { alert('上传失败: ' + error.message); return; }
+      const { publicURL } = supabase.storage.from('assets').getPublicUrl(filePath);
+      const range = quillEditor.getSelection();
+      quillEditor.insertEmbed(range.index, 'image', publicURL);
+    };
+  });
 
-function renderProjectsFromRepo() {
-  const grid = $('#projectsGrid');
-  if (!grid) return;
-
-  const projectExts = ['.pdf', '.pbix', '.html', '.ipynb'];
-  const excludeNames = ['池增历', '简历', 'resume', 'README', 'index', 'style', 'app'];
-
-  let projects = allFiles
-    .filter(f => f.type === 'file' && projectExts.some(ext => f.name.toLowerCase().endsWith(ext)))
-    .filter(f => !excludeNames.some(ex => f.name.toLowerCase().includes(ex.toLowerCase())))
-    .map(f => {
-      const name = f.name.replace(/\.[^.]+$/, '');
-      const ext = f.name.split('.').pop().toLowerCase();
-      const icons = { pdf: '📄', pbix: '📊', html: '🌐', ipynb: '📓' };
-      const tags = { pdf: ['报告'], pbix: ['Power BI'], html: ['交互报告'], ipynb: ['Python'] };
-      return {
-        title: name,
-        tags: tags[ext] || ['项目'],
-        desc: `项目文件：${f.name}`,
-        date: '仓库文件',
-        link: f.download_url || f.html_url,
-        icon: icons[ext] || '📁'
-      };
-    });
-
-  if (projects.length === 0) {
-    renderDefaultProjects();
-    return;
-  }
-
-  grid.innerHTML = projects.slice(0, 4).map(p => projectCardHtml(p)).join('');
-}
-
-function renderDefaultProjects() {
-  const grid = $('#projectsGrid');
-  if (!grid) return;
-  const defaults = [
-    { title: '快消品进销存案例分析报告', tags: ['库存优化','PDF'], desc: '搭建库存健康度诊断体系与智能补货模型，将缺货率降低40%。', date: '2024-06', link: '快消品进销存案例分析报告.pdf', icon: '📄' },
-    { title: '复购分析案例', tags: ['RFM','Power BI'], desc: '基于10万+用户交易数据，构建复购归因模型，召回效率提升2倍。', date: '2024-03', link: '复购分析案例.pdf', icon: '📊' },
-    { title: '线上平台用户RFM分析', tags: ['用户分层','HTML'], desc: '将10万用户按RFM模型分为8个层级，月销从0增长至100W+。', date: '2023-12', link: '线上平台用户RFM分析.html', icon: '🌐' },
-    { title: '复购分析案例', tags: ['Python','Jupyter'], desc: 'Python 代码实现复购分析全流程。', date: '2024-03', link: '复购分析案例.ipynb', icon: '📓' }
-  ];
-  grid.innerHTML = defaults.map(p => projectCardHtml(p)).join('');
-}
-
-function projectCardHtml(p) {
-  return `
-    <article class="project-card" onclick="window.open('${p.link}','_blank')">
-      <div class="project-img">
-        <div class="project-img-placeholder">${p.icon}</div>
-        <span class="project-img-tag">${p.tags[0]}</span>
-      </div>
-      <div class="project-body">
-        <h3 class="project-title">${p.title}</h3>
-        <p class="project-desc">${p.desc}</p>
-        <div class="project-meta">
-          <div class="project-tags">${p.tags.map(t=>`<span class="project-tag">${t}</span>`).join('')}</div>
-          <span class="project-link">查看详情 →</span>
-        </div>
-      </div>
-    </article>
-  `;
-}
-
-function renderCerts() {
-  const grid = $('#certsGrid');
-  if (!grid) return;
-  const images = certFiles.filter(f =>
-    ['.png','.jpg','.jpeg','.gif','.webp'].some(ext => f.name.toLowerCase().endsWith(ext))
-  );
-  if (images.length === 0) {
-    grid.innerHTML = '<div class="loading">暂无证书图片，上传至 certs/ 文件夹即可自动展示</div>';
-    return;
-  }
-  grid.innerHTML = images.map(img => `
-    <div class="cert-item" onclick="window.open('${img.download_url}','_blank')">
-      <img src="${img.download_url}" alt="${img.name}" loading="lazy">
-      <div class="cert-item-name">${img.name.replace(/\.[^.]+$/, '')}</div>
-    </div>
-  `).join('');
-}
-
-// ========================================
-// 5. 文章详情页
-// ========================================
-function openArticle(id) {
-  const post = allPosts.find(p => p.id === id);
-  if (!post) { showToast('文章未找到'); return; }
-
-  const page = $('#pageArticle');
-  const content = $('#articleContent');
-  const date = post.created_at ? post.created_at.slice(0, 10) : '未知日期';
-  const tags = (post.tags || []).join(', ') || '未分类';
-  const bodyHtml = markdownToHtml(post.content || '暂无内容');
-
-  content.innerHTML = `
-    <h1>${escapeHtml(post.title)}</h1>
-    <div class="article-meta">
-      <span>📅 ${date}</span>
-      <span>🏷️ ${escapeHtml(tags)}</span>
-    </div>
-    <div class="article-body">${bodyHtml}</div>
-  `;
-
-  page.style.display = 'block';
-  document.body.style.overflow = 'hidden';
-  page.scrollTop = 0;
-}
-
-function closeArticle() {
-  $('#pageArticle').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-// ========================================
-// 6. Markdown 编辑器 & 发布到 Supabase
-// ========================================
-function openEditor(type) {
-  const overlay = $('#editorOverlay');
-  const title = $('#editorTitle');
-  const tagSelect = $('#editorTag');
-
-  const titles = { blog: '写博客文章', note: '写学习笔记', life: '写生活随笔' };
-  title.textContent = titles[type] || '写文章';
-  tagSelect.value = type;
-
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function closeEditor() {
-  $('#editorOverlay').style.display = 'none';
-  document.body.style.overflow = '';
-  $('#editorPreview').classList.remove('active');
-  $('#editorInputTitle').value = '';
-  $('#editorTextarea').value = '';
-}
-
-function previewArticle() {
-  const md = $('#editorTextarea').value;
-  const preview = $('#editorPreview');
-  preview.innerHTML = markdownToHtml(md);
-  preview.classList.toggle('active');
-}
-
-async function publishArticle() {
-  const title = $('#editorInputTitle').value.trim();
-  const content = $('#editorTextarea').value.trim();
-  const type = $('#editorTag').value;
-
-  if (!title) { showToast('请输入标题'); return; }
-  if (!content) { showToast('请输入内容'); return; }
-
-  showToast('正在发布到 Supabase...');
-
-  try {
-    // 从内容中提取标签（#tag 格式）
-    const tagMatches = content.match(/#(\w+)/g);
-    const tags = tagMatches ? tagMatches.map(t => t.slice(1)) : [];
-
-    const { data, error } = await supabase
-      .from('posts')
-      .insert([{ title, content, type, tags }])
-      .select();
-
-    if (error) throw error;
-
-    showToast('发布成功！');
-    closeEditor();
-    // Realtime 会自动刷新，但手动刷新更及时
-    await loadPosts();
-  } catch (e) {
-    console.error('发布失败:', e);
-    showToast('发布失败: ' + (e.message || '请检查数据库权限'));
-  }
-}
-
-// ========================================
-// 7. AI 聊天
-// ========================================
-function toggleAIChat() {
-  $('#aiChat').classList.toggle('active');
-}
-
-function sendAIMsg() {
-  const input = $('#aiChatInput');
-  const body = $('#aiChatBody');
-  const text = input.value.trim();
-  if (!text) return;
-
-  const userMsg = document.createElement('div');
-  userMsg.className = 'ai-msg ai-msg-user';
-  userMsg.textContent = text;
-  body.appendChild(userMsg);
-
-  input.value = '';
-  body.scrollTop = body.scrollHeight;
-
-  setTimeout(() => {
-    const botMsg = document.createElement('div');
-    botMsg.className = 'ai-msg ai-msg-bot';
-    const replies = [
-      '感谢你的提问！我目前是一个演示助手，你可以后期接入 OpenAI 或 Claude API 来实现真正的智能对话。',
-      '关于数据分析，我建议从业务场景出发，先明确问题再选择工具。',
-      '我的项目案例都在「项目案例」板块，点击卡片即可查看详细报告和源文件。',
-      '如果你想学习数据分析，推荐先从 Excel 和 SQL 入手，再逐步学习 Python 和可视化工具。'
-    ];
-    botMsg.innerHTML = `<p>${replies[Math.floor(Math.random() * replies.length)]}</p>`;
-    body.appendChild(botMsg);
-    body.scrollTop = body.scrollHeight;
-  }, 800);
-}
-
-// ========================================
-// 8. 二维码弹窗
-// ========================================
-function showQR(src, label) {
-  $('#qrImg').src = src;
-  $('#qrText').textContent = '扫码添加' + label;
-  $('#qrModal').classList.add('active');
-}
-function closeQR() {
-  $('#qrModal').classList.remove('active');
-}
-$('#qrModal').addEventListener('click', (e) => {
-  if (e.target === $('#qrModal')) closeQR();
-});
-
-// ========================================
-// 9. Toast 提示
-// ========================================
-function showToast(msg) {
-  const toast = $('#toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
-
-function showNoData(id, msg) {
-  const el = $('#' + id);
-  if (el) el.innerHTML = `<div class="loading">${msg}</div>`;
-}
-
-// ========================================
-// 10. 导航高亮 + 平滑滚动
-// ========================================
-(function initNav(){
-  const sections = $$('section[id]');
-  const links = $$('.nav-link');
-  const mobileLinks = $$('.mobile-link');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const id = entry.target.id;
-        links.forEach(l => l.classList.toggle('active', l.dataset.section === id));
-        mobileLinks.forEach(l => l.classList.toggle('active', l.dataset.section === id));
-      }
-    });
-  }, { threshold: 0.2 });
-
-  sections.forEach(s => observer.observe(s));
-
-  [...links, ...mobileLinks].forEach(link => {
+  $$('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      const target = $(link.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' });
-        $('#mobileMenu').classList.remove('active');
-        $('#mobileMenuBtn').classList.remove('active');
-      }
+      const page = link.dataset.page;
+      if (page) navigate(page);
     });
   });
-})();
 
-function scrollToSection(id) {
-  const el = $('#' + id);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const navLinks = document.getElementById('navLinks');
+  if (menuBtn && navLinks) {
+    menuBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+      menuBtn.classList.toggle('active');
+    });
+  }
+
+  $$('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => showAdminTab(tab.dataset.tab));
+  });
+
+  document.getElementById('adminNewBtn').addEventListener('click', () => {
+    resetForm();
+    const form = document.getElementById('adminForm');
+    form.style.display = 'block';
+    document.getElementById('adminFormTitle').textContent = '新建文章';
+    document.getElementById('adminFormElement').dataset.tab = 'posts';
+    document.getElementById('formId').value = '';
+    document.getElementById('formCategory').value = 'blog';
+  });
+
+  document.getElementById('formCancel').addEventListener('click', resetForm);
+  document.getElementById('adminFormElement').addEventListener('submit', handleAdminSubmit);
+
+  await renderHome();
+  navigate('home');
+  initCounters();
+  initReveal();
 }
 
-// ========================================
-// 11. 移动端菜单
-// ========================================
-$('#mobileMenuBtn').addEventListener('click', () => {
-  $('#mobileMenu').classList.toggle('active');
-  $('#mobileMenuBtn').classList.toggle('active');
+// 辅助功能
+function showQR(src, label) {
+  const modal = document.getElementById('qrModal');
+  const img = document.getElementById('qrImg');
+  const text = document.getElementById('qrText');
+  if (!modal || !img || !text) return;
+  img.src = src;
+  text.textContent = '扫码添加' + label;
+  modal.classList.add('active');
+}
+function closeQR() {
+  const modal = document.getElementById('qrModal');
+  if (modal) modal.classList.remove('active');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('qrModal');
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeQR(); });
 });
 
-// ========================================
-// 12. 数字计数动画
-// ========================================
-(function initCounters(){
-  const counters = $$('.about-stat-num');
+function initCounters() {
+  const counters = document.querySelectorAll('.about-stat-num');
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -465,92 +412,13 @@ $('#mobileMenuBtn').addEventListener('click', () => {
     });
   }, { threshold: 0.5 });
   counters.forEach(c => observer.observe(c));
-})();
+}
 
-// ========================================
-// 13. 滚动动画
-// ========================================
-(function initReveal(){
+function initReveal() {
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) entry.target.classList.add('visible');
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
-  const els = $$('.section-header, .section-desc, .project-card, .content-item, .about-card, .about-stat, .cert-item, .hero-text, .hero-photo, .contact-inner');
-  els.forEach((el, i) => {
-    el.classList.add('reveal', `reveal-d${(i % 3) + 1}`);
-    observer.observe(el);
-  });
-})();
-
-// ========================================
-// 14. 顶部导航滚动效果
-// ========================================
-window.addEventListener('scroll', () => {
-  const nav = $('#topnav');
-  nav.style.boxShadow = window.pageYOffset > 100 ? '0 1px 10px rgba(0,0,0,0.05)' : 'none';
-});
-
-// ========================================
-// 15. 工具函数
-// ========================================
-function markdownToHtml(md) {
-  if (!md) return '<p>暂无内容</p>';
-  let html = escapeHtml(md)
-    .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
-    .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
-    .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
-    .replace(/^\- (.*$)/gim, '<li>$1</li>')
-    .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>');
-
-  html = '<p>' + html + '</p>';
-  html = html.replace(/<p><(h[1-6]|blockquote|li)/g, '<$1');
-  html = html.replace(/<\/(h[1-6]|blockquote|li)><\/p>/g, '</$1>');
-  html = html.replace(/<p><\/p>/g, '');
-  // 包裹连续的 li
-  html = html.replace(/(<li>.*?<\/li>)(?=<li>|$)/gs, '<ul>$1</ul>');
-  return html;
+    entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
-function stripMarkdown(md) {
-  if (!md) return '';
-  return md
-    .replace(/[#*_`\[\]!]/g, '')
-    .replace(/\(.*?\)/g, '')
-    .replace(/https?:\/\/\S+/g, '链接')
-    .replace(/\n/g, ' ')
-    .slice(0, 100);
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ========================================
-// 16. 初始化
-// ========================================
-(async function init() {
-  await Promise.all([
-    loadPosts(),
-    fetchGitHubFiles()
-  ]);
-  subscribePosts();
-})();
-
-console.log('%c🌱 阿历的数字花园已加载', 'color:#7c3aed;font-size:14px;font-weight:bold;');
-console.log('%c数据存储: Supabase | 文件存储: GitHub', 'color:#8a8a9a;font-size:12px;');
+document.addEventListener('DOMContentLoaded', init);
