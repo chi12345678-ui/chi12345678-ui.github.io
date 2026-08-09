@@ -1,605 +1,661 @@
-/* ===== 云端（带"加载失败也不崩"保险） ===== */
-const SUPABASE_URL = 'https://bqdhqnviovzqljjigzys.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
-let sb = null;
-try { sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null; } catch(e){ sb = null; }
+/* ========================================
+   阿历的数字花园 - 交互脚本
+   ======================================== */
 
-/* ===== 工具 ===== */
-const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
-const withTimeout = (p, ms) => Promise.race([Promise.resolve(p), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
+// ========================================
+// 数据配置（后期在这里更新内容）
+// ========================================
+const DATA = {
+  projects: [
+    {
+      title: '快消品进销存智能补货模型',
+      tags: ['库存优化', 'Python', 'Power BI'],
+      desc: '搭建库存健康度诊断体系与智能补货模型，将缺货率降低40%，库存周转提升2倍。包含完整的数据清洗、预测模型与可视化看板。',
+      date: '2024-06',
+      link: '快消品进销存案例分析报告.pdf',
+      icon: '📦'
+    },
+    {
+      title: '电商用户复购归因分析',
+      tags: ['RFM', '复购分析', 'A/B测试'],
+      desc: '基于10万+用户交易数据，构建复购归因模型，识别高价值流失用户群体，精细化发券策略使召回效率提升2倍。',
+      date: '2024-03',
+      link: '复购分析案例.pdf',
+      icon: '🔄'
+    },
+    {
+      title: '线上平台用户RFM分层运营',
+      tags: ['用户分层', '精细化运营', 'SQL'],
+      desc: '将10万用户按RFM模型分为8个层级，制定差异化运营策略，月销从0增长至100W+，母婴店铺运营全案。',
+      date: '2023-12',
+      link: '线上平台用户RFM分析.html',
+      icon: '🎯'
+    },
+    {
+      title: '母婴电商增长运营全案',
+      tags: ['增长黑客', '电商运营', '数据分析'],
+      desc: '从0到1搭建母婴店铺数据运营体系，涵盖选品分析、流量拆解、转化漏斗优化与会员生命周期管理。',
+      date: '2023-09',
+      link: '#',
+      icon: '👶'
+    },
+    {
+      title: '市场竞品动态监控系统',
+      tags: ['爬虫', '竞品分析', '自动化'],
+      desc: '搭建竞品价格与促销动态监控仪表盘，实现每日自动抓取、异常预警与趋势分析，辅助定价决策。',
+      date: '2024-01',
+      link: '#',
+      icon: '📡'
+    }
+  ],
 
-function relTime(ts) {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return '刚刚';
-  if (s < 3600) return Math.floor(s / 60) + ' 分钟前';
-  if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
-  if (s < 86400 * 30) return Math.floor(s / 86400) + ' 天前';
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  notes: [
+    {
+      title: 'Python pandas 数据清洗实战技巧',
+      tags: ['Python', 'pandas'],
+      desc: '整理日常分析中最常用的数据清洗方法：缺失值处理、重复值去重、异常值检测、数据类型转换等。',
+      date: '2026-08-05'
+    },
+    {
+      title: 'RFM模型原理与业务落地指南',
+      tags: ['RFM', '用户运营'],
+      desc: '从理论到实践，详解RFM模型的构建逻辑、分箱方法、业务解读与运营策略匹配。',
+      date: '2026-07-20'
+    },
+    {
+      title: 'Power BI DAX函数速查手册',
+      tags: ['Power BI', 'DAX'],
+      desc: '汇总最常用的DAX计算函数与度量值写法，附带实际业务场景示例。',
+      date: '2026-07-10'
+    },
+    {
+      title: 'SQL窗口函数详解与案例',
+      tags: ['SQL', '数据分析'],
+      desc: 'ROW_NUMBER、RANK、LEAD、LAG等窗口函数的使用场景与性能优化技巧。',
+      date: '2026-06-28'
+    },
+    {
+      title: 'A/B测试设计与结果解读',
+      tags: ['A/B测试', '统计学'],
+      desc: '如何设计一个科学的A/B测试：样本量计算、显著性检验、实验周期控制与结果落地。',
+      date: '2026-06-15'
+    },
+    {
+      title: '电商库存周转率优化思路',
+      tags: ['库存管理', '供应链'],
+      desc: '从数据角度分析库存周转慢的根因，以及如何通过数据模型优化补货节奏。',
+      date: '2026-05-30'
+    }
+  ],
+
+  blog: [
+    {
+      title: '从表格新手到数据分析师：我的三年成长路径',
+      tags: ['职业成长', '数据分析'],
+      desc: '回顾从市场营销专业毕业到成为数据分析师的完整路径，分享学习方法、踩过的坑和关键转折点。数据分析不是学工具，而是培养业务思维与数据敏感度。',
+      date: '2026-07-15',
+      readTime: '8分钟'
+    },
+    {
+      title: '为什么你的RFM模型落不了地？',
+      tags: ['RFM', '方法论'],
+      desc: '很多分析师能做出漂亮的RFM分层图，但运营同学却不知道怎么用。问题在于：分层太粗、没有 actionable insight、缺乏闭环验证。本文分享让RFM真正产生业务价值的方法。',
+      date: '2026-06-22',
+      readTime: '12分钟'
+    },
+    {
+      title: '电商数据分析的五个核心指标体系',
+      tags: ['电商', '指标体系'],
+      desc: '流量、转化、客单、复购、库存——电商分析的五大支柱。如何搭建一套既全面又不冗余的指标体系，是每个数据分析师的必修课。',
+      date: '2026-05-18',
+      readTime: '10分钟'
+    },
+    {
+      title: '用数据讲故事：如何让老板听懂你的分析',
+      tags: ['数据可视化', '沟通'],
+      desc: '技术再强，讲不清楚等于零。从受众分析、结论先行、图表选择到演讲节奏，分享数据汇报的实战技巧。',
+      date: '2026-04-10',
+      readTime: '15分钟'
+    }
+  ],
+
+  life: [
+    {
+      text: '今天终于把拖延了很久的博客重构完成了，从原来的内容堆叠改成了现在的精选+详情模式。设计这件事，真的是越简约越难做。',
+      mood: '💻',
+      date: '2026-08-08'
+    },
+    {
+      text: '周末去了一趟书店，发现数据分析类的书越来越多了，但真正结合业务场景的却很少。还是实战出真知。',
+      mood: '📚',
+      date: '2026-08-02'
+    },
+    {
+      text: '早上跑步5公里，边跑边想一个库存预测的问题，突然有了新思路。运动真的是最好的灵感来源。',
+      mood: '🏃',
+      date: '2026-07-25'
+    },
+    {
+      text: '尝试了一家新开的咖啡馆，环境很适合写笔记。以后周末学习有固定据点了。',
+      mood: '☕',
+      date: '2026-07-18'
+    },
+    {
+      text: '整理电脑里的项目文件，发现三年积累了这么多案例。从最早的Excel表格到现在的Python+BI，工具在变，但解决问题的思路是相通的。',
+      mood: '📂',
+      date: '2026-07-10'
+    }
+  ]
+};
+
+// ========================================
+// 工具函数
+// ========================================
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// ========================================
+// 1. 加载动画
+// ========================================
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    $('#loader').classList.add('hidden');
+  }, 800);
+});
+
+// ========================================
+// 2. Canvas 粒子背景
+// ========================================
+(function initParticles() {
+  const canvas = $('#heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let mouse = { x: null, y: null };
+  let animationId;
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.vx = (Math.random() - 0.5) * 0.5;
+      this.vy = (Math.random() - 0.5) * 0.5;
+      this.size = Math.random() * 2 + 1;
+      this.color = Math.random() > 0.5 ? 'rgba(99,102,241,' : 'rgba(139,92,246,';
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+      if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+      // 鼠标交互
+      if (mouse.x != null) {
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 150) {
+          const force = (150 - dist) / 150;
+          this.vx -= (dx / dist) * force * 0.02;
+          this.vy -= (dy / dist) * force * 0.02;
+        }
+      }
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = this.color + '0.6)';
+      ctx.fill();
+    }
+  }
+
+  function init() {
+    particles = [];
+    const count = Math.min(80, Math.floor(canvas.width * canvas.height / 12000));
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle());
+    }
+  }
+  init();
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 连线
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(99,102,241,${0.15 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    particles.forEach(p => { p.update(); p.draw(); });
+    animationId = requestAnimationFrame(animate);
+  }
+  animate();
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+  });
+  canvas.addEventListener('mouseleave', () => {
+    mouse.x = null;
+    mouse.y = null;
+  });
+
+  // 页面不可见时暂停动画
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animationId);
+    } else {
+      animate();
+    }
+  });
+})();
+
+// ========================================
+// 3. 打字机效果
+// ========================================
+(function initTypewriter() {
+  const el = $('#typewriter');
+  if (!el) return;
+  const texts = [
+    '数据分析从业者',
+    '电商增长专家',
+    '库存优化实践者',
+    '数字花园园丁'
+  ];
+  let textIndex = 0;
+  let charIndex = 0;
+  let isDeleting = false;
+  let pause = 0;
+
+  function type() {
+    const current = texts[textIndex];
+    if (isDeleting) {
+      el.textContent = current.substring(0, charIndex - 1);
+      charIndex--;
+    } else {
+      el.textContent = current.substring(0, charIndex + 1);
+      charIndex++;
+    }
+
+    let speed = isDeleting ? 50 : 120;
+    if (!isDeleting && charIndex === current.length) {
+      speed = 2000;
+      isDeleting = true;
+    } else if (isDeleting && charIndex === 0) {
+      isDeleting = false;
+      textIndex = (textIndex + 1) % texts.length;
+      speed = 500;
+    }
+    setTimeout(type, speed);
+  }
+  setTimeout(type, 1000);
+})();
+
+// ========================================
+// 4. 滚动动画 (Intersection Observer)
+// ========================================
+(function initReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+  // 为需要动画的元素添加类
+  const addReveal = () => {
+    $$('.section-header, .section-subtitle, .project-card, .note-item, .blog-card, .life-card, .skill-card, .stat-item, .about-lead, .about-photo-wrapper').forEach((el, i) => {
+      el.classList.add('reveal');
+      el.classList.add(`reveal-delay-${(i % 3) + 1}`);
+      observer.observe(el);
+    });
+  };
+  addReveal();
+})();
+
+// ========================================
+// 5. 数字计数动画
+// ========================================
+(function initCounters() {
+  const counters = $$('.stat-number');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseInt(el.closest('.stat-item').dataset.target);
+        const suffix = el.dataset.suffix || '';
+        let current = 0;
+        const increment = target / 60;
+        const timer = setInterval(() => {
+          current += increment;
+          if (current >= target) {
+            current = target;
+            clearInterval(timer);
+          }
+          el.textContent = Math.floor(current) + suffix;
+        }, 30);
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  counters.forEach(c => observer.observe(c));
+})();
+
+// ========================================
+// 6. 导航高亮 + 平滑滚动
+// ========================================
+(function initNav() {
+  const sections = $$('section[id]');
+  const navLinks = $$('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.dataset.section === id);
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // 平滑滚动
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = $(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+        // 移动端关闭菜单
+        $('#sidebar').classList.remove('open');
+        $('#menuToggle').classList.remove('active');
+        $('#menuOverlay').classList.remove('active');
+      }
+    });
+  });
+})();
+
+// ========================================
+// 7. 移动端菜单
+// ========================================
+$('#menuToggle').addEventListener('click', () => {
+  $('#sidebar').classList.toggle('open');
+  $('#menuToggle').classList.toggle('active');
+  $('#menuOverlay').classList.toggle('active');
+});
+
+$('#menuOverlay').addEventListener('click', () => {
+  $('#sidebar').classList.remove('open');
+  $('#menuToggle').classList.remove('active');
+  $('#menuOverlay').classList.remove('active');
+});
+
+// ========================================
+// 8. 渲染内容卡片
+// ========================================
+function renderProjects() {
+  const grid = $('#projectsGrid');
+  if (!grid) return;
+  const featured = DATA.projects.slice(0, 3);
+  grid.innerHTML = featured.map(p => `
+    <article class="project-card" onclick="window.open('${p.link}', '_blank')">
+      <div class="project-image">
+        <div class="project-image-placeholder">${p.icon}</div>
+      </div>
+      <div class="project-body">
+        <div class="project-tags">
+          ${p.tags.map(t => `<span class="project-tag">${t}</span>`).join('')}
+        </div>
+        <h3 class="project-title">${p.title}</h3>
+        <p class="project-desc">${p.desc}</p>
+        <div class="project-meta">
+          <span>${p.date}</span>
+          <span class="project-link">查看详情 →</span>
+        </div>
+      </div>
+    </article>
+  `).join('');
 }
-const fmtDate = iso => { const d = new Date(iso); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`; };
-const toastEl = document.getElementById('toast'); let toastTimer = null;
-function showToast(h, ms=4200) { toastEl.innerHTML = h; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms); }
-async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch (e) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); document.body.removeChild(a); return true; } }
-function compress(file, max = 1000, q = 0.7) {
-  return new Promise(res => {
-    const r = new FileReader();
-    r.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > h && w > max) { h = Math.round(h * max / w); w = max; }
-        else if (h > max) { w = Math.round(w * max / h); h = max; }
-        const c = document.createElement('canvas'); c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        c.toBlob(b => res(b), 'image/jpeg', q);
-      };
-      img.src = r.result;
-    };
-    r.readAsDataURL(file);
+
+function renderNotes() {
+  const list = $('#notesList');
+  if (!list) return;
+  const featured = DATA.notes.slice(0, 3);
+  list.innerHTML = featured.map(n => `
+    <article class="note-item">
+      <span class="note-date">${n.date}</span>
+      <div class="note-content">
+        <h3 class="note-title">${n.title}</h3>
+        <p class="note-desc">${n.desc}</p>
+      </div>
+      <div class="note-tags">
+        ${n.tags.map(t => `<span class="note-tag">${t}</span>`).join('')}
+      </div>
+    </article>
+  `).join('');
+}
+
+function renderBlog() {
+  const grid = $('#blogGrid');
+  if (!grid) return;
+  const featured = DATA.blog.slice(0, 2);
+  grid.innerHTML = featured.map(b => `
+    <article class="blog-card">
+      <div class="blog-meta">
+        <span>${b.date}</span>
+        <span>阅读约 ${b.readTime}</span>
+      </div>
+      <h3 class="blog-title">${b.title}</h3>
+      <p class="blog-excerpt">${b.desc}</p>
+      <span class="blog-readmore">阅读全文 →</span>
+    </article>
+  `).join('');
+}
+
+function renderLife() {
+  const grid = $('#lifeGrid');
+  if (!grid) return;
+  const featured = DATA.life.slice(0, 3);
+  grid.innerHTML = featured.map(l => `
+    <article class="life-card">
+      <div class="life-mood">${l.mood}</div>
+      <p class="life-text">${l.text}</p>
+      <div class="life-footer">
+        <span>${l.date}</span>
+        <span>随笔</span>
+      </div>
+    </article>
+  `).join('');
+}
+
+// 初始化渲染
+renderProjects();
+renderNotes();
+renderBlog();
+renderLife();
+
+// ========================================
+// 9. 详情覆盖层
+// ========================================
+let currentDetailType = '';
+
+function openDetail(type) {
+  currentDetailType = type;
+  const overlay = $('#detailOverlay');
+  const label = $('#detailLabel');
+  const title = $('#detailTitle');
+  const content = $('#detailContent');
+  const search = $('#detailSearch');
+
+  const config = {
+    projects: { label: 'PROJECTS', title: '全部项目案例' },
+    notes: { label: 'LEARNING', title: '全部学习笔记' },
+    blog: { label: 'BLOG', title: '全部博客文章' },
+    life: { label: 'LIFE', title: '全部生活随笔' }
+  };
+
+  label.textContent = config[type].label;
+  title.textContent = config[type].title;
+  search.value = '';
+  content.innerHTML = renderDetailItems(type, DATA[type]);
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderDetailItems(type, items) {
+  if (type === 'projects') {
+    return items.map(p => `
+      <div class="detail-item" data-title="${p.title}" data-desc="${p.desc}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <h3 style="font-size:18px;font-weight:600;">${p.icon} ${p.title}</h3>
+          <span style="font-size:12px;color:var(--text-muted);">${p.date}</span>
+        </div>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.7;margin-bottom:12px;">${p.desc}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${p.tags.map(t => `<span class="project-tag">${t}</span>`).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+  if (type === 'notes') {
+    return items.map(n => `
+      <div class="detail-item" data-title="${n.title}" data-desc="${n.desc}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <h3 style="font-size:17px;font-weight:600;">${n.title}</h3>
+          <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">${n.date}</span>
+        </div>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.7;margin-bottom:10px;">${n.desc}</p>
+        <div style="display:flex;gap:8px;">
+          ${n.tags.map(t => `<span class="note-tag">${t}</span>`).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+  if (type === 'blog') {
+    return items.map(b => `
+      <div class="detail-item" data-title="${b.title}" data-desc="${b.desc}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--text-muted);">
+            <span>${b.date}</span>
+            <span>阅读约 ${b.readTime}</span>
+          </div>
+        </div>
+        <h3 style="font-size:19px;font-weight:600;margin-bottom:10px;line-height:1.4;">${b.title}</h3>
+        <p style="color:var(--text-secondary);font-size:15px;line-height:1.8;">${b.desc}</p>
+      </div>
+    `).join('');
+  }
+  if (type === 'life') {
+    return items.map(l => `
+      <div class="detail-item" data-title="${l.text}" data-desc="${l.text}">
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <span style="font-size:32px;line-height:1;">${l.mood}</span>
+          <div style="flex:1;">
+            <p style="color:var(--text-secondary);font-size:15px;line-height:1.8;margin-bottom:10px;">${l.text}</p>
+            <span style="font-size:12px;color:var(--text-muted);">${l.date}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  return '';
+}
+
+function closeDetail() {
+  $('#detailOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function filterDetail() {
+  const query = $('#detailSearch').value.toLowerCase();
+  $$('.detail-item').forEach(item => {
+    const title = item.dataset.title.toLowerCase();
+    const desc = item.dataset.desc.toLowerCase();
+    item.classList.toggle('hidden', !(title.includes(query) || desc.includes(query)));
   });
 }
 
-/* ===== 农历 & 天干地支 ===== */
-const Gan = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
-const Zhi = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-const Animals = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
-const lunarMonths = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];
-const lunarDays = ['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
-const lunarInfo = [
- 0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
- 0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
- 0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
- 0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
- 0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
- 0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052d0,0x0a9a8,0x0e950,0x06aa0,
- 0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
- 0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b5a0,0x195a6,
- 0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
- 0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x055c0,0x0ab60,0x096d5,0x092e0,
- 0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
- 0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
- 0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
- 0x05aa0,0x076a3,0x096d0,0x04bd7,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
- 0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0
-];
-
-function lYearDays(y) { let i, sum = 348; for (i = 0x8000; i > 0x8; i >>= 1) sum += (lunarInfo[y - 1900] & i) ? 1 : 0; return sum + leapDays(y); }
-function leapDays(y) { if (leapMonth(y)) return (lunarInfo[y - 1900] & 0x10000) ? 30 : 29; return 0; }
-function leapMonth(y) { return lunarInfo[y - 1900] & 0xf; }
-function monthDays(y, m) { return (lunarInfo[y - 1900] & (0x10000 >> m)) ? 30 : 29; }
-
-function solarToLunar(date) {
-  let y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate();
-  if (y < 1900 || y > 2100) return null;
-  let base = new Date(1900, 0, 31);
-  let offset = Math.floor((date - base) / 86400000);
-  let i, temp = 0;
-  for (i = 1900; i < 2101 && offset > 0; i++) { temp = lYearDays(i); offset -= temp; }
-  if (offset < 0) { offset += temp; i--; }
-  let lunarYear = i, leap = leapMonth(i), isLeap = false;
-  for (i = 1; i < 13 && offset > 0; i++) {
-    if (leap > 0 && i === leap + 1 && !isLeap) { i--; isLeap = true; temp = leapDays(lunarYear); }
-    else { temp = monthDays(lunarYear, i); }
-    if (isLeap && i === leap + 1) isLeap = false;
-    offset -= temp;
-  }
-  if (offset === 0 && leap > 0 && i === leap + 1) { if (isLeap) isLeap = false; else { isLeap = true; i--; } }
-  if (offset < 0) { offset += temp; i--; }
-  return {
-    year: lunarYear, month: i, day: offset + 1,
-    monthStr: (isLeap ? '闰' : '') + lunarMonths[i - 1] + '月',
-    dayStr: lunarDays[offset],
-    gzYear: Gan[(lunarYear - 4) % 10] + Zhi[(lunarYear - 4) % 12],
-    animal: Animals[(lunarYear - 4) % 12]
-  };
-}
-
-function updateTime() {
-  const now = new Date();
-  const lunar = solarToLunar(now);
-  const y = now.getFullYear();
-  const week = ['日','一','二','三','四','五','六'][now.getDay()];
-  document.getElementById('dateStr').innerHTML = `今天是 <b>${y}年${now.getMonth()+1}月${now.getDate()}日</b> · 周${week}`;
-  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', {hour12:false});
-  if (lunar) {
-    document.getElementById('lunarStr').textContent = `农历 ${lunar.monthStr}${lunar.dayStr}`;
-    document.getElementById('gzStr').textContent = `${lunar.gzYear}年 · ${lunar.animal}年`;
-  }
-}
-setInterval(updateTime, 1000);
-updateTime();
-
-/* ===== 日历 ===== */
-let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
-function changeMonth(delta) {
-  calMonth += delta;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  renderCalendar();
-}
-function renderCalendar() {
-  const el = document.getElementById('calDays');
-  const header = document.getElementById('calMonthYear');
-  const info = document.getElementById('calTodayInfo');
-  if (!el) return;
-  header.textContent = `${calYear}年${calMonth + 1}月`;
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === calYear && today.getMonth() === calMonth;
-  let html = '';
-  for (let i = 0; i < firstDay; i++) html += '<span></span>';
-  for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = isCurrentMonth && d === today.getDate();
-    const lunar = solarToLunar(new Date(calYear, calMonth, d));
-    const lunarText = lunar ? lunar.dayStr : '';
-    html += `<span class="${isToday ? 'today' : ''}"><b>${d}</b><small>${lunarText}</small></span>`;
-  }
-  el.innerHTML = html;
-  if (isCurrentMonth) {
-    const lunar = solarToLunar(today);
-    info.innerHTML = lunar ? `今日农历 ${lunar.monthStr}${lunar.dayStr} · ${lunar.gzYear}年` : '';
-  } else {
-    info.innerHTML = '';
-  }
-}
-
-/* ===== 数据 ===== */
-const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }, set(k, v) { localStorage.setItem(k, JSON.stringify(v)); } };
-let projects = LS.get('projects', []);
-let learning = LS.get('learning', []);
-let life = LS.get('life', []);
-let drafts = LS.get('drafts', []);
-let editorMode = null;
-let edImages = [];
-let edFiles = [];
-let edLinks = [];
-
-/* ===== 主题 ===== */
-const themeBtn = document.getElementById('themeBtn');
-if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-themeBtn.onclick = () => {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
-  localStorage.setItem('theme', isDark ? '' : 'dark');
-  themeBtn.innerHTML = isDark ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-};
-if (document.documentElement.getAttribute('data-theme') === 'dark') themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
-
-/* ===== 离线模式 ===== */
-let isOffline = !navigator.onLine;
-const offlineBtn = document.getElementById('offlineBtn');
-function setOffline(v) {
-  isOffline = v;
-  offlineBtn.classList.toggle('off', isOffline);
-  offlineBtn.innerHTML = isOffline ? '<i class="fas fa-wifi-slash"></i>' : '<i class="fas fa-wifi"></i>';
-  offlineBtn.title = isOffline ? '离线模式（点击切换）' : '在线模式（点击切换）';
-}
-window.addEventListener('online', () => setOffline(false));
-window.addEventListener('offline', () => setOffline(true));
-setOffline(isOffline);
-offlineBtn.onclick = () => { setOffline(!isOffline); showToast(isOffline ? '已切换到离线模式' : '已切换到在线模式'); };
-
-/* ===== 导航 ===== */
-function goHome() { showView('home'); }
-function historyBack() { window.history.back(); }
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const target = document.getElementById('view-' + name);
-  if (target) target.classList.add('active');
-  document.querySelectorAll('.nav a').forEach(a => a.classList.toggle('active', a.dataset.view === name));
-  window.scrollTo({top:0, behavior:'smooth'});
-  if (name === 'projects') renderProjects();
-  if (name === 'learning') renderLearning();
-  if (name === 'life') renderLife();
-  if (name === 'archive') renderArchive();
-  if (name === 'home') renderHome();
-}
-document.querySelectorAll('.nav a, .wg-card, .sec-more').forEach(a => {
-  a.addEventListener('click', e => { e.preventDefault(); showView(a.dataset.view); history.pushState(null, '', '#' + a.dataset.view); });
+$('#detailClose').addEventListener('click', closeDetail);
+$('#detailOverlay').addEventListener('click', (e) => {
+  if (e.target === $('#detailOverlay')) closeDetail();
 });
-window.addEventListener('popstate', () => {
-  const hash = location.hash.replace('#','') || 'home';
-  showView(hash);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDetail();
 });
 
-/* ===== 回到顶部 ===== */
-const toTop = document.getElementById('toTop');
-window.addEventListener('scroll', () => { if (window.scrollY > 400) toTop.classList.add('show'); else toTop.classList.remove('show'); });
-toTop.onclick = () => window.scrollTo({top:0, behavior:'smooth'});
-
-/* ===== 二维码 ===== */
-function showWechat() { document.getElementById('qrImg').src = 'wechat.jpg'; document.getElementById('qrText').textContent = '微信扫码添加'; document.getElementById('qrOverlay').classList.add('on'); }
-function showXiaohongshu() { document.getElementById('qrImg').src = 'xiaohongshu.jpg'; document.getElementById('qrText').textContent = '小红书扫码关注'; document.getElementById('qrOverlay').classList.add('on'); }
-function showQQ() { document.getElementById('qrImg').src = 'qq.jpg'; document.getElementById('qrText').textContent = 'QQ扫码添加'; document.getElementById('qrOverlay').classList.add('on'); }
-function closeQr() { document.getElementById('qrOverlay').classList.remove('on'); }
-
-/* ===== 渲染辅助 ===== */
-function toRTEHTML(html) {
-  if (!html) return '';
-  let d = document.createElement('div'); d.innerHTML = html;
-  d.querySelectorAll('img').forEach(img => { img.style.maxWidth='100%'; img.style.borderRadius='12px'; });
-  return d.innerHTML;
-}
-function makeExcerpt(html, len=90) {
-  if (!html) return '';
-  const txt = html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-  return txt.length > len ? txt.slice(0, len) + '...' : txt;
+// ========================================
+// 10. 二维码弹窗
+// ========================================
+function showQR(src, label) {
+  const modal = $('#qrModal');
+  $('#qrImage').src = src;
+  $('#qrLabel').textContent = `扫码添加${label}`;
+  modal.classList.add('active');
 }
 
-/* ===== 首页渲染（限制3条） ===== */
-function renderHome() {
-  const hp = projects.slice(0, 3);
-  document.getElementById('homeCases').innerHTML = hp.length ? hp.map((p, i) => renderCaseCard(p, i)).join('') : '<div class="no-result">暂无项目</div>';
-  const hl = learning.slice(0, 3);
-  document.getElementById('homeLatest').innerHTML = hl.length ? hl.map(p => renderPostRow(p, 'learning')).join('') : '<div class="no-result">暂无学习笔记</div>';
-  const hf = life.slice(0, 3);
-  document.getElementById('homeLife').innerHTML = hf.length ? hf.map(p => renderLifePost(p)).join('') : '<div class="no-result">暂无随笔</div>';
-  document.getElementById('statProjects').textContent = projects.length;
-  document.getElementById('statLearning').textContent = learning.length;
-  document.getElementById('statLife').textContent = life.length;
-  const start = new Date('2024-01-01');
-  document.getElementById('statDays').textContent = Math.floor((Date.now() - start) / 86400000);
-  renderCalendar();
+function closeQR() {
+  $('#qrModal').classList.remove('active');
 }
 
-function renderCaseCard(p, i) {
-  const ex = esc(p.excerpt || makeExcerpt(p.content, 80));
-  const tags = (p.tags || '').split(',').filter(Boolean).slice(0, 3);
-  const tagHtml = tags.map(t => `<span>${esc(t.trim())}</span>`).join('');
-  const docs = (p.files || []).filter(f => f && f.name).slice(0, 2);
-  const docHtml = docs.map(f => `<span class="case-doc"><i class="fas fa-file"></i> ${esc(f.name)}</span>`).join('');
-  const big = String(i + 1).padStart(2, '0');
-  return `<div class="case case--row" onclick="openRead('project', '${p.id}')">
-    <div class="case-cover" style="background:linear-gradient(135deg, var(--accent-soft), var(--panel-2));">
-      <span class="big">${big}</span>
-      <span class="ctag">${esc(p.category || '案例')}</span>
-    </div>
-    <div class="case-body">
-      <h3>${esc(p.title || '无标题')}</h3>
-      <p>${ex}</p>
-      ${docHtml ? `<div class="case-docs">${docHtml}</div>` : ''}
-      <div class="case-foot">
-        <div class="case-tech">${tagHtml}</div>
-        <span class="case-dl">查看详情 <i class="fas fa-arrow-right"></i></span>
-      </div>
-    </div>
-  </div>`;
-}
-
-function renderPostRow(p, type) {
-  const isDraft = !!p._draft;
-  const pinned = (p.tags || '').includes('置顶');
-  const pinFlag = pinned ? `<span class="pin-flag"><i class="fas fa-thumbtack"></i> 置顶</span>` : '';
-  const draftFlag = isDraft ? `<span class="draft-flag"><i class="fas fa-pencil"></i> 草稿</span>` : '';
-  const imgs = p.images || [];
-  const thumb = imgs.length ? imgs[0] : '';
-  const ex = esc(makeExcerpt(p.content, 100));
-  const tags = (p.tags || '').split(',').filter(Boolean).filter(t => t !== '置顶').slice(0, 3);
-  const tagHtml = tags.map(t => `<span>${esc(t.trim())}</span>`).join('');
-  return `<div class="postcard postcard--row" onclick="openRead('${type}', '${p.id}')">
-    ${thumb ? `<div class="pc-thumb" style="background-image:url('${esc(thumb)}')"><span class="pc-emoji">${p.emoji || '📝'}</span></div>` : `<div class="pc-thumb" style="background:var(--panel-2);display:grid;place-items:center;font-size:48px;">${p.emoji || '📝'}</div>`}
-    <div class="pc-main">
-      <div class="pc-top">
-        <span class="pc-date">${fmtDate(p.created_at || new Date().toISOString())}</span>
-        ${pinFlag}${draftFlag}
-      </div>
-      <h3 class="pc-title">${esc(p.title || '无标题')}</h3>
-      <p class="pc-ex">${ex}</p>
-      <div class="pc-tags">${tagHtml}</div>
-    </div>
-    <div class="pc-mgmt" onclick="event.stopPropagation()">
-      <button class="pc-m" onclick="editPost('${type}', '${p.id}')" title="编辑"><i class="fas fa-pen"></i></button>
-      <button class="pc-m pc-m-del" onclick="delPost('${type}', '${p.id}')" title="删除"><i class="fas fa-trash"></i></button>
-    </div>
-  </div>`;
-}
-
-function renderLifePost(p) {
-  const isDraft = !!p._draft;
-  const imgs = (p.images || []).slice(0, 2);
-  const imgHtml = imgs.map(u => `<img src="${esc(u)}" class="limg" onclick="event.stopPropagation();openLightbox('${esc(u)}')">`).join('');
-  const tags = (p.tags || '').split(',').filter(Boolean).slice(0, 3);
-  return `<div class="post" onclick="openRead('life', '${p.id}')">
-    <div class="ph">
-      <div class="pav">历</div>
-      <div class="pinfo">
-        <div class="who">阿历</div>
-        <div class="when">${relTime(new Date(p.created_at).getTime())}</div>
-      </div>
-      ${isDraft ? '<span class="draft-flag"><i class="fas fa-pencil"></i> 草稿</span>' : ''}
-      <div class="life-mgmt" onclick="event.stopPropagation()">
-        <button class="pc-m" onclick="editPost('life', '${p.id}')" title="编辑"><i class="fas fa-pen"></i></button>
-        <button class="pc-m pc-m-del" onclick="delPost('life', '${p.id}')" title="删除"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>
-    <div class="ptxt">${toRTEHTML(p.content)}</div>
-    ${imgHtml}
-    ${tags.length ? `<div class="ptags">${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
-  </div>`;
-}
-
-/* ===== 项目列表 ===== */
-function renderProjects() {
-  const el = document.getElementById('caseGrid');
-  el.innerHTML = projects.length ? projects.map((p, i) => renderCaseCard(p, i)).join('') : '<div class="no-result">暂无项目，点击右上角「新建项目」开始创作</div>';
-}
-
-/* ===== 学习列表 ===== */
-function renderLearning() {
-  const el = document.getElementById('learningGrid');
-  el.innerHTML = learning.length ? learning.map(p => renderPostRow(p, 'learning')).join('') : '<div class="no-result">暂无笔记，点击右上角「写学习笔记」开始记录</div>';
-}
-
-/* ===== 随笔列表 ===== */
-function renderLife() {
-  const el = document.getElementById('lifePosts');
-  el.innerHTML = life.length ? life.map(p => renderLifePost(p)).join('') : '<div class="no-result">暂无随笔，点击右上角「写随笔」记录生活</div>';
-}
-
-/* ===== 归档 ===== */
-let archiveFilter = 'all';
-function setArchiveFilter(f) { archiveFilter = f; document.querySelectorAll('.archive-tab').forEach(b => b.classList.toggle('active', b.dataset.filter === f)); renderArchive(); }
-function renderArchive() {
-  const q = (document.getElementById('archiveSearch').value || '').toLowerCase();
-  let all = [
-    ...projects.map(p => ({...p, _type:'project', _typeName:'项目'})),
-    ...learning.map(p => ({...p, _type:'learning', _typeName:'学习'})),
-    ...life.map(p => ({...p, _type:'life', _typeName:'随笔'}))
-  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  if (archiveFilter !== 'all') all = all.filter(p => p._type === archiveFilter);
-  if (q) all = all.filter(p => (p.title + p.content + p.tags).toLowerCase().includes(q));
-  const el = document.getElementById('archiveList');
-  if (!all.length) { el.innerHTML = '<div class="no-result">没有找到相关内容</div>'; return; }
-  const groups = {};
-  all.forEach(p => { const k = p._typeName; if (!groups[k]) groups[k] = []; groups[k].push(p); });
-  el.innerHTML = Object.entries(groups).map(([name, items]) => `
-    <div class="archive-folder">
-      <div class="archive-folder-h"><span class="archive-folder-icon">📁</span> ${name} <span class="archive-folder-count">${items.length}</span></div>
-      <div class="archive-folder-items">
-        ${items.map(p => `
-          <div class="archive-item" onclick="openRead('${p._type}', '${p.id}')">
-            <span class="archive-item-emoji">${p.emoji || '📝'}</span>
-            <div class="archive-item-main">
-              <div class="archive-item-title">${esc(p.title || '无标题')}</div>
-              <div class="archive-item-meta">${fmtDate(p.created_at)} ${(p.tags || '').split(',').filter(Boolean).slice(0,2).map(t => `<span class="archive-tag">${esc(t)}</span>`).join('')}</div>
-            </div>
-            <i class="fas fa-chevron-right archive-item-arrow"></i>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-/* ===== 文章详情 ===== */
-function openRead(type, id) {
-  let p;
-  if (type === 'project') p = projects.find(x => x.id === id);
-  else if (type === 'learning') p = learning.find(x => x.id === id);
-  else p = life.find(x => x.id === id);
-  if (!p) return;
-  const isHTML = window.__isHTML && window.__isHTML(p.content);
-  const txt = p.content || '';
-  const imgs = p.images || [];
-  const files = p.files || [];
-  const links = p.links || [];
-  const tags = (p.tags || '').split(',').filter(Boolean);
-  let html = '';
-  html += `<h1 class="article-title">${esc(p.title || '无标题')}</h1>`;
-  html += `<div class="article-meta">
-    <span>${fmtDate(p.created_at)}</span>
-    <span class="mtag">${type === 'project' ? '项目' : type === 'learning' ? '学习' : '随笔'}</span>
-    ${tags.map(t => `<span class="mtag">${esc(t)}</span>`).join('')}
-  </div>`;
-  if (files.length) {
-    html += `<div style="margin-bottom:24px"><h4 style="font-size:16px;margin-bottom:12px"><i class="fas fa-paperclip" style="color:var(--accent)"></i> 附件下载</h4>`;
-    html += files.map(f => `<a href="${esc(f.url || '#')}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);margin-right:8px;margin-bottom:8px;font-size:14px;font-weight:600"><i class="fas fa-file" style="color:var(--accent)"></i> ${esc(f.name)} ${f.size ? `<small style="color:var(--ink-3)">(${(f.size/1024/1024).toFixed(1)} MB)</small>` : ''}</a>`).join('');
-    html += `</div>`;
-  }
-  html += `<div class="article-body">${isHTML ? txt : toRTEHTML(txt)}</div>`;
-  if (imgs.length) {
-    html += `<div class="article-gallery">${imgs.map(u => `<div class="gal-item" onclick="openLightbox('${esc(u)}')"><img src="${esc(u)}" alt=""></div>`).join('')}</div>`;
-  }
-  if (links.length) {
-    html += `<div class="article-refs"><h4><i class="fas fa-link"></i> 参考链接</h4>`;
-    html += links.map(l => `<a class="ref-card" href="${esc(l.url)}" target="_blank"><i class="fas fa-external-link-alt"></i><span><b>${esc(l.title || '链接')}</b><small>${esc(l.url)}</small></span><i class="fas fa-arrow-right"></i></a>`).join('');
-    html += `</div>`;
-  }
-  document.getElementById('readContent').innerHTML = html;
-  showView('read');
-  history.pushState(null, '', '#read');
-}
-
-/* ===== 编辑器弹窗 ===== */
-function openEditor(mode) {
-  editorMode = mode;
-  const titles = { project: '新建项目', learning: '写学习笔记', life: '写随笔' };
-  document.getElementById('editorTitle').textContent = titles[mode] || '新建内容';
-  document.getElementById('edTitle').value = '';
-  document.getElementById('rte').innerHTML = '';
-  document.getElementById('edTags').value = '';
-  edImages = []; edFiles = []; edLinks = [];
-  renderEdThumbs(); renderEdFiles(); renderEdLinks();
-  document.getElementById('editorOverlay').classList.add('on');
-  document.body.style.overflow = 'hidden';
-}
-function closeEditor() {
-  document.getElementById('editorOverlay').classList.remove('on');
-  document.body.style.overflow = '';
-  editorMode = null;
-}
-function editPost(type, id) {
-  let p;
-  if (type === 'project') p = projects.find(x => x.id === id);
-  else if (type === 'learning') p = learning.find(x => x.id === id);
-  else p = life.find(x => x.id === id);
-  if (!p) return;
-  editorMode = type;
-  document.getElementById('editorTitle').textContent = '编辑内容';
-  document.getElementById('edTitle').value = p.title || '';
-  document.getElementById('rte').innerHTML = p.content || '';
-  document.getElementById('edTags').value = p.tags || '';
-  edImages = [...(p.images || [])];
-  edFiles = [...(p.files || [])];
-  edLinks = [...(p.links || [])];
-  renderEdThumbs(); renderEdFiles(); renderEdLinks();
-  document.getElementById('editorOverlay').classList.add('on');
-  document.body.style.overflow = 'hidden';
-  document.getElementById('edSubmit').dataset.editId = id;
-}
-
-async function edHandleImages(input) {
-  const files = Array.from(input.files || []);
-  for (const f of files) {
-    try { const blob = await compress(f, 1200, 0.75); const url = URL.createObjectURL(blob); edImages.push(url); }
-    catch(e) { showToast('图片处理失败: ' + e.message); }
-  }
-  renderEdThumbs(); input.value = '';
-}
-function renderEdThumbs() {
-  document.getElementById('edThumbs').innerHTML = edImages.map((u, i) => `
-    <div class="lr-thumb"><img src="${esc(u)}"><button onclick="edImages.splice(${i},1);renderEdThumbs()"><i class="fas fa-times"></i></button></div>
-  `).join('');
-}
-
-function edHandleFiles(input) {
-  const files = Array.from(input.files || []);
-  files.forEach(f => { edFiles.push({ name: f.name, size: f.size, url: URL.createObjectURL(f), file: f }); });
-  renderEdFiles(); input.value = '';
-}
-function renderEdFiles() {
-  document.getElementById('edAttachments').innerHTML = edFiles.map((f, i) => `
-    <div class="lr-attach-item"><i class="fas fa-file"></i><span>${esc(f.name)} ${f.size ? `<small>(${(f.size/1024/1024).toFixed(1)} MB)</small>` : ''}</span><button onclick="edFiles.splice(${i},1);renderEdFiles()"><i class="fas fa-times"></i></button></div>
-  `).join('');
-}
-
-function edAddLink() {
-  const t = document.getElementById('edLinkTitle').value.trim();
-  const u = document.getElementById('edLinkUrl').value.trim();
-  if (!u) return showToast('请输入链接地址');
-  edLinks.push({ title: t || u, url: u });
-  document.getElementById('edLinkTitle').value = '';
-  document.getElementById('edLinkUrl').value = '';
-  renderEdLinks();
-}
-function renderEdLinks() {
-  document.getElementById('edLinks').innerHTML = edLinks.map((l, i) => `
-    <div class="lr-linkitem"><i class="fas fa-link lk"></i><span class="lt">${esc(l.title)}<small>${esc(l.url)}</small></span><button onclick="edLinks.splice(${i},1);renderEdLinks()"><i class="fas fa-times"></i></button></div>
-  `).join('');
-}
-
-function rteCmd(cmd, val) { document.execCommand(cmd, false, val); document.getElementById('rte').focus(); }
-function rteLink() { const url = prompt('输入链接地址:'); if (url) rteCmd('createLink', url); }
-function rteImage() { const url = prompt('输入图片地址:'); if (url) { rteCmd('insertImage', url); } }
-
-async function edSubmit() {
-  const title = document.getElementById('edTitle').value.trim();
-  const content = document.getElementById('rte').innerHTML.trim();
-  const tags = document.getElementById('edTags').value.trim();
-  const editId = document.getElementById('edSubmit').dataset.editId;
-  if (!title && !content) return showToast('标题和内容不能都为空');
-  const payload = {
-    id: editId || 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-    title, content, tags,
-    images: edImages,
-    files: edFiles.map(f => ({ name: f.name, size: f.size, url: f.url })),
-    links: edLinks,
-    created_at: editId ? (projects.find(x=>x.id===editId)||learning.find(x=>x.id===editId)||life.find(x=>x.id===editId)).created_at : new Date().toISOString(),
-    emoji: editorMode === 'project' ? '💼' : editorMode === 'learning' ? '📚' : '🌱',
-    category: editorMode === 'project' ? '项目' : editorMode === 'learning' ? '学习' : '随笔'
-  };
-  if (editId) {
-    if (editorMode === 'project') projects = projects.map(x => x.id === editId ? payload : x);
-    else if (editorMode === 'learning') learning = learning.map(x => x.id === editId ? payload : x);
-    else life = life.map(x => x.id === editId ? payload : x);
-    delete document.getElementById('edSubmit').dataset.editId;
-  } else {
-    if (editorMode === 'project') projects.unshift(payload);
-    else if (editorMode === 'learning') learning.unshift(payload);
-    else life.unshift(payload);
-  }
-  LS.set('projects', projects);
-  LS.set('learning', learning);
-  LS.set('life', life);
-  if (!isOffline && sb) {
-    try {
-      const table = editorMode === 'project' ? 'projects' : editorMode === 'learning' ? 'learning' : 'life';
-      await withTimeout(sb.from(table).upsert(payload), 5000);
-    } catch(e) { console.log('sync failed', e); }
-  } else {
-    showToast('<b>✓ 已保存到本地</b> 联网后将自动同步');
-  }
-  closeEditor();
-  showToast(editId ? '更新成功' : '发布成功');
-  renderHome();
-  if (editorMode === 'project') renderProjects();
-  if (editorMode === 'learning') renderLearning();
-  if (editorMode === 'life') renderLife();
-}
-
-function delPost(type, id) {
-  if (!confirm('确定删除这条内容吗？')) return;
-  if (type === 'project') projects = projects.filter(x => x.id !== id);
-  else if (type === 'learning') learning = learning.filter(x => x.id !== id);
-  else life = life.filter(x => x.id !== id);
-  LS.set('projects', projects);
-  LS.set('learning', learning);
-  LS.set('life', life);
-  showToast('已删除');
-  renderHome();
-  if (type === 'project') renderProjects();
-  if (type === 'learning') renderLearning();
-  if (type === 'life') renderLife();
-}
-
-/* ===== 图片灯箱 ===== */
-function openLightbox(src) { document.getElementById('lbImg').src = src; document.getElementById('lightbox').classList.add('on'); }
-function closeLightbox() { document.getElementById('lightbox').classList.remove('on'); }
-
-/* ===== 证书墙 ===== */
-const certs = [
-  { name: 'CDA 数据分析师', org: 'CDA Institute', img: 'cert1.jpg' },
-  { name: 'Google Analytics', org: 'Google', img: 'cert2.jpg' },
-  { name: '阿里云 ACP', org: 'Alibaba Cloud', img: 'cert3.jpg' }
-];
-function renderCerts() {
-  document.getElementById('certGrid').innerHTML = certs.map(c => `
-    <div class="cert" onclick="openLightbox('${esc(c.img)}')">
-      <div class="thumb"><img src="${esc(c.img)}" alt="${esc(c.name)}" onerror="this.parentElement.innerHTML='<div style=font-size:40px;color:var(--ink-3)>📜</div>'"><div class="zoom"><i class="fas fa-search-plus"></i> 查看</div></div>
-      <div class="cn">${esc(c.name)}<small>${esc(c.org)}</small></div>
-    </div>
-  `).join('');
-}
-
-/* ===== 键盘快捷键 ===== */
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeEditor(); closeLightbox(); closeQr(); }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.getElementById('editorOverlay').classList.contains('on')) { e.preventDefault(); edSubmit(); }
+$('#qrModal').addEventListener('click', (e) => {
+  if (e.target === $('#qrModal')) closeQR();
 });
 
-/* ===== 初始化 ===== */
-document.getElementById('year').textContent = new Date().getFullYear();
-document.getElementById('footYear').textContent = new Date().getFullYear();
-renderCerts();
-renderHome();
-
-async function loadCloud() {
-  if (!sb || isOffline) return;
-  try {
-    const [p, l, f] = await Promise.all([
-      withTimeout(sb.from('projects').select('*'), 4000),
-      withTimeout(sb.from('learning').select('*'), 4000),
-      withTimeout(sb.from('life').select('*'), 4000)
-    ]);
-    if (p.data && p.data.length) { projects = p.data; LS.set('projects', projects); }
-    if (l.data && l.data.length) { learning = l.data; LS.set('learning', learning); }
-    if (f.data && f.data.length) { life = f.data; LS.set('life', life); }
-    renderHome();
-  } catch(e) { console.log('cloud load failed', e); }
+// ========================================
+// 11. 卡片 3D 倾斜效果（桌面端）
+// ========================================
+if (window.matchMedia('(hover: hover)').matches) {
+  $$('.project-card, .blog-card, .life-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = (y - centerY) / 20;
+      const rotateY = (centerX - x) / 20;
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  });
 }
-loadCloud();
 
-const hash = location.hash.replace('#','') || 'home';
-showView(hash);
+// ========================================
+// 12. 键盘快捷键
+// ========================================
+document.addEventListener('keydown', (e) => {
+  // / 键聚焦搜索
+  if (e.key === '/' && $('#detailOverlay').classList.contains('active')) {
+    e.preventDefault();
+    $('#detailSearch').focus();
+  }
+});
+
+console.log('%c🌱 阿历的数字花园已加载', 'color:#6366f1;font-size:14px;font-weight:bold;');
+console.log('%c欢迎探索项目、笔记、博客与生活随笔', 'color:#94a3b8;font-size:12px;');
