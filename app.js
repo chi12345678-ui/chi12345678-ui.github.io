@@ -6,7 +6,6 @@ const SUPABASE_URL = 'https://bqdhqnviozvqljjigzys.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
 const SUPABASE_REST = SUPABASE_URL + '/rest/v1/';
 
-// 复用已有的存储桶
 const BUCKET_IMAGES = 'learning-images';
 const BUCKET_FILES = 'learning-files';
 const BUCKET_ASSETS = 'assets';
@@ -61,7 +60,7 @@ async function sbFetch(table, options = {}) {
   if (!res.ok) {
     const errText = await res.text();
     console.error('[SB Error]', res.status, errText);
-    throw new Error('请求失败 (' + res.status + '): ' + errText.substring(0, 200));
+    throw new Error(errText.substring(0, 300));
   }
 
   if (res.status === 204) return null;
@@ -88,44 +87,60 @@ async function sbUpload(file, path, bucket) {
   return getBucketUrl(bucket, path);
 }
 
-// ========== 加载所有数据 ==========
+// ========== 加载所有数据（带容错）==========
 async function loadAllData() {
   try {
-    await Promise.all([
-      loadProjects(),
-      loadCertificates(),
-      loadBlogs(),
-      loadEssays()
-    ]);
-    renderFeaturedProjects();
-    renderLatestBlogs();
-  } catch (e) {
-    console.error('加载数据失败:', e);
-    showToast('数据加载失败: ' + e.message);
+    await loadProjects();
+  } catch (e) { console.error('projects:', e); }
+
+  try {
+    await loadCertificates();
+  } catch (e) { console.error('certificates:', e); }
+
+  try {
+    await loadBlogs();
+  } catch (e) { console.error('blogs:', e); }
+
+  try {
+    await loadEssays();
+  } catch (e) { 
+    console.error('essays:', e);
+    // 如果 essays 表不存在，尝试从 posts 表读取
+    try {
+      const posts = await sbFetch('posts', { query: { order: 'created_at.desc' } });
+      if (posts) {
+        cache.essays = posts.map(p => ({
+          id: p.id,
+          content: p.content || p.title || '',
+          images: p.images || [],
+          mood: p.mood || '😊',
+          location: p.location || '',
+          created_at: p.created_at,
+          updated_at: p.updated_at
+        }));
+        renderEssays();
+      }
+    } catch (e2) { console.error('posts fallback:', e2); }
   }
+
+  renderFeaturedProjects();
+  renderLatestBlogs();
 }
 
 // ========== 项目案例 ==========
 async function loadProjects() {
-  try {
-    const data = await sbFetch('projects', {
-      query: { order: 'sort_order.asc,created_at.desc' }
-    });
-    cache.projects = data || [];
-    renderProjects();
-  } catch (e) {
-    console.error('加载项目失败:', e);
-    document.getElementById('projectsGrid').innerHTML = '<div class="loading-state">加载失败: ' + e.message + '</div>';
-  }
+  const data = await sbFetch('projects', {
+    query: { order: 'sort_order.asc,created_at.desc' }
+  });
+  cache.projects = data || [];
+  renderProjects();
 }
 
 function renderProjects() {
   const grid = document.getElementById('projectsGrid');
-  const featured = document.getElementById('featuredProjectsGrid');
   if (!grid) return;
-
   const items = cache.projects;
-  const html = items.map(p => `
+  grid.innerHTML = items.map(p => `
     <div class="project-card" onclick="openProject('${p.id}')">
       <div class="project-img">
         ${p.image_url ? `<img src="${p.image_url}" alt="${escapeHtml(p.title)}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
@@ -142,33 +157,33 @@ function renderProjects() {
         </div>
       </div>
     </div>
-  `).join('');
+  `).join('') || '<div class="loading-state">暂无项目案例，去管理后台添加吧</div>';
+}
 
-  grid.innerHTML = html || '<div class="loading-state">暂无项目案例，去管理后台添加吧</div>';
-
-  if (featured) {
-    const featuredItems = items.slice(0, 4);
-    featured.innerHTML = featuredItems.map(p => `
-      <div class="project-card" onclick="openProject('${p.id}')">
-        <div class="project-img">
-          ${p.image_url ? `<img src="${p.image_url}" alt="${escapeHtml(p.title)}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
-        </div>
-        <div class="project-body">
-          <div class="project-tags">
-            ${(p.tags || []).map(t => `<span class="project-tag">${escapeHtml(t)}</span>`).join('')}
-          </div>
-          <div class="project-title">${escapeHtml(p.title)}</div>
-          <div class="project-desc">${escapeHtml(p.description || '')}</div>
-        </div>
+function renderFeaturedProjects() {
+  const featured = document.getElementById('featuredProjectsGrid');
+  if (!featured) return;
+  const items = cache.projects.slice(0, 4);
+  featured.innerHTML = items.map(p => `
+    <div class="project-card" onclick="openProject('${p.id}')">
+      <div class="project-img">
+        ${p.image_url ? `<img src="${p.image_url}" alt="${escapeHtml(p.title)}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
       </div>
-    `).join('') || '<div class="loading-state">暂无项目</div>';
-  }
+      <div class="project-body">
+        <div class="project-tags">
+          ${(p.tags || []).map(t => `<span class="project-tag">${escapeHtml(t)}</span>`).join('')}
+        </div>
+        <div class="project-title">${escapeHtml(p.title)}</div>
+        <div class="project-desc">${escapeHtml(p.description || '')}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="loading-state">暂无项目</div>';
 }
 
 function openProject(id) {
   const p = cache.projects.find(x => String(x.id) === String(id));
   if (!p) return;
-  let content = `
+  document.getElementById('blogDetailContent').innerHTML = `
     <div class="blog-detail">
       <h1>${escapeHtml(p.title)}</h1>
       <div class="blog-detail-meta">
@@ -179,37 +194,27 @@ function openProject(id) {
         ${(p.tags || []).map(t => `<span class="blog-detail-tag">${escapeHtml(t)}</span>`).join('')}
       </div>
       ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:12px;margin-bottom:24px;" alt="${escapeHtml(p.title)}">` : ''}
-      <div class="blog-detail-content">
-        <p>${escapeHtml(p.description || '暂无详细描述')}</p>
-      </div>
+      <div class="blog-detail-content"><p>${escapeHtml(p.description || '暂无详细描述')}</p></div>
       ${p.file_url ? `
         <div class="blog-detail-attachments">
           <h4>📎 附件下载</h4>
           <div class="attachment-list">
-            <div class="attachment-item">
-              <span>📄</span>
-              <a href="${p.file_url}" target="_blank">下载项目文件 (${escapeHtml(p.file_type || '文件')})</a>
-            </div>
+            <div class="attachment-item"><span>📄</span><a href="${p.file_url}" target="_blank">下载项目文件 (${escapeHtml(p.file_type || '文件')})</a></div>
           </div>
         </div>
       ` : ''}
     </div>
   `;
-  document.getElementById('blogDetailContent').innerHTML = content;
   showSection('blogDetail');
 }
 
 // ========== 证书 ==========
 async function loadCertificates() {
-  try {
-    const data = await sbFetch('certificates', {
-      query: { order: 'sort_order.asc,created_at.desc' }
-    });
-    cache.certificates = data || [];
-    renderCertificates();
-  } catch (e) {
-    console.error('加载证书失败:', e);
-  }
+  const data = await sbFetch('certificates', {
+    query: { order: 'sort_order.asc,created_at.desc' }
+  });
+  cache.certificates = data || [];
+  renderCertificates();
 }
 
 function renderCertificates() {
@@ -231,16 +236,11 @@ function renderCertificates() {
 
 // ========== 博客 ==========
 async function loadBlogs() {
-  try {
-    const data = await sbFetch('blogs', {
-      query: { order: 'is_pinned.desc,created_at.desc' }
-    });
-    cache.blogs = data || [];
-    renderBlogs();
-  } catch (e) {
-    console.error('加载笔记失败:', e);
-    document.getElementById('blogsGrid').innerHTML = '<div class="loading-state">加载失败: ' + e.message + '</div>';
-  }
+  const data = await sbFetch('blogs', {
+    query: { order: 'is_pinned.desc,created_at.desc' }
+  });
+  cache.blogs = data || [];
+  renderBlogs();
 }
 
 function renderBlogs() {
@@ -290,12 +290,7 @@ function openBlogDetail(id) {
       <div class="blog-detail-attachments">
         <h4>📎 附件</h4>
         <div class="attachment-list">
-          ${b.attachments.map(att => `
-            <div class="attachment-item">
-              <span>📄</span>
-              <a href="${att.url}" target="_blank">${escapeHtml(att.name)}</a>
-            </div>
-          `).join('')}
+          ${b.attachments.map(att => `<div class="attachment-item"><span>📄</span><a href="${att.url}" target="_blank">${escapeHtml(att.name)}</a></div>`).join('')}
         </div>
       </div>
     `;
@@ -347,16 +342,11 @@ async function deleteCurrentBlog() {
 
 // ========== 随笔 ==========
 async function loadEssays() {
-  try {
-    const data = await sbFetch('essays', {
-      query: { order: 'created_at.desc' }
-    });
-    cache.essays = data || [];
-    renderEssays();
-  } catch (e) {
-    console.error('加载随笔失败:', e);
-    document.getElementById('essaysGrid').innerHTML = '<div class="loading-state">加载失败: ' + e.message + '</div>';
-  }
+  const data = await sbFetch('essays', {
+    query: { order: 'created_at.desc' }
+  });
+  cache.essays = data || [];
+  renderEssays();
 }
 
 function renderEssays() {
@@ -524,9 +514,7 @@ function openBlogEditor(item = null) {
   uploadedFiles = [];
   document.getElementById('uploadPreview').innerHTML = '';
   if (item && item.attachments) {
-    item.attachments.forEach(att => {
-      uploadedFiles.push({ url: att.url, name: att.name, isImage: false });
-    });
+    item.attachments.forEach(att => uploadedFiles.push({ url: att.url, name: att.name, isImage: false }));
     renderUploadPreview();
   }
 
@@ -562,9 +550,7 @@ function openEssayEditor(item = null) {
   uploadedFiles = [];
   document.getElementById('uploadPreview').innerHTML = '';
   if (item && item.images) {
-    item.images.forEach(img => {
-      uploadedFiles.push({ url: img, name: '图片', isImage: true });
-    });
+    item.images.forEach(img => uploadedFiles.push({ url: img, name: '图片', isImage: true }));
     renderUploadPreview();
   }
 
