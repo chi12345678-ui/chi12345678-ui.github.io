@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>阿历 · 数据分析成长博客</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ===== 顶部导航（移动端） ===== -->
+  <nav class="top-nav">
+    <div class="nav-brand"><a href="#home" class="brand-link">阿历</a></div>
+    <button class="hamburger" id="hamburger"><i class="fas fa-bars"></i></button>
+    <ul class="nav-menu" id="navMenu">
+      <li><a href="#home" class="active" data-view="home">首页</a></li>
+      <li><a href="#about" data-view="about">关于我</a></li>
+      <li><a href="#projects" data-view="projects">项目案例</a></li>
+      <li><a href="#learning" data-view="learning">学习成长</a></li>
+      <li><a href="#life" data-view="life">生活随笔</a></li>
+      <li class="theme-toggle"><button id="themeToggle"><i class="fas fa-moon"></i></button></li>
+    </ul>
+  </nav>
+
+  <!-- ===== 侧边栏（桌面） ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <a href="#home" class="brand-link">阿历</a>
+      <span class="brand-sub">数据分析 · 成长博客</span>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a href="#home" class="active" data-view="home"><i class="fas fa-home"></i> 首页</a></li>
+        <li><a href="#about" data-view="about"><i class="fas fa-user"></i> 关于我</a></li>
+        <li><a href="#projects" data-view="projects"><i class="fas fa-code"></i> 项目案例</a></li>
+        <li><a href="#learning" data-view="learning"><i class="fas fa-graduation-cap"></i> 学习成长</a></li>
+        <li><a href="#life" data-view="life"><i class="fas fa-pen-fancy"></i> 生活随笔</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="themeToggleDesktop"><i class="fas fa-moon"></i></button>
+      <span>&copy; 2026 阿历</span>
+    </div>
+  </aside>
+
+  <!-- ===== 主内容 ===== -->
+  <main class="main-content">
+    <section id="view-home" class="view active"><div id="homeContent"></div></section>
+    <section id="view-about" class="view"><div id="aboutContent"></div></section>
+    <section id="view-projects" class="view"><div id="projectsContent"></div></section>
+    <section id="view-learning" class="view"><div id="learningContent"></div></section>
+    <section id="view-life" class="view"><div id="lifeContent"></div></section>
+  </main>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "marked": "https://cdn.jsdelivr.net/npm/marked@12.0.0/+esm",
+      "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.1.6/+esm"
+    }
+  }
+  </script>
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
