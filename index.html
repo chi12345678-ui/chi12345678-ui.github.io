@@ -6,15 +6,10 @@
   <title>阿历的个人主页 · 数据驱动成长</title>
   <meta name="description" content="阿历的个人主页 - 数据分析、业务增长、学习记录、生活随笔">
   <link rel="stylesheet" href="style.css">
-  <!-- Quill 富文本编辑器 -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <!-- Chart.js 用于数据可视化 -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <!-- 顶部导航栏 -->
   <nav class="navbar">
     <div class="navbar-container">
       <a href="#" class="navbar-brand" onclick="showSection('home')">
@@ -38,7 +33,6 @@
   <main class="main-content">
     <!-- ========== 首页 ========== -->
     <section id="home" class="page-section active">
-      <!-- Hero: 左文右图 -->
       <div class="hero">
         <div class="hero-text">
           <p class="hero-greeting">你好呀！👋</p>
@@ -69,45 +63,6 @@
         </div>
       </div>
 
-      <!-- 数据概览 Dashboard -->
-      <div class="dashboard-section">
-        <div class="section-header section-header--row">
-          <div>
-            <span class="section-label">DASHBOARD</span>
-            <h2 class="section-title">成长数据看板</h2>
-          </div>
-        </div>
-        <div class="dashboard-grid">
-          <div class="dashboard-card">
-            <div class="dashboard-number" id="statProjects">0</div>
-            <div class="dashboard-label">项目案例</div>
-          </div>
-          <div class="dashboard-card">
-            <div class="dashboard-number" id="statBlogs">0</div>
-            <div class="dashboard-label">学习笔记</div>
-          </div>
-          <div class="dashboard-card">
-            <div class="dashboard-number" id="statEssays">0</div>
-            <div class="dashboard-label">生活随笔</div>
-          </div>
-          <div class="dashboard-card">
-            <div class="dashboard-number" id="statCerts">0</div>
-            <div class="dashboard-label">专业证书</div>
-          </div>
-        </div>
-        <div class="dashboard-chart-row">
-          <div class="dashboard-chart-card">
-            <h4>技能雷达</h4>
-            <canvas id="skillsChart"></canvas>
-          </div>
-          <div class="dashboard-chart-card">
-            <h4>内容产出趋势</h4>
-            <canvas id="trendChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- 精选项目 -->
       <div class="projects" id="homeProjects">
         <div class="section-header section-header--row">
           <div>
@@ -121,7 +76,6 @@
         </div>
       </div>
 
-      <!-- 最新笔记 -->
       <div class="blog" id="homeBlogs">
         <div class="section-header section-header--row">
           <div>
@@ -306,7 +260,7 @@
       </div>
     </section>
 
-    <!-- ========== 通用编辑器弹窗 ========== -->
+    <!-- ========== 编辑器弹窗 ========== -->
     <div class="modal-overlay" id="editorModal">
       <div class="modal-panel modal-panel--large">
         <div class="modal-header">
@@ -347,12 +301,10 @@
       </div>
     </div>
 
-    <!-- ========== Toast 提示 ========== -->
+    <!-- ========== Toast ========== -->
     <div class="toast" id="toast"></div>
   </main>
 
-  <!-- Quill -->
-  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

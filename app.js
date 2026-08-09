@@ -1,22 +1,20 @@
 /* ========================================
- 阿历的个人主页 — 数据驱动成长
- 核心逻辑：Supabase 数据同步 + 富文本编辑 + 文件上传
+ 阿历的个人主页 — 核心逻辑
  ======================================== */
 
-// ========== Supabase 配置 ==========
 const SUPABASE_URL = 'https://bqdhqnviozvqljjigzys.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
 const SUPABASE_REST = SUPABASE_URL + '/rest/v1/';
+
 // 复用已有的存储桶
-const BUCKET_IMAGES = 'learning-images';      // 图片
-const BUCKET_FILES = 'learning-files';        // 附件
-const BUCKET_ASSETS = 'assets';               // 通用资源
+const BUCKET_IMAGES = 'learning-images';
+const BUCKET_FILES = 'learning-files';
+const BUCKET_ASSETS = 'assets';
 
 function getBucketUrl(bucket, path) {
   return SUPABASE_URL + '/storage/v1/object/public/' + bucket + '/' + path;
 }
 
-let supabaseClient = null;
 let quillEditor = null;
 let currentAdminTab = 'projects';
 let currentEditId = null;
@@ -25,51 +23,51 @@ let uploadedFiles = [];
 let currentBlogId = null;
 let currentEssayId = null;
 
-// 本地缓存数据
-let cache = {
-  projects: [],
-  certificates: [],
-  blogs: [],
-  essays: [],
-  profile: null
-};
+let cache = { projects: [], certificates: [], blogs: [], essays: [], profile: null };
 
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
-  initSupabase();
   loadAllData();
-  initCharts();
+  initDragUpload();
 });
 
-function initSupabase() {
-  if (window.supabase) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
-}
-
-// ========== 通用 HTTP 请求（兼容无 supabase-js 的情况）==========
+// ========== Supabase HTTP 请求 ==========
 async function sbFetch(table, options = {}) {
-  const url = new URL(SUPABASE_REST + table, window.location.origin);
+  let urlStr = SUPABASE_REST + table;
   if (options.query) {
-    Object.entries(options.query).forEach(([k, v]) => url.searchParams.set(k, v));
+    const params = new URLSearchParams();
+    Object.entries(options.query).forEach(([k, v]) => {
+      if (Array.isArray(v)) params.set(k, v.join(','));
+      else params.set(k, String(v));
+    });
+    urlStr += '?' + params.toString();
   }
-  const res = await fetch(url, {
+
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': options.prefer || 'return=representation'
+  };
+
+  console.log('[SB Fetch]', options.method || 'GET', urlStr);
+
+  const res = await fetch(urlStr, {
     method: options.method || 'GET',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': options.prefer || 'return=representation',
-      ...options.headers
-    },
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined
   });
+
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
+    const errText = await res.text();
+    console.error('[SB Error]', res.status, errText);
+    throw new Error('请求失败 (' + res.status + '): ' + errText.substring(0, 200));
   }
+
   if (res.status === 204) return null;
-  return res.json();
+  const data = await res.json();
+  console.log('[SB OK]', table, Array.isArray(data) ? data.length + '条' : '1条');
+  return data;
 }
 
 async function sbUpload(file, path, bucket) {
@@ -97,25 +95,28 @@ async function loadAllData() {
       loadProjects(),
       loadCertificates(),
       loadBlogs(),
-      loadEssays(),
-      loadProfile()
+      loadEssays()
     ]);
-    updateDashboard();
     renderFeaturedProjects();
     renderLatestBlogs();
   } catch (e) {
     console.error('加载数据失败:', e);
-    showToast('数据加载失败，请检查网络');
+    showToast('数据加载失败: ' + e.message);
   }
 }
 
 // ========== 项目案例 ==========
 async function loadProjects() {
-  const data = await sbFetch('projects', {
-    query: { order: 'sort_order.asc,created_at.desc' }
-  });
-  cache.projects = data || [];
-  renderProjects();
+  try {
+    const data = await sbFetch('projects', {
+      query: { order: 'sort_order.asc,created_at.desc' }
+    });
+    cache.projects = data || [];
+    renderProjects();
+  } catch (e) {
+    console.error('加载项目失败:', e);
+    document.getElementById('projectsGrid').innerHTML = '<div class="loading-state">加载失败: ' + e.message + '</div>';
+  }
 }
 
 function renderProjects() {
@@ -127,37 +128,37 @@ function renderProjects() {
   const html = items.map(p => `
     <div class="project-card" onclick="openProject('${p.id}')">
       <div class="project-img">
-        ${p.image_url ? `<img src="${p.image_url}" alt="${p.title}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
+        ${p.image_url ? `<img src="${p.image_url}" alt="${escapeHtml(p.title)}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
       </div>
       <div class="project-body">
         <div class="project-tags">
-          ${(p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('')}
+          ${(p.tags || []).map(t => `<span class="project-tag">${escapeHtml(t)}</span>`).join('')}
         </div>
-        <div class="project-title">${p.title}</div>
-        <div class="project-desc">${p.description || ''}</div>
+        <div class="project-title">${escapeHtml(p.title)}</div>
+        <div class="project-desc">${escapeHtml(p.description || '')}</div>
         <div class="project-meta">
-          <span>${p.category || '数据分析'}</span>
+          <span>${escapeHtml(p.category || '数据分析')}</span>
           <span class="project-link">查看详情 →</span>
         </div>
       </div>
     </div>
   `).join('');
 
-  grid.innerHTML = html || '<div class="loading-state">暂无项目案例</div>';
+  grid.innerHTML = html || '<div class="loading-state">暂无项目案例，去管理后台添加吧</div>';
 
   if (featured) {
     const featuredItems = items.slice(0, 4);
     featured.innerHTML = featuredItems.map(p => `
       <div class="project-card" onclick="openProject('${p.id}')">
         <div class="project-img">
-          ${p.image_url ? `<img src="${p.image_url}" alt="${p.title}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
+          ${p.image_url ? `<img src="${p.image_url}" alt="${escapeHtml(p.title)}" loading="lazy">` : '<div class="project-img-placeholder">📊</div>'}
         </div>
         <div class="project-body">
           <div class="project-tags">
-            ${(p.tags || []).map(t => `<span class="project-tag">${t}</span>`).join('')}
+            ${(p.tags || []).map(t => `<span class="project-tag">${escapeHtml(t)}</span>`).join('')}
           </div>
-          <div class="project-title">${p.title}</div>
-          <div class="project-desc">${p.description || ''}</div>
+          <div class="project-title">${escapeHtml(p.title)}</div>
+          <div class="project-desc">${escapeHtml(p.description || '')}</div>
         </div>
       </div>
     `).join('') || '<div class="loading-state">暂无项目</div>';
@@ -169,17 +170,17 @@ function openProject(id) {
   if (!p) return;
   let content = `
     <div class="blog-detail">
-      <h1>${p.title}</h1>
+      <h1>${escapeHtml(p.title)}</h1>
       <div class="blog-detail-meta">
-        <span>${p.category || '数据分析'}</span>
+        <span>${escapeHtml(p.category || '数据分析')}</span>
         <span>${formatDate(p.created_at)}</span>
       </div>
       <div class="blog-detail-tags">
-        ${(p.tags || []).map(t => `<span class="blog-detail-tag">${t}</span>`).join('')}
+        ${(p.tags || []).map(t => `<span class="blog-detail-tag">${escapeHtml(t)}</span>`).join('')}
       </div>
-      ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:12px;margin-bottom:24px;" alt="${p.title}">` : ''}
+      ${p.image_url ? `<img src="${p.image_url}" style="width:100%;border-radius:12px;margin-bottom:24px;" alt="${escapeHtml(p.title)}">` : ''}
       <div class="blog-detail-content">
-        <p>${p.description || '暂无详细描述'}</p>
+        <p>${escapeHtml(p.description || '暂无详细描述')}</p>
       </div>
       ${p.file_url ? `
         <div class="blog-detail-attachments">
@@ -187,25 +188,28 @@ function openProject(id) {
           <div class="attachment-list">
             <div class="attachment-item">
               <span>📄</span>
-              <a href="${p.file_url}" target="_blank">下载项目文件 (${p.file_type || '文件'})</a>
+              <a href="${p.file_url}" target="_blank">下载项目文件 (${escapeHtml(p.file_type || '文件')})</a>
             </div>
           </div>
         </div>
       ` : ''}
     </div>
   `;
-  // 临时用博客详情页展示项目
   document.getElementById('blogDetailContent').innerHTML = content;
   showSection('blogDetail');
 }
 
 // ========== 证书 ==========
 async function loadCertificates() {
-  const data = await sbFetch('certificates', {
-    query: { order: 'sort_order.asc,created_at.desc' }
-  });
-  cache.certificates = data || [];
-  renderCertificates();
+  try {
+    const data = await sbFetch('certificates', {
+      query: { order: 'sort_order.asc,created_at.desc' }
+    });
+    cache.certificates = data || [];
+    renderCertificates();
+  } catch (e) {
+    console.error('加载证书失败:', e);
+  }
 }
 
 function renderCertificates() {
@@ -215,23 +219,28 @@ function renderCertificates() {
   grid.innerHTML = items.map(c => `
     <div class="cert-card">
       <div class="cert-img">
-        ${c.image_url ? `<img src="${c.image_url}" alt="${c.title}" loading="lazy">` : '<div class="project-img-placeholder">🏆</div>'}
+        ${c.image_url ? `<img src="${c.image_url}" alt="${escapeHtml(c.title)}" loading="lazy">` : '<div class="project-img-placeholder">🏆</div>'}
       </div>
       <div class="cert-body">
-        <div class="cert-title">${c.title}</div>
-        <div class="cert-meta">${c.issuer || ''} · ${c.issue_date || ''}</div>
+        <div class="cert-title">${escapeHtml(c.title)}</div>
+        <div class="cert-meta">${escapeHtml(c.issuer || '')} · ${formatDate(c.issue_date)}</div>
       </div>
     </div>
   `).join('') || '<div class="loading-state">暂无证书</div>';
 }
 
-// ========== 博客/学习笔记 ==========
+// ========== 博客 ==========
 async function loadBlogs() {
-  const data = await sbFetch('blogs', {
-    query: { order: 'is_pinned.desc,created_at.desc' }
-  });
-  cache.blogs = data || [];
-  renderBlogs();
+  try {
+    const data = await sbFetch('blogs', {
+      query: { order: 'is_pinned.desc,created_at.desc' }
+    });
+    cache.blogs = data || [];
+    renderBlogs();
+  } catch (e) {
+    console.error('加载笔记失败:', e);
+    document.getElementById('blogsGrid').innerHTML = '<div class="loading-state">加载失败: ' + e.message + '</div>';
+  }
 }
 
 function renderBlogs() {
@@ -240,16 +249,16 @@ function renderBlogs() {
   const items = cache.blogs;
   grid.innerHTML = items.map(b => `
     <div class="blog-card" onclick="openBlogDetail('${b.id}')">
-      ${b.cover_image ? `<img class="blog-cover" src="${b.cover_image}" alt="${b.title}" loading="lazy">` : ''}
+      ${b.cover_image ? `<img class="blog-cover" src="${b.cover_image}" alt="${escapeHtml(b.title)}" loading="lazy">` : ''}
       <div class="blog-meta">
         <span>${formatDate(b.created_at)}</span>
-        ${b.is_pinned ? '<span style="color:var(--accent)">📌 置顶</span>' : ''}
+        ${b.is_pinned ? '<span style="font-weight:600">📌 置顶</span>' : ''}
       </div>
-      <div class="blog-title">${b.title}</div>
-      <div class="blog-excerpt">${b.excerpt || stripHtml(b.content).substring(0, 120) + '...'}</div>
+      <div class="blog-title">${escapeHtml(b.title)}</div>
+      <div class="blog-excerpt">${escapeHtml(b.excerpt || stripHtml(b.content).substring(0, 120) + '...')}</div>
       <div class="blog-readmore">阅读全文 →</div>
     </div>
-  `).join('') || '<div class="loading-state">暂无学习笔记</div>';
+  `).join('') || '<div class="loading-state">暂无学习笔记，去写一篇吧</div>';
 }
 
 function renderLatestBlogs() {
@@ -258,13 +267,13 @@ function renderLatestBlogs() {
   const items = cache.blogs.slice(0, 4);
   grid.innerHTML = items.map(b => `
     <div class="blog-card" onclick="openBlogDetail('${b.id}')">
-      ${b.cover_image ? `<img class="blog-cover" src="${b.cover_image}" alt="${b.title}" loading="lazy">` : ''}
+      ${b.cover_image ? `<img class="blog-cover" src="${b.cover_image}" alt="${escapeHtml(b.title)}" loading="lazy">` : ''}
       <div class="blog-meta">
         <span>${formatDate(b.created_at)}</span>
-        ${b.is_pinned ? '<span style="color:var(--accent)">📌 置顶</span>' : ''}
+        ${b.is_pinned ? '<span style="font-weight:600">📌 置顶</span>' : ''}
       </div>
-      <div class="blog-title">${b.title}</div>
-      <div class="blog-excerpt">${b.excerpt || stripHtml(b.content).substring(0, 120) + '...'}</div>
+      <div class="blog-title">${escapeHtml(b.title)}</div>
+      <div class="blog-excerpt">${escapeHtml(b.excerpt || stripHtml(b.content).substring(0, 120) + '...')}</div>
       <div class="blog-readmore">阅读全文 →</div>
     </div>
   `).join('') || '<div class="loading-state">暂无笔记</div>';
@@ -284,7 +293,7 @@ function openBlogDetail(id) {
           ${b.attachments.map(att => `
             <div class="attachment-item">
               <span>📄</span>
-              <a href="${att.url}" target="_blank">${att.name}</a>
+              <a href="${att.url}" target="_blank">${escapeHtml(att.name)}</a>
             </div>
           `).join('')}
         </div>
@@ -293,20 +302,19 @@ function openBlogDetail(id) {
   }
 
   document.getElementById('blogDetailContent').innerHTML = `
-    <h1>${b.title}</h1>
+    <h1>${escapeHtml(b.title)}</h1>
     <div class="blog-detail-meta">
       <span>${formatDate(b.created_at)}</span>
       <span>${b.view_count || 0} 次阅读</span>
     </div>
     <div class="blog-detail-tags">
-      ${(b.tags || []).map(t => `<span class="blog-detail-tag">${t}</span>`).join('')}
+      ${(b.tags || []).map(t => `<span class="blog-detail-tag">${escapeHtml(t)}</span>`).join('')}
     </div>
-    ${b.cover_image ? `<img src="${b.cover_image}" style="width:100%;border-radius:12px;margin-bottom:24px;" alt="${b.title}">` : ''}
-    <div class="blog-detail-content">${b.content}</div>
+    ${b.cover_image ? `<img src="${b.cover_image}" style="width:100%;border-radius:12px;margin-bottom:24px;" alt="${escapeHtml(b.title)}">` : ''}
+    <div class="blog-detail-content">${b.content || ''}</div>
     ${attachmentsHtml}
   `;
   showSection('blogDetail');
-  // 增加阅读数
   sbFetch('blogs?id=eq.' + id, {
     method: 'PATCH',
     body: { view_count: (b.view_count || 0) + 1 }
@@ -321,8 +329,7 @@ function backToBlogs() {
 function editCurrentBlog() {
   if (!currentBlogId) return;
   const b = cache.blogs.find(x => String(x.id) === String(currentBlogId));
-  if (!b) return;
-  openBlogEditor(b);
+  if (b) openBlogEditor(b);
 }
 
 async function deleteCurrentBlog() {
@@ -338,13 +345,18 @@ async function deleteCurrentBlog() {
   }
 }
 
-// ========== 生活随笔 ==========
+// ========== 随笔 ==========
 async function loadEssays() {
-  const data = await sbFetch('essays', {
-    query: { order: 'created_at.desc' }
-  });
-  cache.essays = data || [];
-  renderEssays();
+  try {
+    const data = await sbFetch('essays', {
+      query: { order: 'created_at.desc' }
+    });
+    cache.essays = data || [];
+    renderEssays();
+  } catch (e) {
+    console.error('加载随笔失败:', e);
+    document.getElementById('essaysGrid').innerHTML = '<div class="loading-state">加载失败: ' + e.message + '</div>';
+  }
 }
 
 function renderEssays() {
@@ -361,13 +373,13 @@ function renderEssays() {
           ${(e.images || []).slice(0, 4).map(img => `<img src="${img}" loading="lazy">`).join('')}
         </div>
       ` : '<div class="life-mood">' + (e.mood || '😊') + '</div>'}
-      <div class="life-text">${e.content}</div>
+      <div class="life-text">${escapeHtml(e.content)}</div>
       <div class="life-footer">
-        <span>${e.location || ''}</span>
+        <span>${escapeHtml(e.location || '')}</span>
         <span>${formatDate(e.created_at)}</span>
       </div>
     </div>
-  `}).join('') || '<div class="loading-state">暂无生活随笔</div>';
+  `}).join('') || '<div class="loading-state">暂无生活随笔，去发一条吧</div>';
 }
 
 function openEssayDetail(id) {
@@ -382,10 +394,10 @@ function openEssayDetail(id) {
 
   document.getElementById('essayDetailContent').innerHTML = `
     <div class="essay-mood">${e.mood || '😊'}</div>
-    <div class="essay-text">${e.content}</div>
+    <div class="essay-text">${escapeHtml(e.content)}</div>
     ${imagesHtml}
     <div class="essay-meta">
-      ${e.location ? '📍 ' + e.location + ' · ' : ''}${formatDate(e.created_at)}
+      ${e.location ? '📍 ' + escapeHtml(e.location) + ' · ' : ''}${formatDate(e.created_at)}
     </div>
   `;
   showSection('essayDetail');
@@ -399,8 +411,7 @@ function backToEssays() {
 function editCurrentEssay() {
   if (!currentEssayId) return;
   const e = cache.essays.find(x => String(x.id) === String(currentEssayId));
-  if (!e) return;
-  openEssayEditor(e);
+  if (e) openEssayEditor(e);
 }
 
 async function deleteCurrentEssay() {
@@ -416,124 +427,6 @@ async function deleteCurrentEssay() {
   }
 }
 
-// ========== 个人资料 ==========
-async function loadProfile() {
-  const data = await sbFetch('profile', { query: { limit: 1 } });
-  if (data && data.length > 0) {
-    cache.profile = data[0];
-  }
-}
-
-// ========== Dashboard 数据看板 ==========
-function updateDashboard() {
-  animateNumber('statProjects', cache.projects.length);
-  animateNumber('statBlogs', cache.blogs.length);
-  animateNumber('statEssays', cache.essays.length);
-  animateNumber('statCerts', cache.certificates.length);
-  updateCharts();
-}
-
-function animateNumber(id, target) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  let current = 0;
-  const step = Math.max(1, Math.floor(target / 30));
-  const timer = setInterval(() => {
-    current += step;
-    if (current >= target) {
-      current = target;
-      clearInterval(timer);
-    }
-    el.textContent = current;
-  }, 30);
-}
-
-let skillsChartInstance = null;
-let trendChartInstance = null;
-
-function initCharts() {
-  // 技能雷达图
-  const skillsCtx = document.getElementById('skillsChart');
-  if (skillsCtx) {
-    skillsChartInstance = new Chart(skillsCtx, {
-      type: 'radar',
-      data: {
-        labels: ['数据分析', '业务洞察', 'SQL/Python', '可视化', 'AB测试', '用户运营'],
-        datasets: [{
-          label: '能力值',
-          data: [90, 85, 80, 88, 75, 82],
-          backgroundColor: 'rgba(131, 60, 246, 0.2)',
-          borderColor: '#833cf6',
-          pointBackgroundColor: '#833cf6',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: '#833cf6'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: 100,
-            ticks: { display: false },
-            grid: { color: 'rgba(0,0,0,0.05)' },
-            pointLabels: { font: { size: 11 } }
-          }
-        },
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
-
-  // 内容产出趋势图
-  const trendCtx = document.getElementById('trendChart');
-  if (trendCtx) {
-    trendChartInstance = new Chart(trendCtx, {
-      type: 'line',
-      data: {
-        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-        datasets: [{
-          label: '笔记',
-          data: [2, 3, 1, 4, 2, 3],
-          borderColor: '#833cf6',
-          backgroundColor: 'rgba(131, 60, 246, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointBackgroundColor: '#833cf6'
-        }, {
-          label: '随笔',
-          data: [1, 2, 3, 1, 2, 1],
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointBackgroundColor: '#10b981'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } },
-          x: { grid: { display: false } }
-        },
-        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } }
-      }
-    });
-  }
-}
-
-function updateCharts() {
-  // 根据实际数据更新趋势图
-  if (trendChartInstance && cache.blogs.length > 0) {
-    // 这里可以按月份聚合数据更新图表
-  }
-}
-
 // ========== 导航切换 ==========
 function showSection(sectionId) {
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -546,7 +439,6 @@ function showSection(sectionId) {
 
   document.getElementById('navLinks').classList.remove('open');
   document.getElementById('mobileMenuBtn').classList.remove('active');
-
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -560,7 +452,7 @@ function toggleAdmin() {
   renderAdminList();
 }
 
-// ========== 二维码弹窗 ==========
+// ========== 二维码 ==========
 function showQR(type) {
   const map = {
     wechat: { img: 'wechat.jpg', text: '微信扫码添加' },
@@ -625,24 +517,23 @@ function openBlogEditor(item = null) {
       <input type="text" id="editTags" value="${item ? (item.tags || []).join(', ') : ''}" placeholder="数据分析, RFM, 电商">
     </div>
     <div class="form-group">
-      <label>
-        <input type="checkbox" id="editPinned" ${item && item.is_pinned ? 'checked' : ''}>
-        置顶
-      </label>
+      <label><input type="checkbox" id="editPinned" ${item && item.is_pinned ? 'checked' : ''}> 置顶</label>
     </div>
   `;
 
   uploadedFiles = [];
   document.getElementById('uploadPreview').innerHTML = '';
+  if (item && item.attachments) {
+    item.attachments.forEach(att => {
+      uploadedFiles.push({ url: att.url, name: att.name, isImage: false });
+    });
+    renderUploadPreview();
+  }
 
   document.getElementById('editorModal').classList.add('active');
   setTimeout(() => {
     initQuill();
-    if (item && item.content) {
-      quillEditor.root.innerHTML = item.content;
-    } else {
-      quillEditor.root.innerHTML = '';
-    }
+    quillEditor.root.innerHTML = item && item.content ? item.content : '';
   }, 100);
 }
 
@@ -693,15 +584,10 @@ async function saveEditorForm() {
   saveBtn.disabled = true;
 
   try {
-    if (currentEditType === 'blogs') {
-      await saveBlog();
-    } else if (currentEditType === 'essays') {
-      await saveEssay();
-    } else if (currentEditType === 'projects') {
-      await saveProject();
-    } else if (currentEditType === 'certificates') {
-      await saveCertificate();
-    }
+    if (currentEditType === 'blogs') await saveBlog();
+    else if (currentEditType === 'essays') await saveEssay();
+    else if (currentEditType === 'projects') await saveProject();
+    else if (currentEditType === 'certificates') await saveCertificate();
     closeEditor();
   } catch (e) {
     showToast('保存失败: ' + e.message);
@@ -720,11 +606,10 @@ async function saveBlog() {
   const tags = document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(Boolean);
   const isPinned = document.getElementById('editPinned').checked;
   const content = quillEditor ? quillEditor.root.innerHTML : '';
-
   const attachments = uploadedFiles.filter(f => !f.isImage).map(f => ({ name: f.name, url: f.url }));
 
   const data = {
-    title, content, excerpt, cover_image: cover || null,
+    title, content, excerpt: excerpt || null, cover_image: cover || null,
     tags, is_pinned: isPinned, attachments,
     updated_at: new Date().toISOString()
   };
@@ -734,6 +619,7 @@ async function saveBlog() {
     showToast('笔记更新成功');
   } else {
     data.created_at = new Date().toISOString();
+    data.view_count = 0;
     await sbFetch('blogs', { method: 'POST', body: data });
     showToast('笔记发布成功');
   }
@@ -776,7 +662,7 @@ async function saveProject() {
   const fileType = uploadedFiles.find(f => !f.isImage)?.name?.split('.').pop() || '';
 
   const data = {
-    title, description, category: category || '数据分析',
+    title, description: description || null, category: category || '数据分析',
     tags, image_url: imageUrl || null, file_url: fileUrl || null,
     file_type: fileType || null,
     updated_at: new Date().toISOString()
@@ -803,7 +689,7 @@ async function saveCertificate() {
   const imageUrl = uploadedFiles.find(f => f.isImage)?.url || document.getElementById('editImage')?.value.trim() || '';
 
   const data = {
-    title, issuer, issue_date: issueDate || null,
+    title, issuer: issuer || null, issue_date: issueDate || null,
     image_url: imageUrl || null,
     updated_at: new Date().toISOString()
   };
@@ -832,14 +718,12 @@ async function uploadFile(file) {
   const path = Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
   const isImage = file.type.startsWith('image/');
 
-  // 先显示本地预览
   const localUrl = URL.createObjectURL(file);
   uploadedFiles.push({ url: localUrl, name: file.name, isImage, uploading: true });
   renderUploadPreview();
 
   try {
     const publicUrl = await sbUpload(file, path);
-    // 替换本地URL为真实URL
     const idx = uploadedFiles.findIndex(f => f.url === localUrl);
     if (idx !== -1) {
       uploadedFiles[idx].url = publicUrl;
@@ -858,9 +742,9 @@ function renderUploadPreview() {
   const container = document.getElementById('uploadPreview');
   container.innerHTML = uploadedFiles.map((f, i) => `
     <div class="upload-preview-item">
-      ${f.isImage ? `<img src="${f.url}" alt="${f.name}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;">📄</div>'}
+      ${f.isImage ? `<img src="${f.url}" alt="${escapeHtml(f.name)}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:24px;">📄</div>'}
       ${f.uploading ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;">上传中...</div>' : ''}
-      <div class="upload-file-name">${f.name}</div>
+      <div class="upload-file-name">${escapeHtml(f.name)}</div>
       <button type="button" class="upload-remove" onclick="removeUploadedFile(${i})">×</button>
     </div>
   `).join('');
@@ -871,19 +755,17 @@ function removeUploadedFile(index) {
   renderUploadPreview();
 }
 
-// 拖拽上传
-document.addEventListener('DOMContentLoaded', () => {
+function initDragUpload() {
   const zone = document.getElementById('uploadZone');
   if (!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--text)'; });
   zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
   zone.addEventListener('drop', e => {
     e.preventDefault();
     zone.style.borderColor = '';
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach(file => uploadFile(file));
+    Array.from(e.dataTransfer.files).forEach(file => uploadFile(file));
   });
-});
+}
 
 // ========== 管理后台 ==========
 function switchAdminTab(tab) {
@@ -904,7 +786,7 @@ function renderAdminList() {
   else if (type === 'essays') items = cache.essays;
 
   list.innerHTML = items.map(item => {
-    const title = item.title || item.content?.substring(0, 30) + '...' || '未命名';
+    const title = item.title || (item.content ? item.content.substring(0, 30) + '...' : '未命名');
     const date = formatDate(item.created_at);
     return `
       <div class="admin-item">
@@ -922,15 +804,10 @@ function renderAdminList() {
 }
 
 function adminNewItem() {
-  if (currentAdminTab === 'projects') {
-    openProjectEditor();
-  } else if (currentAdminTab === 'certificates') {
-    openCertificateEditor();
-  } else if (currentAdminTab === 'blogs') {
-    openBlogEditor();
-  } else if (currentAdminTab === 'essays') {
-    openEssayEditor();
-  }
+  if (currentAdminTab === 'projects') openProjectEditor();
+  else if (currentAdminTab === 'certificates') openCertificateEditor();
+  else if (currentAdminTab === 'blogs') openBlogEditor();
+  else if (currentAdminTab === 'essays') openEssayEditor();
 }
 
 function openProjectEditor(item = null) {
@@ -965,12 +842,8 @@ function openProjectEditor(item = null) {
 
   uploadedFiles = [];
   document.getElementById('uploadPreview').innerHTML = '';
-  if (item && item.image_url) {
-    uploadedFiles.push({ url: item.image_url, name: '封面图', isImage: true });
-  }
-  if (item && item.file_url) {
-    uploadedFiles.push({ url: item.file_url, name: item.file_type || '附件', isImage: false });
-  }
+  if (item && item.image_url) uploadedFiles.push({ url: item.image_url, name: '封面图', isImage: true });
+  if (item && item.file_url) uploadedFiles.push({ url: item.file_url, name: item.file_type || '附件', isImage: false });
   renderUploadPreview();
 
   document.getElementById('editorModal').classList.add('active');
@@ -1004,9 +877,7 @@ function openCertificateEditor(item = null) {
 
   uploadedFiles = [];
   document.getElementById('uploadPreview').innerHTML = '';
-  if (item && item.image_url) {
-    uploadedFiles.push({ url: item.image_url, name: '证书图', isImage: true });
-  }
+  if (item && item.image_url) uploadedFiles.push({ url: item.image_url, name: '证书图', isImage: true });
   renderUploadPreview();
 
   document.getElementById('editorModal').classList.add('active');
@@ -1044,15 +915,16 @@ function formatDate(iso) {
 }
 
 function stripHtml(html) {
+  if (!html) return '';
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || '';
 }
 
 function escapeHtml(text) {
-  if (!text) return '';
+  if (text == null) return '';
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = String(text);
   return div.innerHTML;
 }
 
