@@ -21,7 +21,7 @@ const $$ = s => document.querySelectorAll(s);
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function navigate(page) {
@@ -43,11 +43,13 @@ async function loadPosts(category = null) {
   if (error) { console.error('加载文章失败:', error); return []; }
   return data || [];
 }
+
 async function loadProjects() {
   const { data, error } = await supabase.from('projects').select('*').order('sort_order', { ascending: true });
   if (error) { console.error('加载项目失败:', error); return []; }
   return data || [];
 }
+
 async function loadCertificates() {
   const { data, error } = await supabase.from('certificates').select('*').order('sort_order', { ascending: true });
   if (error) { console.error('加载证书失败:', error); return []; }
@@ -181,7 +183,6 @@ async function toggleSection(type) {
   }
 }
 
-// 管理后台
 async function loadAdminData() {
   const { data: posts } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
   allPosts = posts || [];
@@ -189,6 +190,7 @@ async function loadAdminData() {
   allCertificates = await loadCertificates();
   renderAdminList(currentAdminTab);
 }
+
 function showAdminTab(tab) {
   currentAdminTab = tab;
   $$('.admin-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -197,6 +199,7 @@ function showAdminTab(tab) {
   if (target) target.style.display = 'flex';
   renderAdminList(tab);
 }
+
 function renderAdminList(tab) {
   const container = document.getElementById(`admin${tab.charAt(0).toUpperCase()+tab.slice(1)}List`);
   if (!container) return;
@@ -205,7 +208,7 @@ function renderAdminList(tab) {
   else if (tab === 'projects') items = allProjects;
   else if (tab === 'certificates') items = allCertificates;
   if (items.length === 0) {
-    container.innerHTML = '<p style="color:var(--text-muted);padding:20px;">暂无数据，点击“新建”添加。</p>';
+    container.innerHTML = '<p style="color:var(--text-muted);padding:20px;">暂无数据，点击"新建"添加。</p>';
     return;
   }
   container.innerHTML = items.map(item => {
@@ -224,6 +227,7 @@ function renderAdminList(tab) {
     `;
   }).join('');
 }
+
 function editAdminItem(tab, id) {
   let item = null;
   if (tab === 'posts') item = allPosts.find(p => p.id === id);
@@ -246,6 +250,7 @@ function editAdminItem(tab, id) {
   }
   $('#adminFormElement').dataset.tab = tab;
 }
+
 async function deleteAdminItem(tab, id) {
   if (!confirm('确定要删除吗？')) return;
   let table = tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates';
@@ -254,6 +259,7 @@ async function deleteAdminItem(tab, id) {
   alert('删除成功');
   loadAdminData();
 }
+
 async function handleAdminSubmit(e) {
   e.preventDefault();
   const form = e.target;
@@ -283,6 +289,7 @@ async function handleAdminSubmit(e) {
   loadAdminData();
   renderHome();
 }
+
 function resetForm() {
   document.getElementById('adminForm').style.display = 'none';
   document.getElementById('adminFormElement').reset();
@@ -291,7 +298,6 @@ function resetForm() {
   if (quillEditor) quillEditor.root.innerHTML = '';
 }
 
-// 初始化
 async function init() {
   quillEditor = new Quill('#editorContainer', {
     theme: 'snow',
@@ -373,7 +379,6 @@ async function init() {
   initReveal();
 }
 
-// 辅助功能
 function showQR(src, label) {
   const modal = document.getElementById('qrModal');
   const img = document.getElementById('qrImg');
@@ -383,10 +388,12 @@ function showQR(src, label) {
   text.textContent = '扫码添加' + label;
   modal.classList.add('active');
 }
+
 function closeQR() {
   const modal = document.getElementById('qrModal');
   if (modal) modal.classList.remove('active');
 }
+
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('qrModal');
   if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeQR(); });
