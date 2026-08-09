@@ -66,11 +66,11 @@ function collectAllBackupCandidates() {
     if (!Array.isArray(arr)) return;
     arr.forEach(function (p) {
       if (!p || typeof p !== 'object') return;
-      if ('title' in p) return;
+      if ('title' in p) return;                       // 排除学习成长文章
       const content = contentOf(p);
       const imgs = Array.isArray(p.images) ? p.images : [];
       if (!String(content).trim() && !imgs.length) return;
-      if (lifeIsHiddenObj({ id: p.id, content: content, txt: p.txt }, sets)) return;
+      if (lifeIsHiddenObj({ id: p.id, content: content, txt: p.txt }, sets)) return;  // 排除已删内容
       const key = normTxt(content) + '||' + imgs.join(',');
       if (seen.has(key)) return;
       seen.add(key);
@@ -120,7 +120,7 @@ async function migrateBackupToCloud(cands) {
   const sets = lifeHideSets();
   const cloudHave = new Set();
   try {
-    const res = await withTimeout(sb.from('blogs').select('content').limit(1000), 8000);
+    const res = await withTimeout(sb.from('posts').select('content').limit(1000), 8000);
     if (res.error || !res.data) return;
     res.data.forEach(p => cloudHave.add(normTxt(p.content)));
   } catch (e) { return; }
@@ -136,10 +136,10 @@ async function migrateBackupToCloud(cands) {
     let ok = false;
     try {
       let r;
-      if (p.created_at) { r = await withTimeout(sb.from('blogs').insert({ ...payload, created_at: p.created_at }), 15000); if (r.error) r = await withTimeout(sb.from('blogs').insert(payload), 15000); }
-      else { r = await withTimeout(sb.from('blogs').insert(payload), 15000); }
+      if (p.created_at) { r = await withTimeout(sb.from('posts').insert({ ...payload, created_at: p.created_at }), 15000); if (r.error) r = await withTimeout(sb.from('posts').insert(payload), 15000); }
+      else { r = await withTimeout(sb.from('posts').insert(payload), 15000); }
       ok = !r.error;
-    } catch (e) { try { const r2 = await withTimeout(sb.from('blogs').insert(payload), 15000); ok = !r2.error; } catch (e2) { ok = false; } }
+    } catch (e) { try { const r2 = await withTimeout(sb.from('posts').insert(payload), 15000); ok = !r2.error; } catch (e2) { ok = false; } }
     if (ok) { uploaded++; if (key) { cloudHave.add(key); doneSet.add(key); } } else failed++;
   }
   if (doneSet.size) localStorage.setItem('dg_migrated_contents', JSON.stringify([...doneSet]));
@@ -212,7 +212,7 @@ document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]'); if (a) { e.preventDefault(); go(a.getAttribute('href').slice(1)); }
 });
 
-/* ===== 项目案例（硬编码，从仓库读取） ===== */
+/* ===== 项目案例（横版） ===== */
 const CASES = [
   { color: 'linear-gradient(135deg,#e8730c,#ff9d4d)', icon: 'fa-layer-group', tag: 'USER VALUE', title: 'RFM 用户价值分析案例', desc: '基于 SQL 取数 + Python(Pandas) 构建 RFM 模型，对线上平台用户做三维度打分与分层，输出可复现的交互式分析报告。', tech: ['SQL', 'Python', 'Pandas', 'Jupyter'], docs: [{ label: '交互式报告', href: '线上平台用户RFM分析.html' }], dl: '线上平台用户RFM分析.ipynb' },
   { color: 'linear-gradient(135deg,#2f6fed,#5b8def)', icon: 'fa-boxes-stacked', tag: 'INVENTORY', title: '快消品进销存分析', desc: '以 Power BI 完成数据建模与清洗，搭建进销存看板 + 分析报告：监控库存、月销与临期风险，完成 ABC 动销与智能补货诊断。', tech: ['Power BI', 'DAX'], docs: [{ label: '演示案例', href: '快消品进销存演示案例.pdf' }, { label: '分析报告', href: '快消品进销存案例分析报告.pdf' }], dl: '快消品进销存演示案例.pbix' },
@@ -223,7 +223,7 @@ function renderCases() {
 }
 document.getElementById('caseGrid').addEventListener('click', e => { const cv = e.target.closest('.case-cover'); if (cv && !e.target.closest('.case-doc') && !e.target.closest('.case-dl') && cv.dataset.doc0) window.open(cv.dataset.doc0, '_blank'); });
 
-/* ===== 证书（硬编码，从仓库读取） ===== */
+/* ===== 证书 ===== */
 const CERTS = [{ n: 'CDA 数据分析师', s: 'LEVEL-1', img: './certs/CDA-LEVEL1.jpg' }, { n: 'Office 计算机', s: '二级证书', img: './certs/office_level2.jpg' }, { n: '英语六级', s: 'CET-6', img: './certs/CET6.jpg' }, { n: '普通话', s: '二甲证书', img: './certs/putonghua.jpg' }];
 function renderCerts() { document.getElementById('certGrid').innerHTML = CERTS.map(c => `<div class="cert" data-img="${esc(c.img)}"><div class="thumb"><img src="${esc(c.img)}" alt="${esc(c.n)}" loading="lazy" onerror="this.style.display='none'"><div class="zoom"><i class="fas fa-magnifying-glass-plus"></i>查看大图</div></div><div class="cn">${esc(c.n)}<small>${esc(c.s)}</small></div></div>`).join(''); }
 document.getElementById('certGrid').addEventListener('click', e => { const el = e.target.closest('[data-img]'); if (el) openLB(el.dataset.img); });
@@ -241,75 +241,23 @@ const LR_KEY = 'chi_lr_drafts';
 const getLR = () => { try { const r = JSON.parse(localStorage.getItem(LR_KEY)); return Array.isArray(r) ? r : []; } catch (e) { return []; } };
 const setLR = a => localStorage.setItem(LR_KEY, JSON.stringify(a));
 async function loadLearning() {
-  if (_lp) return _lp;
-  _lp = (async () => {
+  if (_lp) return _lp; return _lp = (async () => {
     let cloud = null;
-    let errorDetail = null;
     if (sb) {
-      try {
-        const res = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000);
-        if (!res.error && res.data) {
-          cloud = res.data;
-        } else {
-          errorDetail = res.error;
-          console.warn('[loadLearning] 查询失败:', errorDetail);
-        }
-      } catch (e) {
-        errorDetail = e;
-        console.warn('[loadLearning] 异常:', e);
+      try { const res = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!res.error && res.data) cloud = res.data; } catch (e) { }
+      if (cloud !== null) {
+        const drafts = getLR(); if (drafts.length) { const remain = []; for (const x of drafts) { let ok = false; try { const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: x.images, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } setLR(remain); if (remain.length !== drafts.length) { try { const r2 = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) cloud = r2.data; } catch (e) { } } }
       }
     }
-
-    // 如果云端没有数据或失败，且不是权限问题（403），则回退到示例 + 本地
-    // 但如果是 403，明确提示权限问题，不显示示例（避免混淆）
-    const is403 = errorDetail && (errorDetail.code === '403' || errorDetail.message?.includes('permission'));
-    if (is403) {
-      showToast('⚠️ 无法读取学习记录：数据库权限不足，请为 learning 表开启公共 SELECT 策略', 8000);
-      console.error('[loadLearning] 403 权限错误，请检查 RLS 策略');
-      cloud = []; // 强制空数组，不用 seed
-    } else if (!cloud || cloud.length === 0) {
-      // 只在没有真实数据且非权限错误时使用 seed
-      if (!cloud) cloud = [];
-      // 如果云端返回空数组，我们可以选择展示 seed 以提供示例内容，但为了真实，还是空吧
-      // 但为了用户友好，如果完全没有数据，显示 seed 作为示例（用户可发布真实数据覆盖）
-      if (cloud.length === 0 && !is403) {
-        // 使用 seed 作为占位，但注意不要覆盖真实数据（真实数据为空时没问题）
-        cloud = [...SEED_LEARNING];
-      }
-    }
-
-    // 合并本地草稿
-    const drafts = getLR();
-    if (drafts.length) {
-      const remain = [];
-      for (const x of drafts) {
-        let ok = false;
-        try {
-          const r = await withTimeout(sb.from('learning').insert({ title: x.title, content: x.content, images: x.images, links: x.links, tags: x.tags, emoji: x.emoji || '📝' }), 15000);
-          ok = !r.error;
-        } catch (e) { }
-        if (!ok) remain.push(x);
-      }
-      setLR(remain);
-      if (remain.length !== drafts.length) {
-        try {
-          const r2 = await withTimeout(sb.from('learning').select('*').order('created_at', { ascending: false }).limit(100), 6000);
-          if (!r2.error && r2.data) cloud = r2.data;
-        } catch (e) { }
-      }
-    }
-
-    const cloudArr = cloud ? cloud.map(p => ({ ...p, emoji: p.emoji || '📝' })) : [];
+    const cloudArr = cloud ? cloud.map(p => ({ ...p, emoji: p.emoji || '📝' })) : null;
+    const useSeed = !cloudArr || cloudArr.length === 0; const base = (cloudArr || []).concat(useSeed ? SEED_LEARNING : []);
     const postedLR = getPostedLR().map(x => ({ ...x, _posted: true }));
-    let merged = [...cloudArr, ...getLR().map(x => ({ ...x, _local: true })), ...postedLR];
-    merged = sortPosts(merged);
-    merged = applyLocalOverlay(merged);
-    merged = dedupePostedArr(merged, 'title');
-    confirmPostedArr(getPostedLR(), cloudArr, 'title', setPostedLR);
-    learningList = merged;
+    learningList = sortPosts([...base, ...getLR().map(x => ({ ...x, _local: true })), ...postedLR]);
+    learningList = applyLocalOverlay(learningList);
+    learningList = dedupePostedArr(learningList, 'title');
+    confirmPostedArr(getPostedLR(), cloudArr || [], 'title', setPostedLR);
     return { ok: true };
   })();
-  return _lp;
 }
 function invalidateLearning() { _lp = null; }
 function cardHTML(p, i) {
@@ -419,7 +367,7 @@ async function publishLearning() {
   showToast('已保存到本机 ✓ 联网后自动同步，内容不会丢', 6000);
 }
 
-/* ===== 生活随笔（使用 blogs 表） ===== */
+/* ===== 生活随笔 ===== */
 const postList = document.getElementById('postList'), postInput = document.getElementById('postInput'), postTags = document.getElementById('postTags'), postPub = document.getElementById('postPub');
 const PUB_HTML = postPub.innerHTML, SAVE_HTML = '<i class="fas fa-floppy-disk"></i> 保存修改', seenIds = new Set(), LKEY = 'chi_posts_local_v1'; let cloudOK = true, lifeImages = [], lifeList = [];
 let lifeEditId = null, lifeEditLocal = false;
@@ -433,6 +381,7 @@ function postHTML(p) {
   const isH = window.__isHTML && window.__isHTML(raw);
   let imgs = (p.images || []).slice();
   let txtHtml, ptxtCls;
+  /* —— 关键修复：正文里内嵌的 <img> 也抽出来并入九宫格，不再以原始大图撑爆卡片 —— */
   if (isH) {
     ptxtCls = 'ptxt ptxt-html';
     try {
@@ -447,7 +396,7 @@ function postHTML(p) {
     ptxtCls = 'ptxt';
     txtHtml = toRTEHTML(raw);
   }
-  imgs = imgs.filter((s, i) => s && imgs.indexOf(s) === i);
+  imgs = imgs.filter((s, i) => s && imgs.indexOf(s) === i);   // 去重
   const ts = p.created_at ? new Date(p.created_at).getTime() : (p.ts || Date.now());
   const tags = (p.tags || []).map(t => `<span>#${esc(t)}</span>`).join('');
   let imgHtml = '';
@@ -471,41 +420,15 @@ function renderHomeLife() {
 }
 async function loadPosts() {
   let data = null, err = null;
-  if (sb) {
-    try {
-      const res = await withTimeout(sb.from('blogs').select('*').order('created_at', { ascending: false }).limit(100), 6000);
-      data = res.data;
-      err = res.error;
-    } catch (e) { err = e; }
-  }
+  if (sb) { try { const res = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); data = res.data; err = res.error; } catch (e) { err = e; } }
   const hide = getLifeHide();
   if (err || data === null) {
-    cloudOK = false; setLiveBadge(false); setSubText(false);
-    lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
+    cloudOK = false; setLiveBadge(false); setSubText(false); lifeList = sortPosts([...SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })), ...loadLocal().map(x => ({ ...x, _local: true })), ...getPostedLife().map(x => ({ ...x, _posted: true }))]);
     const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
     renderPosts(lifeList, true); return;
   }
   cloudOK = true; setLiveBadge(true); setSubText(true);
-  const local = loadLocal();
-  if (local.length) {
-    const remain = [];
-    for (const x of local) {
-      let ok = false;
-      try {
-        const r = await withTimeout(sb.from('blogs').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 12000);
-        ok = !r.error;
-      } catch (e) { }
-      if (!ok) remain.push(x);
-    }
-    saveLocal(remain);
-    if (remain.length !== local.length) {
-      try {
-        const r2 = await withTimeout(sb.from('blogs').select('*').order('created_at', { ascending: false }).limit(100), 6000);
-        if (!r2.error && r2.data) data = r2.data;
-      } catch (e) { }
-    }
-  }
-  seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
+  const local = loadLocal(); if (local.length) { const remain = []; for (const x of local) { let ok = false; try { const r = await withTimeout(sb.from('posts').insert({ content: x.content, tags: x.tags, images: x.images || [] }), 12000); ok = !r.error; } catch (e) { } if (!ok) remain.push(x); } saveLocal(remain); if (remain.length !== local.length) { try { const r2 = await withTimeout(sb.from('posts').select('*').order('created_at', { ascending: false }).limit(100), 6000); if (!r2.error && r2.data) data = r2.data; } catch (e) { } } } seenIds.clear(); (data || []).forEach(p => seenIds.add(p.id));
   const seedLife = (!data || !data.length) ? SEED_LIFE.filter(s => !hide.includes(s.id)).map(s => ({ ...s, _seed: true })) : [];
   lifeList = mergeByTime(data || [], seedLife.concat(loadLocal().map(x => ({ ...x, _local: true }))));
   const postedLife = getPostedLife().map(x => ({ ...x, _posted: true }));
@@ -515,7 +438,7 @@ async function loadPosts() {
   const sets = lifeHideSets(); lifeList = lifeList.filter(p => !lifeIsHiddenObj(p, sets));
   renderPosts(lifeList, false);
 }
-function subscribeRT() { if (!sb) return; try { sb.channel('blogs-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'blogs' }, pl => { if (!cloudOK) return; const p = pl.new; if (!p || seenIds.has(p.id)) return; seenIds.add(p.id); const e = postList.querySelector('.no-result'); if (e) e.remove(); postList.insertAdjacentHTML('afterbegin', postHTML(p)); }).subscribe(); } catch (e) { } }
+function subscribeRT() { if (!sb) return; try { sb.channel('posts-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, pl => { if (!cloudOK) return; const p = pl.new; if (!p || seenIds.has(p.id)) return; seenIds.add(p.id); const e = postList.querySelector('.no-result'); if (e) e.remove(); postList.insertAdjacentHTML('afterbegin', postHTML(p)); }).subscribe(); } catch (e) { } }
 function setLifeEditorMode(on) { postPub.innerHTML = on ? SAVE_HTML : PUB_HTML; let cb = document.getElementById('lifeCancel'); if (on && !cb) { postPub.insertAdjacentHTML('afterend', '<button class="btn btn-ghost" id="lifeCancel" style="margin-left:8px"><i class="fas fa-xmark"></i> 取消编辑</button>'); document.getElementById('lifeCancel').onclick = clearLifeEditor; } else if (!on && cb) cb.remove(); }
 function clearLifeEditor() { lifeEditId = null; lifeEditLocal = false; if (window.__rteLife) window.__rteLife.clear(); else postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs(); setLifeEditorMode(false); }
 function editLife(id) { const p = lifeList.find(a => String(a.id) === String(id)); if (!p || p._seed) return; lifeEditId = String(id); lifeEditLocal = !!p._local; if (window.__rteLife) window.__rteLife.ed.innerHTML = toRTEHTML(p.content || ''); else postInput.value = toRTEHTML(p.content || ''); postTags.value = (p.tags || []).join(', '); lifeImages = (p.images || []).slice(); renderLifeThumbs(); setLifeEditorMode(true); setTimeout(() => { if (window.__rteLife) window.__rteLife.ed.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80); showToast('已进入编辑模式 · 改完点「保存修改」'); }
@@ -525,15 +448,16 @@ async function deleteLife(id, isLocal) {
   const target = lifeList.find(p => String(p.id) === sid);
   const isSeed = !!(target && target._seed);
   const delKey = normTxt(target ? contentOf(target) : '');
+  /* —— 关键修复：按 id 或 内容指纹 清理所有池子，杜绝"幽灵副本" —— */
   const matchLife = x => String(x.id) === sid || (delKey !== '' && normTxt(contentOf(x)) === delKey);
   const pp = getPostedLife(); if (pp.some(matchLife)) setPostedLife(pp.filter(x => !matchLife(x)));
   if (isLocal) { saveLocal(loadLocal().filter(x => !matchLife(x))); }
   else if (isSeed) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
   else if (sb) {
-    let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('blogs').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
+    let ok = false; for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').delete().eq('id', sid), 12000); ok = !r.error; } catch (e) { } }
     if (!ok) { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); if (lifeEditId === sid) clearLifeEditor(); if (delKey) addLifeHideC(delKey); showToast('已在本机移除 ✓（云端副本需开删除权限才能彻底抹掉）'); loadPosts(); renderHomeLife(); return; }
   } else { const h = getLifeHide(); if (!h.includes(sid)) h.push(sid); setLifeHide(h); }
-  if (delKey && !isSeed) addLifeHideC(delKey);
+  if (delKey && !isSeed) addLifeHideC(delKey);   /* 记内容指纹黑名单：渲染/救援/上云全路径都会排除它，永不再复活 */
   if (lifeEditId === sid) clearLifeEditor(); showToast('已删除 ✓'); loadPosts(); renderHomeLife();
 }
 async function publishLife() {
@@ -545,14 +469,14 @@ async function publishLife() {
     const sid = String(lifeEditId); let ok = false;
     const pp = getPostedLife(); const pi = pp.findIndex(a => String(a.id) === sid);
     if (pi >= 0) { pp[pi] = Object.assign({}, pp[pi], { content, tags, images: imgs }); setPostedLife(pp); ok = true; }
-    if (lifeEditLocal) { const l = loadLocal(); const idx = l.findIndex(a => String(a.id) === sid); if (idx >= 0) { l[idx] = Object.assign({}, l[idx], { content, tags, images: imgs }); saveLocal(l); ok = true; } } else if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('blogs').update({ content, tags, images: imgs }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } } }
+    if (lifeEditLocal) { const l = loadLocal(); const idx = l.findIndex(a => String(a.id) === sid); if (idx >= 0) { l[idx] = Object.assign({}, l[idx], { content, tags, images: imgs }); saveLocal(l); ok = true; } } else if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const r = await withTimeout(sb.from('posts').update({ content, tags, images: imgs }).eq('id', sid), 20000); ok = !r.error; } catch (e) { } } }
     postPub.disabled = false;
     if (ok) { clearLifeEditor(); showToast('已保存修改 ✓'); loadPosts(); return; }
     postPub.innerHTML = SAVE_HTML; showToast('保存失败 · 原内容未丢失'); return;
   }
   const content = (window.__rteLife && window.__rteLife.isEmpty()) ? '' : postInput.value.trim();
   if (!content && !lifeImages.length) { if (window.__rteLife) window.__rteLife.focus(); else postInput.focus(); return; } const tags = postTags.value.split(/[,，]/).map(t => t.trim()).filter(Boolean); const imgs = lifeImages.slice(); postPub.disabled = true; postPub.textContent = '发布中…';
-  let ok = false; if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('blogs').insert({ content, tags, images: imgs }), 20000); ok = !res.error; } catch (e) { } } }
+  let ok = false; if (sb) { for (let i = 0; i < 2 && !ok; i++) { try { const res = await withTimeout(sb.from('posts').insert({ content, tags, images: imgs }), 20000); ok = !res.error; } catch (e) { } } }
   postPub.innerHTML = PUB_HTML; postPub.disabled = false;
   if (window.__rteLife) window.__rteLife.clear(); else postInput.value = ''; postTags.value = ''; lifeImages = []; renderLifeThumbs();
   if (ok) {
@@ -664,10 +588,10 @@ function makeRTE(ta, opts) {
 }
 
 /* ===== 启动 ===== */
-const _lifeCands = collectAllBackupCandidates();
-recoverLifeBackup(_lifeCands);
-migrateBackupToCloud(_lifeCands);
-injectExportBtn();
+const _lifeCands = collectAllBackupCandidates();   /* 全量扫描本地存储，捞出所有随笔候选 */
+recoverLifeBackup(_lifeCands);                     /* ① 并入显示池：断网也可见 */
+migrateBackupToCloud(_lifeCands);                  /* ② 按内容去重真正上云：所有设备正常显示 */
+injectExportBtn();                                 /* ③ 注入"导出全部随笔 JSON"按钮 */
 window.addEventListener('hashchange', route);
 renderCases(); renderCerts();
 primeLearningSync(); primeLifeSync();
@@ -709,21 +633,26 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     '.post .ptxt{font-size:16.5px !important;line-height:1.85 !important;}',
     '.post .ptxt p{margin:0 0 8px;}',
     '.post .ptags{margin-top:10px;font-size:13px;}',
-    '.ptxt img,.ptxt-html img{max-width:240px !important;max-height:240px !important;width:auto;height:auto;object-fit:cover;border-radius:8px;display:block;margin:8px 0;cursor:pointer;}',
+    /* 正文内嵌图兜底：万一没进九宫格，也绝不撑爆，且有圆角、可点 */
+        '.ptxt img,.ptxt-html img{max-width:240px !important;max-height:240px !important;width:auto;height:auto;object-fit:cover;border-radius:8px;display:block;margin:8px 0;cursor:pointer;}',
+    /* 删除/编辑键始终可见可点 */
     '.life-mgmt{opacity:1 !important;visibility:visible !important;display:flex !important;pointer-events:auto !important;position:absolute;top:14px;right:14px;gap:8px;z-index:10;}',
     '.life-mgmt .pc-m{background:rgba(255,255,255,.85);border:1px solid #eee;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#666;transition:all .2s;backdrop-filter:blur(4px);}',
     '.life-mgmt .pc-m:hover{background:#fff;color:#d9534f;border-color:#d9534f;box-shadow:0 2px 8px rgba(0,0,0,.1);}',
+    /* 九宫格 */
     '.life-grid{display:grid;gap:6px;margin:12px 0;}',
-    '.life-grid.lg-c1{grid-template-columns:1fr;max-width:min(420px,72%);}',
-    '.life-grid.lg-c2{grid-template-columns:1fr 1fr;max-width:min(560px,92%);}',
-    '.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
-    '.life-grid.lg-c1 .lg-cell{aspect-ratio:4/3;}',
-    '.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:10px;background:#f0f0f0;cursor:pointer;}',
-    '.lg-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;}',
-    '.lg-cell:hover img{transform:scale(1.05);}',
+'.life-grid.lg-c1{grid-template-columns:1fr;max-width:min(420px,72%);}',
+'.life-grid.lg-c2{grid-template-columns:1fr 1fr;max-width:min(560px,92%);}',
+'.life-grid.lg-c3{grid-template-columns:1fr 1fr 1fr;}',
+'.life-grid.lg-c1 .lg-cell{aspect-ratio:4/3;}',
+'.lg-cell{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:10px;background:#f0f0f0;cursor:pointer;}',
+'.lg-cell img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease;}',
+'.lg-cell:hover img{transform:scale(1.05);}',
+    /* 导出按钮工具条 */
     '.life-toolbar{display:flex;justify-content:flex-end;margin:18px 0 4px;}',
     '#lifeExportBtn{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600;color:#2bb673;background:rgba(43,182,115,.08);border:1px solid rgba(43,182,115,.25);padding:8px 16px;border-radius:999px;transition:all .2s;cursor:pointer;}',
     '#lifeExportBtn:hover{background:rgba(43,182,115,.16);transform:translateY(-1px);box-shadow:0 6px 16px rgba(43,182,115,.2);}',
+    /* 暗色适配 */
     '[data-theme="dark"] .lg-cell{background:#333;}',
     '[data-theme="dark"] .post .ptxt{color:#ddd;}',
     '[data-theme="dark"] .life-mgmt .pc-m{background:rgba(40,40,40,.85);border-color:#444;color:#bbb;}',
@@ -731,27 +660,38 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   ].join('');
   var st = document.createElement('style'); st.setAttribute('data-patch', 'life-enhance'); st.textContent = css; document.head.appendChild(st);
 })();
-
 /* ============ 补丁 B：编辑器加高 + 插入符号 + 图片尺寸强压 ============ */
 (function () {
   'use strict';
+
+  /* ---------- 1) 注入样式：编辑框加高 / 符号面板 / 图片强压 ---------- */
   var patchCss = [
+    /* 编辑框加高，写长文不再憋屈 */
     '[contenteditable="true"]{min-height:300px !important;max-height:70vh;overflow:auto;}',
-    '.sym-trigger{position:absolute;top:8px;right:10px;z-index:30;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;font-size:12px;font-weight:600;color:#e2620a;background:#fff7ef;border:1px solid #ffd9b3;border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(226,98,10,.12);transition:transform .15s ease,box-shadow .15s ease,background .15s;user-select:none;}',
+    /* 插入符号按钮（贴在编辑框右上） */
+    '.sym-trigger{position:absolute;top:8px;right:10px;z-index:30;display:inline-flex;align-items:center;gap:5px;',
+    'padding:5px 11px;font-size:12px;font-weight:600;color:#e2620a;background:#fff7ef;border:1px solid #ffd9b3;',
+    'border-radius:999px;cursor:pointer;box-shadow:0 2px 6px rgba(226,98,10,.12);transition:transform .15s ease,box-shadow .15s ease,background .15s;user-select:none;}',
     '.sym-trigger:hover{transform:translateY(-1px);background:#ffeede;box-shadow:0 5px 14px rgba(226,98,10,.2);}',
     '.sym-trigger:active{transform:translateY(0) scale(.97);}',
-    '.sym-panel{position:absolute;top:42px;right:10px;z-index:40;width:268px;padding:10px;background:#fff;border:1px solid #eee;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.16);display:none;grid-template-columns:repeat(8,1fr);gap:5px;transform-origin:top right;animation:symPop .16s ease;}',
+    /* 符号面板 */
+    '.sym-panel{position:absolute;top:42px;right:10px;z-index:40;width:268px;padding:10px;background:#fff;border:1px solid #eee;',
+    'border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.16);display:none;grid-template-columns:repeat(8,1fr);gap:5px;',
+    'transform-origin:top right;animation:symPop .16s ease;}',
     '.sym-panel.open{display:grid;}',
     '@keyframes symPop{from{opacity:0;transform:scale(.92) translateY(-4px);}to{opacity:1;transform:scale(1) translateY(0);}}',
-    '.sym-panel button{height:30px;border:0;border-radius:8px;background:#f5f5f5;color:#333;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,background .12s,color .12s;}',
+    '.sym-panel button{height:30px;border:0;border-radius:8px;background:#f5f5f5;color:#333;font-size:15px;line-height:1;cursor:pointer;',
+    'display:flex;align-items:center;justify-content:center;transition:transform .12s ease,background .12s,color .12s;}',
     '.sym-panel button:hover{background:#e2620a;color:#fff;transform:scale(1.18);}',
     '.sym-panel button:active{transform:scale(.9);}',
     '.sym-panel button.flash{background:#2bb673 !important;color:#fff !important;}',
+    /* —— 图片尺寸强压（生活随笔九宫格 + 首页预览，广撒网 life/home 语义，不误伤文章详情） —— */
     '.life-grid{max-width:min(330px,90%) !important;}',
     '.life-grid.lg-c1{max-width:min(260px,80%) !important;}',
     '.lg-cell{border-radius:8px !important;}',
     '.ptxt img,.ptxt-html img{max-width:240px !important;max-height:240px !important;width:auto !important;height:auto !important;object-fit:cover;border-radius:8px;}',
     '.life-card img,.home-life img,.life-item img,.life-preview img,.life-latest img,.life-wrap img,.post-life img{max-width:240px !important;max-height:240px !important;width:auto !important;height:auto !important;object-fit:cover;border-radius:8px;}',
+    /* 暗色适配 */
     '[data-theme="dark"] .sym-trigger{background:#3a2a1c;color:#ffb877;border-color:#5a3d24;}',
     '[data-theme="dark"] .sym-panel{background:#262626;border-color:#3a3a3a;box-shadow:0 12px 34px rgba(0,0,0,.5);}',
     '[data-theme="dark"] .sym-panel button{background:#333;color:#ddd;}',
@@ -762,15 +702,17 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   s.textContent = patchCss;
   document.head.appendChild(s);
 
-  var SYMBOLS = ['§','★','☆','●','○','◆','◇','▸','➤','➜','→','←','✓','✔','✗','✘','•','‣','','⚑','','☐','⚠','✦','','❷','','①','②','③','④','⑤','—','…','·','「」','【】','《》'];
+  /* ---------- 2) 插入符号：给每个富文本框装按钮 + 面板 ---------- */
+  var SYMBOLS = ['§','★','☆','●','○','◆','◇','▸','➤','➜','→','←','✓','✔','✗','✘',
+    '•','‣','','⚑','','☐','⚠','✦','','❷','','①','②','③','④','⑤','—','…','·','「」','【】','《》'];
 
   function buildEditor(ed) {
-    if (ed.dataset.symDone) return;
+    if (ed.dataset.symDone) return;          // 防重复注入
     ed.dataset.symDone = '1';
     var host = ed.parentElement || ed;
     if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
 
-    var savedRange = null;
+    var savedRange = null;                    // 记住光标，点符号时不丢
     function saveRange() {
       var sel = window.getSelection();
       if (sel && sel.rangeCount && ed.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0).cloneRange();
@@ -791,14 +733,14 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
       b.type = 'button';
       b.textContent = sym;
       b.title = '插入 ' + sym;
-      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });   // 关键：阻止编辑框失焦
       b.addEventListener('click', function () {
         ed.focus();
         var sel = window.getSelection();
-        if (savedRange) { sel.removeAllRanges(); sel.addRange(savedRange); }
+        if (savedRange) { sel.removeAllRanges(); sel.addRange(savedRange); }   // 恢复光标
         try { document.execCommand('insertText', false, sym); } catch (err) {}
         savedRange = null; saveRange();
-        b.classList.add('flash'); setTimeout(function () { b.classList.remove('flash'); }, 180);
+        b.classList.add('flash'); setTimeout(function () { b.classList.remove('flash'); }, 180);  // 点击反馈
       });
       panel.appendChild(b);
     });
@@ -817,17 +759,24 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
 
   function mountAll() { document.querySelectorAll('[contenteditable="true"]').forEach(buildEditor); }
   mountAll();
+  // 页面是动态渲染的，编辑框可能后出现，兜底再扫几次
   setTimeout(mountAll, 600); setTimeout(mountAll, 1800);
   var mo = new MutationObserver(function () { mountAll(); });
   mo.observe(document.body, { childList: true, subtree: true });
 })();
-
-/* ===== 补丁 K（终版·清理式）：删 C′/H/J 后追加 · 自包含 · 幂等 · 无轮询 · 无刷屏 ===== */
+/* ===== 补丁 K（终版·清理式）：删 C′/H/J 后追加 · 自包含 · 幂等 · 无轮询 · 无刷屏 =====
+   修① 首页同步：包装全局 renderPosts，画完独立页顺手 renderHomeLife()
+        （loadPosts 末尾会调 renderPosts，时序天然正确，覆盖发布/删除/同步全路径）。
+   修② 编辑器调大：!important 撑满版心 + 加高正文框 + 加大标题（顶回 v6 的 840 限宽）。
+   修③ 移除右下角🩺体检按钮：#syncFab / #syncCard 直接 display:none（精确 id，零误伤）。
+   不含任何 MutationObserver 全页监听 / setInterval / setTimeout 轮询 → 不再刷屏、不再卡顿。
+*/
 (function(){
   'use strict';
   if(window.__patchK) return;
   window.__patchK = 1;
 
+  /* —— 样式：体检按钮移除 + 编辑器调大 —— */
   var st = document.createElement('style');
   st.setAttribute('data-patch','K');
   st.textContent = [
@@ -842,12 +791,13 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   ].join('');
   (document.head||document.documentElement).appendChild(st);
 
+  /* —— 修① 包装全局 renderPosts：独立页画完顺手刷首页 —— */
   if(typeof window.renderPosts === 'function' && typeof window.renderHomeLife === 'function' && !window.__rpWrappedK){
     var _orig = window.renderPosts;
     window.__rpWrappedK = 1;
     window.renderPosts = function(posts, off){
-      try{ _orig(posts, off); }catch(e){}
-      try{ window.renderHomeLife(); }catch(e){}
+      try{ _orig(posts, off); }catch(e){}      /* 作者原逻辑：画随笔独立页 */
+      try{ window.renderHomeLife(); }catch(e){} /* 补一刀：画首页随笔块（同一份最新 lifeList） */
     };
     console.log('%c[patchK] renderPosts 已包装 → 发布/删除/同步后首页随笔将随之刷新','color:#16a34a;font-weight:700');
   } else {
@@ -856,24 +806,36 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
 
   console.log('%c[patchK] 终版已挂载：首页同步 + 编辑器调大 + 🩺体检按钮已移除（无轮询/无刷屏）','color:#16a34a;font-weight:700');
 })();
-
-/* ===== 补丁 M（图纸到位·一次结清）：纯追加 / 幂等 / 不改作者原代码 ===== */
+/* ===== 补丁 M（图纸到位·一次结清）：纯追加 / 幂等 / 不改作者原代码 =====
+   修① 内容回得来：关"极速离线" + 隐藏 iframe 原生 fetch 重写 supabase 通道
+        （30s 超时，绕开作者代码里"所有云端请求 2.5s 硬超时"的误杀，也不看 OFFLINE）。
+   修② 恢复右下角🩺同步自检（被补丁 K 误藏；它是实测"云端 vs 本机条数"+
+        一键生成 INSERT 修复 SQL 的唯一入口，内容没上云时全靠它）。
+   修③ 布局·学习成长/生活随笔：把"内容列表"搬到"编辑框"上方
+        （真实节点：learning=#learningGrid 与 .editor；life=#postList+.life-toolbar 与 .post-box）。
+   修④ 布局·首页"生活随笔·最新"橱窗收窄（真实 id=#homeLife），去右侧空白、与上方横板块分层。
+   全部用真实 id/class（已逐行核对 index.html 与 app.js），不再猜。
+*/
 (function(){
   'use strict';
   if (window.__patchM) return;
   window.__patchM = 1;
 
+  /* ---------- 修④ 首页随笔橱窗收窄 + 修② 恢复🩺（CSS） ---------- */
   var st = document.createElement('style');
   st.setAttribute('data-patch','M');
   st.textContent = [
+    /* 收窄到朋友圈最佳阅读宽；左对齐继承版心贴左；特异性 1,2,0 + !important 稳赢优化层 #homeLife(1,0,0) */
     '.view[data-view="home"] #homeLife{ max-width:min(760px,100%) !important; width:100% !important; }',
     '.view[data-view="home"] #homeLife > *{ max-width:100% !important; }',
+    /* 恢复🩺：覆盖补丁 K 的 #syncFab,#syncCard{display:none!important}（更高特异性 + 后加载 + !important 赢） */
     '#syncFab{ display:grid !important; }',
     '#syncCard{ display:none !important; }',
     '#syncCard.open{ display:flex !important; }'
   ].join('');
   (document.head||document.documentElement).appendChild(st);
 
+  /* ---------- 修① 关极速离线 + 原生 fetch 重写云端通道（绕 2.5s 误杀） ---------- */
   var wasOff = (localStorage.getItem('chi_offline') === '1');
   try { localStorage.setItem('chi_offline','0'); window.OFFLINE = false; } catch(e){}
   try {
@@ -886,21 +848,21 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   try {
     var ifr = document.createElement('iframe');
     ifr.style.display='none'; ifr.setAttribute('aria-hidden','1');
-    (document.body||document.documentElement).appendChild(ifr);
+    (document.body||document.documentElement).appendChild(ifr); /* 不可 remove，否则 bind 失效 */
     if (ifr.contentWindow && ifr.contentWindow.fetch) nativeFetch = ifr.contentWindow.fetch.bind(ifr.contentWindow);
   } catch(e){}
   if (!nativeFetch && window.fetch && window.fetch.bind) nativeFetch = window.fetch.bind(window);
 
   if (nativeFetch) {
     var isSB = function(u){ return !!u && (u.indexOf('supabase.co')>=0 || u.indexOf('supabase.in')>=0); };
-    var hijacked = window.fetch;
+    var hijacked = window.fetch; /* 当前 = 作者"2.5s + OFFLINE"版 */
     window.fetch = function(input, init){
       var url = typeof input==='string' ? input : ((input && input.url)||'');
-      if (!isSB(url)) return hijacked(input, init);
+      if (!isSB(url)) return hijacked(input, init); /* 非云端：透传作者逻辑 */
       var ctrl = new AbortController();
-      var t = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 30000);
+      var t = setTimeout(function(){ try{ ctrl.abort(); }catch(e){} }, 30000); /* 30s，不再 2.5s 误杀 */
       var merged; try { merged = Object.assign({}, init, { signal: ctrl.signal }); } catch(e){ merged = init; }
-      var p = nativeFetch(input, merged);
+      var p = nativeFetch(input, merged); /* 走原生：不看 OFFLINE、不 2.5s */
       p.then(function(){clearTimeout(t);}, function(){clearTimeout(t);});
       return p;
     };
@@ -909,13 +871,16 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     console.warn('[patchM] 未拿到原生 fetch，仅靠关闭极速离线生效');
   }
 
+  /* ---------- 修③ 搬节点：列表上移、编辑框下移（真实节点，幂等） ---------- */
   function moveListAboveEditor(){
     try {
+      /* 学习成长：#learningGrid 搬到 .editor 之前 */
       var lEd = document.querySelector('.view[data-view="learning"] .editor');
       var lGrid = document.getElementById('learningGrid');
       if (lEd && lGrid && lEd.parentNode === lGrid.parentNode) {
         if (lEd.compareDocumentPosition(lGrid) & Node.DOCUMENT_POSITION_FOLLOWING) lEd.parentNode.insertBefore(lGrid, lEd);
       }
+      /* 生活随笔：.life-toolbar + #postList 搬到 .post-box 之前（导出按钮留在列表正上方） */
       var pBox = document.querySelector('.view[data-view="life"] .post-box');
       var pList = document.getElementById('postList');
       var pBar = document.querySelector('.view[data-view="life"] .life-toolbar');
@@ -929,6 +894,7 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     } catch(e){ console.warn('[patchM] 搬节点异常', e); }
   }
 
+  /* ---------- 修① 主动重拉云端 + 重画（无需手刷） ---------- */
   function refreshAll(){
     try { if (typeof invalidateLearning === 'function') invalidateLearning(); } catch(e){}
     var p1 = (typeof loadPosts === 'function') ? Promise.resolve().then(function(){ return loadPosts(); }) : Promise.resolve();
@@ -947,6 +913,7 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
     }).catch(function(e){ console.warn('[patchM] 重拉异常', e); });
   }
 
+  /* ---------- 启动：先搬节点（DOM 已就绪），再重拉 ---------- */
   function boot(){
     moveListAboveEditor();
     console.log('%c[patchM] 已挂载：极速离线 ' + (wasOff ? '由【开】→【关】' : '确认关') + ' ｜ 4 项修复就位','color:#16a34a;font-weight:700');
@@ -954,47 +921,4 @@ window.__rteLife = makeRTE(document.getElementById('postInput'), { ph: '写点�
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
-})();
-
-/* ===== learning 保险 v2：补首页学习预览重画 + 加载自检灯 ===== */
-(function(){
-  console.log('%c[LR保险]已加载 v2','color:#16a34a;font-weight:700');
-  var URL='https://bqdhqnviozvqljjigzys.supabase.co';
-  var KEY='sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
-  function isSeed(p){ return String(p&&p.id||'').indexOf('seed-')===0; }
-  function nativeFetch(){ try{ var f=document.createElement('iframe'); f.style.display='none'; document.documentElement.appendChild(f); if(f.contentWindow&&f.contentWindow.fetch) return f.contentWindow.fetch.bind(f.contentWindow); }catch(e){} return window.fetch.bind(window); }
-  function seedCount(){ try{ return (learningList||[]).filter(isSeed).length; }catch(e){ return -1; } }
-  async function refreshLearning(){
-    try{
-      var nf=nativeFetch(); var c=new AbortController(); var t=setTimeout(function(){try{c.abort();}catch(e){}},15000);
-      var r=await nf(URL+'/rest/v1/learning?select=id,title,content,images,links,tags,emoji,created_at&order=created_at.desc&limit=100',{headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Accept':'application/json'},signal:c.signal});
-      clearTimeout(t);
-      if(r.status!==200){ console.log('%c[LR保险]云端status='+r.status+'，跳过','color:#d97706'); return; }
-      var cloud=JSON.parse(await r.text())||[];
-      console.log('%c[LR保险]云端learning='+cloud.length+'条','color:#0ea5e9');
-      if(!cloud.length){ console.log('%c[LR保险]云端空，保留seed兜底','color:#d97706'); return; }
-      try{ if(typeof invalidateLearning==='function') invalidateLearning(); }catch(e){}
-      try{ if(typeof loadLearning==='function') await loadLearning(); }catch(e){}
-      if(typeof learningList!=='undefined' && (learningList||[]).length>0 && (learningList||[]).every(isSeed)){
-        learningList = cloud.concat((learningList||[]).filter(function(p){return p&&p._local;}));
-        console.log('%c[LR保险]作者逻辑仍seed→已硬覆盖为云端数据','color:#d97706');
-      }
-      console.log('%c[LR保险]重读后 样例数='+seedCount()+' 总数='+(learningList||[]).length,'color:#0ea5e9');
-      var hit='(无)';
-      try{ if(typeof renderLearningList==='function') renderLearningList(); }catch(e){}
-      try{ if(typeof renderHomeLatest==='function') renderHomeLatest(); }catch(e){}
-      try{ if(typeof renderHomeLearning==='function'){ renderHomeLearning(); hit='renderHomeLearning'; } }catch(e){}
-      try{ if(typeof renderLearningLatest==='function'){ renderLearningLatest(); hit='renderLearningLatest'; } }catch(e){}
-      try{ if(typeof renderLatestLearning==='function'){ renderLatestLearning(); hit='renderLatestLearning'; } }catch(e){}
-      try{ if(typeof renderHomeLearn==='function'){ renderHomeLearn(); hit='renderHomeLearn'; } }catch(e){}
-      try{ if(typeof renderLearningPreview==='function'){ renderLearningPreview(); hit='renderLearningPreview'; } }catch(e){}
-      try{ if(typeof renderLearningHome==='function'){ renderLearningHome(); hit='renderLearningHome'; } }catch(e){}
-      try{ if(typeof renderLearnHome==='function'){ renderLearnHome(); hit='renderLearnHome'; } }catch(e){}
-      try{ if(typeof renderHomeLearnList==='function'){ renderHomeLearnList(); hit='renderHomeLearnList'; } }catch(e){}
-      console.log('%c[LR保险]首页预览重画命中: '+hit+(hit==='(无)'?'  ← 首页若仍seed，把代码搜“学习成长·最新”那行上下15行截图发我':''),'color:'+(hit==='(无)'?'#d97706':'#16a34a')+';font-weight:700');
-    }catch(e){ console.log('%c[LR保险-ERR] '+(e&&e.message||e),'color:#dc2626'); }
-  }
-  window.__refreshLearning = refreshLearning;
-  window.addEventListener('load', function(){ setTimeout(refreshLearning, 700); });
-  document.addEventListener('click', function(e){ var a=e.target&&e.target.closest&&e.target.closest('a,[data-page],.nav-item,.menu-item'); if(!a) return; setTimeout(refreshLearning, 300); }, true);
 })();
