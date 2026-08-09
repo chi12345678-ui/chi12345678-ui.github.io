@@ -2,9 +2,9 @@
    阿历的数字花园 — 全功能脚本（Supabase 驱动）
    ======================================== */
 
-// ===== 配置 Supabase =====
-const SUPABASE_URL = 'https://你的项目ID.supabase.co';   // 替换为你的 URL
-const SUPABASE_ANON_KEY = '你的anon密钥';               // 替换为你的 anon key
+// ===== 配置 Supabase（已填入你的项目信息） =====
+const SUPABASE_URL = 'https://bqdhqnviozvqljjigzys.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_IcCmQ1r0JQd8S_0x_ZT8tg_3oa_w4sd';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -30,25 +30,19 @@ function formatDate(iso) {
 
 // ===== 路由与导航 =====
 function navigate(page) {
-  // 隐藏所有页面
   $$('.page-section').forEach(el => el.classList.remove('active'));
   const target = document.getElementById(`page-${page}`);
   if (target) target.classList.add('active');
 
-  // 更新导航高亮
   $$('.nav-link').forEach(link => {
     link.classList.toggle('active', link.dataset.page === page);
   });
 
   currentPage = page;
-
-  // 如果进入管理页，加载数据
   if (page === 'admin') {
     loadAdminData();
     showAdminTab(currentAdminTab);
   }
-
-  // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -75,7 +69,6 @@ async function loadCertificates() {
 
 // ===== 渲染前端展示 =====
 async function renderHome() {
-  // 首页展示最新3个项目、笔记、博客、生活随笔
   const projects = await loadProjects();
   const posts = await loadPosts();
 
@@ -99,7 +92,6 @@ async function renderHome() {
     `).join('');
   }
 
-  // 笔记
   const notesList = $('#notesList');
   if (notesList) {
     const notes = posts.filter(p => p.category === 'note').slice(0, 3);
@@ -115,7 +107,6 @@ async function renderHome() {
     `).join('');
   }
 
-  // 博客
   const blogGrid = $('#blogGrid');
   if (blogGrid) {
     const blogs = posts.filter(p => p.category === 'blog').slice(0, 2);
@@ -132,7 +123,6 @@ async function renderHome() {
     `).join('');
   }
 
-  // 生活随笔
   const lifeGrid = $('#lifeGrid');
   if (lifeGrid) {
     const lives = posts.filter(p => p.category === 'life').slice(0, 3);
@@ -149,12 +139,10 @@ async function renderHome() {
   }
 }
 
-// 查看单篇文章（弹窗或跳转详情页，这里用弹窗简单显示）
 function viewPost(id) {
   const post = allPosts.find(p => p.id === id);
   if (!post) return;
   alert(`标题：${post.title}\n\n内容：${post.content.replace(/<[^>]+>/g,'').slice(0,200)}...\n\n完整内容请到管理后台查看。`);
-  // 实际可跳转详情页或弹窗，因无独立详情页，暂用alert
 }
 
 // ===== 展开更多功能 =====
@@ -171,7 +159,6 @@ async function toggleSection(type) {
     const section = $(`#page-${type}`);
     if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else {
-    // 加载全部数据
     let items = [];
     if (type === 'projects') {
       items = await loadProjects();
@@ -240,7 +227,7 @@ async function toggleSection(type) {
 
 // ===== 管理后台 =====
 async function loadAdminData() {
-  allPosts = await loadPosts(); // 加载所有（包括草稿）
+  allPosts = await loadPosts();
   allProjects = await loadProjects();
   allCertificates = await loadCertificates();
   renderAdminList(currentAdminTab);
@@ -289,7 +276,6 @@ function renderAdminList(tab) {
   }).join('');
 }
 
-// 编辑
 function editAdminItem(tab, id) {
   let item = null;
   if (tab === 'posts') item = allPosts.find(p => p.id === id);
@@ -302,7 +288,6 @@ function editAdminItem(tab, id) {
   form.style.display = 'block';
   document.getElementById('adminFormTitle').textContent = `编辑 ${tab === 'posts' ? '文章' : tab === 'projects' ? '项目' : '证书'}`;
 
-  // 填充表单（简化：只处理 posts）
   if (tab === 'posts') {
     document.getElementById('formId').value = item.id;
     document.getElementById('formTitle').value = item.title || '';
@@ -313,11 +298,9 @@ function editAdminItem(tab, id) {
     document.getElementById('formStatus').value = item.status || 'published';
     if (quillEditor) quillEditor.root.innerHTML = item.content || '';
   }
-  // 可扩展其他类型
   $('#adminFormElement').dataset.tab = tab;
 }
 
-// 删除
 async function deleteAdminItem(tab, id) {
   if (!confirm('确定要删除吗？')) return;
   let table = tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates';
@@ -327,7 +310,6 @@ async function deleteAdminItem(tab, id) {
   loadAdminData();
 }
 
-// ===== 管理表单提交 =====
 async function handleAdminSubmit(e) {
   e.preventDefault();
   const form = e.target;
@@ -353,17 +335,13 @@ async function handleAdminSubmit(e) {
 
   if (tab === 'posts') {
     data.category = category;
-  } else if (tab === 'projects') {
-    // 可扩展
   }
 
   let result;
   if (id) {
-    // 更新
     result = await supabase.from(tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates')
       .update(data).eq('id', id);
   } else {
-    // 新建
     data.created_at = new Date().toISOString();
     result = await supabase.from(tab === 'posts' ? 'posts' : tab === 'projects' ? 'projects' : 'certificates')
       .insert([data]);
@@ -373,7 +351,6 @@ async function handleAdminSubmit(e) {
   alert('保存成功');
   resetForm();
   loadAdminData();
-  // 刷新前端展示
   renderHome();
 }
 
@@ -387,7 +364,6 @@ function resetForm() {
 
 // ===== 初始化 =====
 async function init() {
-  // 设置 Quill 编辑器
   quillEditor = new Quill('#editorContainer', {
     theme: 'snow',
     modules: {
@@ -410,7 +386,7 @@ async function init() {
     }
   });
 
-  // 自定义图片上传到 Supabase Storage
+  // 图片上传到 Supabase Storage（使用 assets 桶）
   quillEditor.getModule('toolbar').addHandler('image', function() {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
@@ -436,26 +412,22 @@ async function init() {
       e.preventDefault();
       const page = link.dataset.page;
       navigate(page);
-      // 关闭移动端侧边栏
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('mobileMenuBtn').classList.remove('active');
     });
   });
 
-  // 移动端菜单
   document.getElementById('mobileMenuBtn').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('mobileMenuBtn').classList.toggle('active');
   });
 
-  // 管理面板标签切换
   $$('.admin-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       showAdminTab(tab.dataset.tab);
     });
   });
 
-  // 新建按钮
   document.getElementById('adminNewBtn').addEventListener('click', () => {
     resetForm();
     const form = document.getElementById('adminForm');
@@ -463,26 +435,20 @@ async function init() {
     document.getElementById('adminFormTitle').textContent = '新建文章';
     document.getElementById('adminFormElement').dataset.tab = 'posts';
     document.getElementById('formId').value = '';
-    // 默认分类
     document.getElementById('formCategory').value = 'blog';
   });
 
-  // 取消按钮
   document.getElementById('formCancel').addEventListener('click', resetForm);
-
-  // 表单提交
   document.getElementById('adminFormElement').addEventListener('submit', handleAdminSubmit);
 
-  // 初始加载首页
   await renderHome();
   navigate('home');
 
-  // 统计数字动画（原有功能）
   initCounters();
   initReveal();
 }
 
-// ===== 保留原有辅助功能（二维码等） =====
+// ===== 辅助功能（二维码、计数、动画） =====
 function showQR(src, label) {
   const modal = document.getElementById('qrModal');
   const img = document.getElementById('qrImg');
@@ -498,7 +464,6 @@ document.getElementById('qrModal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('qrModal')) closeQR();
 });
 
-// 数字计数动画
 function initCounters() {
   const counters = document.querySelectorAll('.about-stat-num');
   const observer = new IntersectionObserver((entries) => {
@@ -521,7 +486,6 @@ function initCounters() {
   counters.forEach(c => observer.observe(c));
 }
 
-// 滚动显现动画
 function initReveal() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -531,5 +495,4 @@ function initReveal() {
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
-// 页面加载后执行
 document.addEventListener('DOMContentLoaded', init);
