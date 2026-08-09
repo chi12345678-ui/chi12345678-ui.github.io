@@ -367,7 +367,7 @@ async function initApp() {
 
   // 初始导航
   const hash = window.location.hash.replace('#', '') || 'home';
-  navigate(hashMap[hash] ? hash : 'home');
+  navigate(viewMap[hash] ? hash : 'home');
 }
 
 // 启动
