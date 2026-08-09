@@ -1,6 +1,6 @@
 /* ========================================
    阿历的数字花园 — 全功能脚本（Supabase 驱动）
-   参考 Santiago Diaz 布局
+   顶部导航 + 左文右图
    ======================================== */
 
 // ===== 配置 Supabase（已填入你的项目信息） =====
@@ -31,10 +31,14 @@ function formatDate(iso) {
 
 // ===== 路由与导航 =====
 function navigate(page) {
+    // 隐藏所有页面
     $$('.page-section').forEach(el => el.classList.remove('active'));
+
+    // 显示目标页面
     const target = document.getElementById(`page-${page}`);
     if (target) target.classList.add('active');
 
+    // 更新导航高亮
     $$('.nav-link').forEach(link => {
         link.classList.toggle('active', link.dataset.page === page);
     });
@@ -42,9 +46,10 @@ function navigate(page) {
     currentPage = page;
 
     // 关闭移动端菜单
-    document.getElementById('navLinks').classList.remove('open');
-    document.getElementById('mobileMenuBtn').classList.remove('active');
+    document.getElementById('navLinks')?.classList.remove('open');
+    document.getElementById('mobileMenuBtn')?.classList.remove('active');
 
+    // 如果进入管理页，加载数据
     if (page === 'admin') {
         loadAdminData();
         showAdminTab(currentAdminTab);
@@ -79,7 +84,7 @@ async function renderHome() {
     const projects = await loadProjects();
     const posts = await loadPosts();
 
-    // 项目
+    // ----- 项目案例 -----
     const projectGrid = $('#projectsGrid');
     if (projectGrid) {
         const show = projects.slice(0, 4);
@@ -103,7 +108,7 @@ async function renderHome() {
         `).join('');
     }
 
-    // 笔记
+    // ----- 学习笔记 -----
     const notesList = $('#notesList');
     if (notesList) {
         const notes = posts.filter(p => p.category === 'note').slice(0, 5);
@@ -119,7 +124,7 @@ async function renderHome() {
         `).join('');
     }
 
-    // 博客
+    // ----- 博客 -----
     const blogGrid = $('#blogGrid');
     if (blogGrid) {
         const blogs = posts.filter(p => p.category === 'blog').slice(0, 4);
@@ -136,7 +141,7 @@ async function renderHome() {
         `).join('');
     }
 
-    // 生活随笔
+    // ----- 生活随笔 -----
     const lifeGrid = $('#lifeGrid');
     if (lifeGrid) {
         const lives = posts.filter(p => p.category === 'life').slice(0, 3);
@@ -153,13 +158,14 @@ async function renderHome() {
     }
 }
 
+// 查看文章详情（简易弹窗）
 function viewPost(id) {
     const post = allPosts.find(p => p.id === id);
     if (!post) return;
     alert(`标题：${post.title}\n\n内容：${post.content.replace(/<[^>]+>/g, '').slice(0, 300)}...\n\n完整内容请到管理后台查看。`);
 }
 
-// ===== 展开更多功能 =====
+// ===== 展开更多 =====
 async function toggleSection(type) {
     const moreEl = $(`#${type}More`);
     const btnEl = $(`#${type}Toggle`);
@@ -244,7 +250,9 @@ async function toggleSection(type) {
 
 // ===== 管理后台 =====
 async function loadAdminData() {
-    allPosts = await loadPosts();
+    // 加载所有数据（包括草稿）
+    const { data: posts } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+    allPosts = posts || [];
     allProjects = await loadProjects();
     allCertificates = await loadCertificates();
     renderAdminList(currentAdminTab);
@@ -423,22 +431,26 @@ async function init() {
         };
     });
 
-    // 导航事件
+    // 导航点击事件
     $$('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const page = link.dataset.page;
-            navigate(page);
+            if (page) navigate(page);
         });
     });
 
-    // 移动端菜单
-    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-        document.getElementById('navLinks').classList.toggle('open');
-        document.getElementById('mobileMenuBtn').classList.toggle('active');
-    });
+    // 移动端菜单切换
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const navLinks = document.getElementById('navLinks');
+    if (menuBtn && navLinks) {
+        menuBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('open');
+            menuBtn.classList.toggle('active');
+        });
+    }
 
-    // 管理面板标签切换
+    // 管理后台标签切换
     $$('.admin-tab').forEach(tab => {
         tab.addEventListener('click', () => {
             showAdminTab(tab.dataset.tab);
@@ -446,24 +458,35 @@ async function init() {
     });
 
     // 新建按钮
-    document.getElementById('adminNewBtn').addEventListener('click', () => {
-        resetForm();
-        const form = document.getElementById('adminForm');
-        form.style.display = 'block';
-        document.getElementById('adminFormTitle').textContent = '新建文章';
-        document.getElementById('adminFormElement').dataset.tab = 'posts';
-        document.getElementById('formId').value = '';
-        document.getElementById('formCategory').value = 'blog';
-    });
+    const newBtn = document.getElementById('adminNewBtn');
+    if (newBtn) {
+        newBtn.addEventListener('click', () => {
+            resetForm();
+            const form = document.getElementById('adminForm');
+            form.style.display = 'block';
+            document.getElementById('adminFormTitle').textContent = '新建文章';
+            document.getElementById('adminFormElement').dataset.tab = 'posts';
+            document.getElementById('formId').value = '';
+            document.getElementById('formCategory').value = 'blog';
+        });
+    }
 
     // 取消按钮
-    document.getElementById('formCancel').addEventListener('click', resetForm);
+    const cancelBtn = document.getElementById('formCancel');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', resetForm);
+    }
 
     // 表单提交
-    document.getElementById('adminFormElement').addEventListener('submit', handleAdminSubmit);
+    const formEl = document.getElementById('adminFormElement');
+    if (formEl) {
+        formEl.addEventListener('submit', handleAdminSubmit);
+    }
 
-    // 初始加载
+    // 渲染首页
     await renderHome();
+
+    // 默认显示首页
     navigate('home');
 
     // 统计数字动画
@@ -476,17 +499,25 @@ function showQR(src, label) {
     const modal = document.getElementById('qrModal');
     const img = document.getElementById('qrImg');
     const text = document.getElementById('qrText');
+    if (!modal || !img || !text) return;
     img.src = src;
     text.textContent = '扫码添加' + label;
     modal.classList.add('active');
 }
 
 function closeQR() {
-    document.getElementById('qrModal').classList.remove('active');
+    const modal = document.getElementById('qrModal');
+    if (modal) modal.classList.remove('active');
 }
 
-document.getElementById('qrModal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('qrModal')) closeQR();
+// 点击弹窗外部关闭
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('qrModal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeQR();
+        });
+    }
 });
 
 function initCounters() {
@@ -521,4 +552,5 @@ function initReveal() {
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }
 
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', init);
