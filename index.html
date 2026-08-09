@@ -3,203 +3,356 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>阿历 | 数据分析与增长运营</title>
-  <meta name="description" content="阿历的个人主页——深耕快消品与电商领域的数据分析从业者。">
-  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
+  <title>阿历的个人主页 · 数据驱动成长</title>
+  <meta name="description" content="阿历的个人主页 - 数据分析、业务增长、学习记录、生活随笔">
   <link rel="stylesheet" href="style.css">
+  <!-- Quill 富文本编辑器 -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- Chart.js 用于数据可视化 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-
-<!-- ===== 顶部导航栏 ===== -->
-<header class="navbar">
-  <div class="navbar-container">
-    <a href="#home" class="navbar-brand">
-      <span class="brand-avatar">阿</span>
-      <span class="brand-name">阿历</span>
-    </a>
-    <nav class="nav-links" id="navLinks">
-      <a href="#home" class="nav-link active" data-page="home">首页</a>
-      <a href="#projects" class="nav-link" data-page="projects">项目</a>
-      <a href="#blog" class="nav-link" data-page="blog">博客</a>
-      <a href="#notes" class="nav-link" data-page="notes">笔记</a>
-      <a href="#life" class="nav-link" data-page="life">生活</a>
-      <a href="#admin" class="nav-link nav-admin" data-page="admin">管理</a>
-    </nav>
-    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="菜单">
-      <span></span><span></span><span></span>
-    </button>
-  </div>
-</header>
-
-<!-- ===== 主内容 ===== -->
-<main class="main-content">
-
-  <!-- ===== 首页 Hero ===== -->
-  <section id="page-home" class="page-section active">
-    <div class="hero">
-      <div class="hero-text">
-        <p class="hero-greeting">你好呀 👋</p>
-        <h1 class="hero-title">我是阿历</h1>
-        <p class="hero-subtitle">
-          一名深耕<strong>快消品与电商</strong>领域的数据分析从业者。
-          我相信数据不是冷冰冰的数字，而是<strong>听懂业务、讲清故事</strong>的语言。
-        </p>
-        <p class="hero-detail">
-          成功利用数据分析将一家电商母婴店铺从 <strong>0 做到月销 100W+</strong>。
-          多年市场运营经验，擅长库存健康度诊断、RFM 用户分层、复购归因与 A/B 测试驱动精细化运营。
-        </p>
-        <div class="hero-actions">
-          <a href="#projects" class="btn btn-primary">浏览项目案例</a>
-          <a href="#" class="btn btn-secondary" onclick="openAIChat()">🤖 AI 助手</a>
-          <a href="mailto:chift0707@gmail.com" class="btn btn-secondary">联系我</a>
-        </div>
-        <div class="hero-social">
-          <a href="mailto:chift0707@gmail.com" class="social-link" title="邮箱">📧</a>
-          <a href="#" class="social-link" title="微信" onclick="showQR('wechat.jpg','微信');return false;">💬</a>
-          <a href="#" class="social-link" title="小红书" onclick="showQR('xiaohongshu.jpg','小红书');return false;">📕</a>
-          <a href="#" class="social-link" title="QQ" onclick="showQR('qq.jpg','QQ');return false;">🐧</a>
-        </div>
+  <!-- 顶部导航栏 -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="#" class="navbar-brand" onclick="showSection('home')">
+        <div class="brand-avatar">历</div>
+        <span>阿历的个人主页</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a class="nav-link active" data-section="home" onclick="showSection('home')">首页</a>
+        <a class="nav-link" data-section="projects" onclick="showSection('projects')">项目案例</a>
+        <a class="nav-link" data-section="blogs" onclick="showSection('blogs')">学习笔记</a>
+        <a class="nav-link" data-section="essays" onclick="showSection('essays')">生活随笔</a>
+        <a class="nav-link" data-section="about" onclick="showSection('about')">关于我</a>
+        <a class="nav-link nav-admin" onclick="toggleAdmin()">管理后台</a>
       </div>
-      <div class="hero-photo">
-        <img src="me.jpg" alt="阿历" onerror="this.style.display='none';this.parentElement.classList.add('no-photo')">
-        <div class="hero-photo-fallback">历</div>
-      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
-  </section>
+  </nav>
 
-  <!-- ===== 项目案例 ===== -->
-  <section id="page-projects" class="page-section">
-    <div class="projects">
+  <main class="main-content">
+    <!-- ========== 首页 ========== -->
+    <section id="home" class="page-section active">
+      <!-- Hero: 左文右图 -->
+      <div class="hero">
+        <div class="hero-text">
+          <p class="hero-greeting">你好呀！👋</p>
+          <h1 class="hero-title">我是 <span class="accent-text">阿历</span></h1>
+          <p class="hero-subtitle">
+            一名深耕<strong>快消品与电商</strong>领域的数据分析从业者。<br>
+            成功利用数据分析将一家电商母婴店铺从 0 做到月销 <strong>100W+</strong>。
+          </p>
+          <p class="hero-detail">
+            📊 擅长库存健康度诊断、智能补货模型、RFM 用户分层、复购归因、A/B 测试。<br>
+            🌱 这里是我的<strong>数字花园</strong>——记录学习、项目、工作与生活，伴随一生的成长档案。
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-large" onclick="showSection('projects')">浏览项目案例</button>
+            <button class="btn btn-secondary btn-large" onclick="showSection('blogs')">阅读学习笔记</button>
+          </div>
+          <div class="hero-social">
+            <a class="social-link" title="微信" onclick="showQR('wechat')">💬</a>
+            <a class="social-link" title="小红书" onclick="showQR('xiaohongshu')">📕</a>
+            <a class="social-link" title="QQ" onclick="showQR('qq')">🐧</a>
+            <a class="social-link" title="Email" href="mailto:chift0707@gmail.com">✉️</a>
+            <a class="social-link" title="GitHub" href="https://github.com/chi12345678-ui" target="_blank">🐙</a>
+          </div>
+        </div>
+        <div class="hero-photo" id="heroPhoto">
+          <img src="me.jpg" alt="阿历" id="heroAvatar" onerror="this.style.display='none';document.getElementById('heroFallback').style.display='flex'">
+          <div class="hero-photo-fallback" id="heroFallback" style="display:none">历</div>
+        </div>
+      </div>
+
+      <!-- 数据概览 Dashboard -->
+      <div class="dashboard-section">
+        <div class="section-header section-header--row">
+          <div>
+            <span class="section-label">DASHBOARD</span>
+            <h2 class="section-title">成长数据看板</h2>
+          </div>
+        </div>
+        <div class="dashboard-grid">
+          <div class="dashboard-card">
+            <div class="dashboard-number" id="statProjects">0</div>
+            <div class="dashboard-label">项目案例</div>
+          </div>
+          <div class="dashboard-card">
+            <div class="dashboard-number" id="statBlogs">0</div>
+            <div class="dashboard-label">学习笔记</div>
+          </div>
+          <div class="dashboard-card">
+            <div class="dashboard-number" id="statEssays">0</div>
+            <div class="dashboard-label">生活随笔</div>
+          </div>
+          <div class="dashboard-card">
+            <div class="dashboard-number" id="statCerts">0</div>
+            <div class="dashboard-label">专业证书</div>
+          </div>
+        </div>
+        <div class="dashboard-chart-row">
+          <div class="dashboard-chart-card">
+            <h4>技能雷达</h4>
+            <canvas id="skillsChart"></canvas>
+          </div>
+          <div class="dashboard-chart-card">
+            <h4>内容产出趋势</h4>
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 精选项目 -->
+      <div class="projects" id="homeProjects">
+        <div class="section-header section-header--row">
+          <div>
+            <span class="section-label">FEATURED</span>
+            <h2 class="section-title">精选项目</h2>
+          </div>
+          <button class="btn-text" onclick="showSection('projects')">查看全部 →</button>
+        </div>
+        <div class="projects-grid" id="featuredProjectsGrid">
+          <div class="loading-state">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 最新笔记 -->
+      <div class="blog" id="homeBlogs">
+        <div class="section-header section-header--row">
+          <div>
+            <span class="section-label">LATEST</span>
+            <h2 class="section-title">最新学习笔记</h2>
+          </div>
+          <button class="btn-text" onclick="showSection('blogs')">查看全部 →</button>
+        </div>
+        <div class="blog-grid" id="latestBlogsGrid">
+          <div class="loading-state">加载中...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 项目案例 ========== -->
+    <section id="projects" class="page-section">
+      <div class="section-header">
+        <span class="section-label">PROJECTS</span>
+        <h2 class="section-title">项目案例</h2>
+        <p class="section-desc">用数据把业务问题，变成可落地的增长动作。每个案例都附可下载的源文件与报告。</p>
+      </div>
+      <div class="projects-grid" id="projectsGrid">
+        <div class="loading-state">加载项目案例中...</div>
+      </div>
+    </section>
+
+    <!-- ========== 学习笔记 ========== -->
+    <section id="blogs" class="page-section">
       <div class="section-header section-header--row">
         <div>
-          <span class="section-label">项目案例</span>
-          <h2 class="section-title">用数据驱动增长</h2>
+          <span class="section-label">LEARNING</span>
+          <h2 class="section-title">学习笔记</h2>
+          <p class="section-desc">像博客一样记录每一次学习——文字、图片、参考链接。</p>
         </div>
-        <button class="btn-text" id="projectsToggle" onclick="toggleSection('projects')">查看全部 →</button>
+        <button class="btn btn-primary" onclick="openBlogEditor()">✍️ 写一篇</button>
       </div>
-      <p class="section-desc">每个案例都附可下载的源文件与报告，点击卡片即可查看详情。</p>
-      <div class="projects-grid" id="projectsGrid"></div>
-      <div class="projects-more" id="projectsMore"></div>
-    </div>
-  </section>
+      <div class="blog-grid" id="blogsGrid">
+        <div class="loading-state">加载学习笔记中...</div>
+      </div>
+    </section>
 
-  <!-- ===== 博客 ===== -->
-  <section id="page-blog" class="page-section">
-    <div class="blog">
+    <!-- ========== 博客详情/编辑页 ========== -->
+    <section id="blogDetail" class="page-section">
+      <div class="blog-detail-header">
+        <button class="btn-text" onclick="backToBlogs()">← 返回列表</button>
+        <div class="blog-detail-actions" id="blogDetailActions">
+          <button class="btn btn-secondary" onclick="editCurrentBlog()">编辑</button>
+          <button class="btn" style="background:#dc2626;color:#fff" onclick="deleteCurrentBlog()">删除</button>
+        </div>
+      </div>
+      <article class="blog-detail" id="blogDetailContent">
+        <div class="loading-state">加载中...</div>
+      </article>
+    </section>
+
+    <!-- ========== 生活随笔 ========== -->
+    <section id="essays" class="page-section">
       <div class="section-header section-header--row">
         <div>
-          <span class="section-label">博客</span>
-          <h2 class="section-title">深度思考与方法论</h2>
+          <span class="section-label">LIFE</span>
+          <h2 class="section-title">生活随笔</h2>
+          <p class="section-desc">分析之外的日常碎片。像发朋友圈一样记录生活——短小、即时、带图。</p>
         </div>
-        <button class="btn-text" id="blogToggle" onclick="toggleSection('blog')">查看全部 →</button>
+        <button class="btn btn-primary" onclick="openEssayEditor()">📝 发一条</button>
       </div>
-      <p class="section-desc">关于数据分析、运营策略与职业成长的深度文章。</p>
-      <div class="blog-grid" id="blogGrid"></div>
-      <div class="blog-more" id="blogMore"></div>
-    </div>
-  </section>
+      <div class="life-grid" id="essaysGrid">
+        <div class="loading-state">加载生活随笔中...</div>
+      </div>
+    </section>
 
-  <!-- ===== 学习笔记 ===== -->
-  <section id="page-notes" class="page-section">
-    <div class="notes">
-      <div class="section-header section-header--row">
-        <div>
-          <span class="section-label">学习笔记</span>
-          <h2 class="section-title">持续学习，持续记录</h2>
-        </div>
-        <button class="btn-text" id="notesToggle" onclick="toggleSection('notes')">查看全部 →</button>
-      </div>
-      <p class="section-desc">像博客一样记录每一次学习——文字、图片、参考链接。</p>
-      <div class="notes-list" id="notesList"></div>
-      <div class="notes-more" id="notesMore"></div>
-    </div>
-  </section>
-
-  <!-- ===== 生活随笔 ===== -->
-  <section id="page-life" class="page-section">
-    <div class="life">
-      <div class="section-header section-header--row">
-        <div>
-          <span class="section-label">生活随笔</span>
-          <h2 class="section-title">分析之外的日常</h2>
-        </div>
-        <button class="btn-text" id="lifeToggle" onclick="toggleSection('life')">查看全部 →</button>
-      </div>
-      <p class="section-desc">像发朋友圈一样记录生活——短小、即时、带图。</p>
-      <div class="life-grid" id="lifeGrid"></div>
-      <div class="life-more" id="lifeMore"></div>
-    </div>
-  </section>
-
-  <!-- ===== AI 助手弹窗 ===== -->
-  <div class="ai-overlay" id="aiOverlay" style="display:none;">
-    <div class="ai-panel">
-      <div class="ai-header">
-        <h3>🤖 AI 助手</h3>
-        <button class="ai-close" onclick="closeAIChat()">&times;</button>
-      </div>
-      <div class="ai-messages" id="aiMessages">
-        <div class="ai-message ai-bot">
-          👋 你好！我是阿历的 AI 助手。你可以问我关于数据分析、运营策略、项目案例等方面的问题。
+    <!-- ========== 随笔详情/编辑页 ========== -->
+    <section id="essayDetail" class="page-section">
+      <div class="blog-detail-header">
+        <button class="btn-text" onclick="backToEssays()">← 返回列表</button>
+        <div class="blog-detail-actions" id="essayDetailActions">
+          <button class="btn btn-secondary" onclick="editCurrentEssay()">编辑</button>
+          <button class="btn" style="background:#dc2626;color:#fff" onclick="deleteCurrentEssay()">删除</button>
         </div>
       </div>
-      <div class="ai-input-area">
-        <input type="text" id="aiInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter') sendAIMessage()">
-        <button class="btn btn-primary" onclick="sendAIMessage()">发送</button>
-      </div>
-      <p class="ai-hint">💡 支持提问：项目案例、数据分析方法、运营策略等</p>
-    </div>
-  </div>
+      <article class="essay-detail" id="essayDetailContent">
+        <div class="loading-state">加载中...</div>
+      </article>
+    </section>
 
-  <!-- ===== 管理后台 ===== -->
-  <section id="page-admin" class="page-section">
-    <div class="admin-container">
-      <div class="admin-header">
-        <h2>管理后台</h2>
-        <div class="admin-tabs">
-          <button class="admin-tab active" data-tab="posts">文章</button>
-          <button class="admin-tab" data-tab="projects">项目</button>
-          <button class="admin-tab" data-tab="certificates">证书</button>
+    <!-- ========== 关于我 ========== -->
+    <section id="about" class="page-section">
+      <div class="about-container">
+        <div class="about-header">
+          <div class="about-photo">
+            <img src="me.jpg" alt="阿历" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="about-photo-fallback" style="display:none">历</div>
+          </div>
+          <div class="about-intro">
+            <h1>关于我</h1>
+            <p class="about-subtitle">我是 <strong>阿历</strong>，一名深耕 <strong>快消品与电商</strong> 领域的数据分析从业者。</p>
+            <p class="about-desc">我相信数据不是冷冰冰的数字，而是 <strong>听懂业务、讲清故事</strong> 的语言。这座花园记录我从一个表格新手，到能独立搭建补货模型、用户分层体系的每一步—— <strong>慢慢种，慢慢长</strong>。</p>
+          </div>
         </div>
-        <button class="btn btn-primary" id="adminNewBtn">+ 新建</button>
+
+        <div class="about-stats">
+          <div class="about-stat">
+            <div class="about-stat-number">100W+</div>
+            <div class="about-stat-label">月销增长<br>从0到月销百万母婴店</div>
+          </div>
+          <div class="about-stat">
+            <div class="about-stat-number">8</div>
+            <div class="about-stat-label">RFM分层<br>把10万用户分成8类</div>
+          </div>
+          <div class="about-stat">
+            <div class="about-stat-number">2×</div>
+            <div class="about-stat-label">召回效率<br>精细化发券翻倍</div>
+          </div>
+          <div class="about-stat">
+            <div class="about-stat-number">∞</div>
+            <div class="about-stat-label">持续生长<br>这座花园不会停</div>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <h3>核心能力</h3>
+          <div class="about-skills">
+            <div class="about-skill">
+              <div class="about-skill-num">01</div>
+              <div class="about-skill-content">
+                <h4>把模糊需求变成数据模型</h4>
+                <p>库存健康度诊断、智能补货模型，让"该备多少货"从拍脑袋变成可计算。</p>
+              </div>
+            </div>
+            <div class="about-skill">
+              <div class="about-skill-num">02</div>
+              <div class="about-skill-content">
+                <h4>用 RFM 驱动精细化运营</h4>
+                <p>用户分层、复购归因、留存分析、A/B 测试，把"哪些用户该发券"算清楚。</p>
+              </div>
+            </div>
+            <div class="about-skill">
+              <div class="about-skill-num">03</div>
+              <div class="about-skill-content">
+                <h4>长期主义的记录者</h4>
+                <p>这座数字花园就是我的方法论沉淀——只要网站不停，生长就不终止。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <h3>证书墙</h3>
+          <div class="certs-grid" id="certsGrid">
+            <div class="loading-state">加载证书中...</div>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <h3>简历下载</h3>
+          <div class="resume-card">
+            <div class="resume-info">
+              <div class="resume-title">池增历 · 市场数据运营 3 年</div>
+              <div class="resume-meta">快消 / 电商 · 数据分析 · 增长运营</div>
+            </div>
+            <a class="btn btn-primary" href="池增历-市场数据运营3年-市场营销专业-本科.pdf" target="_blank">📄 下载简历</a>
+          </div>
+        </div>
       </div>
-      <div id="adminPostsList" class="admin-list"></div>
-      <div id="adminProjectsList" class="admin-list" style="display:none;"></div>
-      <div id="adminCertificatesList" class="admin-list" style="display:none;"></div>
-      <div id="adminForm" class="admin-form" style="display:none;">
-        <h3 id="adminFormTitle">新建文章</h3>
-        <form id="adminFormElement">
-          <input type="hidden" id="formId">
-          <div class="form-group"><label>标题</label><input type="text" id="formTitle" required></div>
-          <div class="form-group"><label>分类</label><select id="formCategory"><option value="blog">博客</option><option value="note">学习笔记</option><option value="life">生活随笔</option></select></div>
-          <div class="form-group"><label>摘要</label><input type="text" id="formSummary"></div>
-          <div class="form-group"><label>内容（富文本）</label><div id="editorContainer"></div></div>
-          <div class="form-group"><label>封面图 URL</label><input type="text" id="formCover" placeholder="https://..."></div>
-          <div class="form-group"><label>标签（逗号分隔）</label><input type="text" id="formTags" placeholder="Python, 数据分析"></div>
-          <div class="form-group"><label>状态</label><select id="formStatus"><option value="published">已发布</option><option value="draft">草稿</option></select></div>
-          <div class="form-actions"><button type="submit" class="btn btn-primary">保存</button><button type="button" class="btn btn-secondary" id="formCancel">取消</button></div>
-        </form>
+    </section>
+
+    <!-- ========== 管理后台 ========== -->
+    <section id="admin" class="page-section">
+      <div class="admin-container">
+        <div class="admin-header">
+          <h2>管理后台</h2>
+          <div class="admin-tabs">
+            <button class="admin-tab active" onclick="switchAdminTab('projects')">项目案例</button>
+            <button class="admin-tab" onclick="switchAdminTab('certificates')">证书</button>
+            <button class="admin-tab" onclick="switchAdminTab('blogs')">学习笔记</button>
+            <button class="admin-tab" onclick="switchAdminTab('essays')">生活随笔</button>
+          </div>
+          <button class="btn btn-primary" id="adminNewBtn" onclick="adminNewItem()">+ 新增</button>
+        </div>
+        <div class="admin-list" id="adminList">
+          <div class="loading-state">加载中...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 通用编辑器弹窗 ========== -->
+    <div class="modal-overlay" id="editorModal">
+      <div class="modal-panel modal-panel--large">
+        <div class="modal-header">
+          <h3 id="editorTitle">新建</h3>
+          <button class="modal-close" onclick="closeEditor()">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="editorForm" onsubmit="event.preventDefault();saveEditorForm();">
+            <div id="editorFields"></div>
+            <div class="form-group" id="richEditorGroup">
+              <label>内容</label>
+              <div id="quillEditor"></div>
+            </div>
+            <div class="form-group" id="fileUploadGroup">
+              <label>附件 / 图片</label>
+              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-zone-text">点击或拖拽上传图片/文件</div>
+                <div class="upload-zone-hint">支持 JPG、PNG、GIF、PDF、Excel 等</div>
+              </div>
+              <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(event)">
+              <div class="upload-preview" id="uploadPreview"></div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" onclick="closeEditor()">取消</button>
+              <button type="submit" class="btn btn-primary" id="saveBtn">保存</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  </section>
 
-  <footer class="footer">
-    <p>用 <span>❤</span> 构建 · 阿历的数字花园 · 2026</p>
-  </footer>
-</main>
+    <!-- ========== 二维码弹窗 ========== -->
+    <div class="qr-modal" id="qrModal" onclick="closeQR(event)">
+      <div class="qr-box" onclick="event.stopPropagation()">
+        <button class="qr-close" onclick="closeQR()">×</button>
+        <img src="" alt="二维码" id="qrImg">
+        <p id="qrText">扫码添加</p>
+      </div>
+    </div>
 
-<!-- 二维码弹窗 -->
-<div class="qr-modal" id="qrModal">
-  <div class="qr-box">
-    <button class="qr-close" onclick="closeQR()">&times;</button>
-    <img id="qrImg" src="" alt="二维码">
-    <p id="qrText">扫码添加</p>
-  </div>
-</div>
+    <!-- ========== Toast 提示 ========== -->
+    <div class="toast" id="toast"></div>
+  </main>
 
-<!-- 引入 JS 库和脚本 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-<script src="app.js"></script>
+  <!-- Quill -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
